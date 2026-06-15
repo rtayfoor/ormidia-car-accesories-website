@@ -13,7 +13,7 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo">
-                <img src="logo.jpg" alt="Ormidia Logo" class="logo-img">
+                <img src="logo.jpg" alt="Ormidia Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/40x40?text=Logo'">
                 <span class="logo-text">Ormidia</span>
             </div>
             <ul class="nav-menu">
@@ -43,7 +43,7 @@
             <div class="hero-content">
                 <h1 class="hero-title">Premium Car Accessories <br>For The Modern Driver</h1>
                 <p class="hero-description">
-                    Discover our curated collection of high-quality car accessories designed to enhance your driving experience. From interior luxury to exterior protection.
+                    Discover our curated collection of high-quality car accessories designed to enhance your driving experience.
                 </p>
                 <div class="hero-buttons">
                     <a href="products.html" class="btn btn-primary">Shop Now</a>
@@ -117,11 +117,25 @@
         <div class="container">
             <div class="section-header">
                 <h2>Featured Products</h2>
-                <p>Our most popular accessories this month</p>
+                <p>Premium accessories for your vehicle</p>
             </div>
-            <div class="products-grid" id="featured-products">
-                <!-- Products will be loaded dynamically -->
+            
+            <!-- Head Rest Pillows Category -->
+            <div class="category-section">
+                <h3 class="category-title">Head Rest Pillows</h3>
+                <div class="products-grid" id="headrest-products">
+                    <!-- Products will load here -->
+                </div>
             </div>
+            
+            <!-- Anti-Slip Mats Category -->
+            <div class="category-section">
+                <h3 class="category-title">Anti-Slip Dashboard Mats</h3>
+                <div class="products-grid" id="antislip-products">
+                    <!-- Products will load here -->
+                </div>
+            </div>
+            
             <div class="view-all">
                 <a href="products.html" class="btn btn-outline">View All Products</a>
             </div>
@@ -135,7 +149,7 @@
                 <div class="about-text">
                     <h2>About Ormidia</h2>
                     <p>Founded with a passion for automotive excellence, Ormidia brings you the finest car accessories from around the world. We believe that every drive should be a premium experience.</p>
-                    <p>Our team carefully selects each product to ensure quality, durability, and style. Whether you're looking for practical solutions or luxury additions, we have something for every car enthusiast.</p>
+                    <p>Our team carefully selects each product to ensure quality, durability, and style.</p>
                     <div class="about-features">
                         <div>
                             <i class="fas fa-check-circle"></i>
@@ -165,7 +179,7 @@
         <div class="container">
             <div class="newsletter-content">
                 <h2>Stay In The Loop</h2>
-                <p>Subscribe to receive updates on new arrivals, special offers, and exclusive deals.</p>
+                <p>Subscribe to receive updates on new arrivals and special offers.</p>
                 <form class="newsletter-form" id="newsletter-form">
                     <input type="email" placeholder="Enter your email address" required>
                     <button type="submit" class="btn btn-primary">Subscribe</button>
@@ -221,7 +235,7 @@
             <div class="footer-content">
                 <div class="footer-section">
                     <h3>Ormidia</h3>
-                    <p>Premium car accessories for the modern driver. Quality, style, and performance in every product.</p>
+                    <p>Premium car accessories for the modern driver.</p>
                     <div class="social-links">
                         <a href="#"><i class="fab fa-facebook"></i></a>
                         <a href="#"><i class="fab fa-instagram"></i></a>
@@ -262,7 +276,154 @@
         </div>
     </footer>
 
-    <script src="app.js"></script>
-    <script src="cart.js"></script>
+    <script>
+        // Product Data
+        const headRestPillows = [
+            { name: "Ford", image: "head-rest-pillow_ford.png", price: 29.99 },
+            { name: "Honda", image: "head-rest-pillow_honda.png", price: 29.99 },
+            { name: "Isuzu", image: "head-rest-pillow_isuzu.png", price: 29.99 },
+            { name: "Kia", image: "head-rest-pillow_kia.png", price: 29.99 },
+            { name: "Mazda", image: "head-rest-pillow_mazda.png", price: 29.99 },
+            { name: "Mercedes", image: "head-rest-pillow_mercedes.png", price: 34.99 },
+            { name: "Suzuki", image: "head-rest-pillow_suzuki.png", price: 29.99 }
+        ];
+
+        const antiSlipMats = [
+            { name: "BMW", image: "anti-slip-mat_bmw.png", price: 19.99 },
+            { name: "Chevrolet", image: "anti-slip-mat_chevrolet.png", price: 19.99 },
+            { name: "Honda", image: "anti-slip-mat_honda.png", price: 19.99 },
+            { name: "Kia", image: "anti-slip-mat_kia.png", price: 19.99 },
+            { name: "Mazda", image: "anti-slip-mat_mazda.png", price: 19.99 },
+            { name: "Mitsubishi", image: "anti-slip-mat_mitsubishi.png", price: 19.99 },
+            { name: "Suzuki", image: "anti-slip-mat_suzuki.png", price: 19.99 },
+            { name: "Toyota", image: "anti-slip-mat_toyota.png", price: 19.99 },
+            { name: "Volkswagen", image: "anti-slip-mat_volkswagen.png", price: 19.99 }
+        ];
+
+        // Function to display products
+        function displayProducts(products, containerId, productType) {
+            const container = document.getElementById(containerId);
+            if (!container) {
+                console.log("Container not found:", containerId);
+                return;
+            }
+            
+            container.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="${product.image}" 
+                             alt="${productType} for ${product.name}"
+                             onerror="this.src='https://via.placeholder.com/300x200?text=${productType}+${product.name}'">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-brand">${productType}</div>
+                        <h3 class="product-title">${productType} for ${product.name}</h3>
+                        <div class="product-price">$${product.price}</div>
+                        <button class="add-to-cart" onclick="addToCart('${productType}', '${product.name}', ${product.price})">
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            console.log(`Displayed ${products.length} ${productType} products`);
+        }
+
+        // Cart function
+        function addToCart(type, brand, price) {
+            let cart = JSON.parse(localStorage.getItem('cart')) || [];
+            cart.push({ type: type, brand: brand, price: price, id: Date.now() });
+            localStorage.setItem('cart', JSON.stringify(cart));
+            showNotification(`${type} for ${brand} added to cart!`);
+            updateCartCount();
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const cartCount = document.querySelector('.cart-count');
+            if (cartCount) {
+                cartCount.textContent = cart.length;
+            }
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `<i class="fas fa-check-circle"></i><span>${message}</span>`;
+            document.body.appendChild(notification);
+            
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #e67e22;
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                z-index: 9999;
+                animation: slideInRight 0.3s ease;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                font-family: 'Inter', sans-serif;
+            `;
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Page loaded, displaying products...");
+            displayProducts(headRestPillows, 'headrest-products', 'Head Rest Pillow');
+            displayProducts(antiSlipMats, 'antislip-products', 'Anti-Slip Mat');
+            updateCartCount();
+            
+            // Mobile menu toggle
+            const menuToggle = document.querySelector('.menu-toggle');
+            const navMenu = document.querySelector('.nav-menu');
+            if (menuToggle) {
+                menuToggle.addEventListener('click', () => {
+                    navMenu.classList.toggle('active');
+                });
+            }
+            
+            // Newsletter form
+            const newsletterForm = document.getElementById('newsletter-form');
+            if (newsletterForm) {
+                newsletterForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const email = newsletterForm.querySelector('input').value;
+                    showNotification(`Thanks for subscribing with ${email}!`);
+                    newsletterForm.reset();
+                });
+            }
+            
+            // Contact form
+            const contactForm = document.getElementById('contact-form');
+            if (contactForm) {
+                contactForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    showNotification('Message sent successfully!');
+                    contactForm.reset();
+                });
+            }
+        });
+    </script>
+
+    <style>
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
 </body>
 </html>

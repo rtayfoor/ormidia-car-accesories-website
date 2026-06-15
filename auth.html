@@ -153,7 +153,6 @@
             function checkAuthStatus() {
                 const user = JSON.parse(localStorage.getItem('user'));
                 if (user && user.id) {
-                    // User is logged in, redirect to home or show logged in state
                     window.location.href = 'index.html';
                 }
             }
@@ -172,20 +171,23 @@
                 }
             };
             
-            // Hash password (simple hash for demo - in production use proper bcrypt)
-            async function hashPassword(password) {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(password);
-                const hash = await crypto.subtle.digest('SHA-256', data);
-                return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+            // Simple hash function (for demo purposes)
+            function simpleHash(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return Math.abs(hash).toString(16);
             }
             
             // Sign Up Function
             document.getElementById('signup').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                const name = document.getElementById('signup-name').value;
-                const email = document.getElementById('signup-email').value;
+                const name = document.getElementById('signup-name').value.trim();
+                const email = document.getElementById('signup-email').value.trim().toLowerCase();
                 const password = document.getElementById('signup-password').value;
                 const confirmPassword = document.getElementById('signup-confirm').value;
                 
@@ -205,48 +207,47 @@
                     return;
                 }
                 
+                if (!email.includes('@')) {
+                    showNotification('Please enter a valid email address', 'error');
+                    return;
+                }
+                
                 try {
-                    // Check if user already exists
-                    const { data: existingUser, error: checkError } = await _supabase
-                        .from('users')
-                        .select('email')
-                        .eq('email', email)
-                        .single();
+                    // Simple hash password
+                    const hashedPassword = simpleHash(password);
                     
-                    if (existingUser) {
-                        showNotification('Email already registered. Please login.', 'error');
+                    // Insert new user using Supabase REST API directly
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Prefer': 'return=representation'
+                        },
+                        body: JSON.stringify({
+                            name: name,
+                            email: email,
+                            password: hashedPassword,
+                            created_at: new Date().toISOString()
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        if (response.status === 409) {
+                            showNotification('Email already registered. Please login.', 'error');
+                        } else {
+                            console.error('Signup error:', errorData);
+                            showNotification('Signup failed. Please try again.', 'error');
+                        }
                         return;
                     }
                     
-                    // Hash password
-                    const hashedPassword = await hashPassword(password);
-                    
-                    // Insert new user
-                    const { data, error } = await _supabase
-                        .from('users')
-                        .insert([
-                            { 
-                                name: name, 
-                                email: email, 
-                                password: hashedPassword,
-                                created_at: new Date()
-                            }
-                        ])
-                        .select();
-                    
-                    if (error) {
-                        console.error('Signup error:', error);
-                        showNotification('Signup failed: ' + error.message, 'error');
-                        return;
-                    }
-                    
-                    if (data) {
-                        showNotification('Account created successfully! Please login.', 'success');
-                        // Clear form
-                        document.getElementById('signup').reset();
-                        // Switch to login form
-                        setTimeout(() => switchForm('login'), 2000);
-                    }
+                    const data = await response.json();
+                    showNotification('Account created successfully! Please login.', 'success');
+                    document.getElementById('signup').reset();
+                    setTimeout(() => switchForm('login'), 2000);
                     
                 } catch (error) {
                     console.error('Error:', error);
@@ -258,7 +259,7 @@
             document.getElementById('login').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                const email = document.getElementById('login-email').value;
+                const email = document.getElementById('login-email').value.trim().toLowerCase();
                 const password = document.getElementById('login-password').value;
                 
                 if (!email || !password) {
@@ -267,42 +268,50 @@
                 }
                 
                 try {
-                    // Hash the input password
-                    const hashedPassword = await hashPassword(password);
+                    const hashedPassword = simpleHash(password);
                     
-                    // Find user by email and password
-                    const { data, error } = await _supabase
-                        .from('users')
-                        .select('id, name, email, created_at')
-                        .eq('email', email)
-                        .eq('password', hashedPassword)
-                        .single();
-                    
-                    if (error) {
-                        if (error.code === 'PGRST116') {
-                            showNotification('Invalid email or password', 'error');
-                        } else {
-                            console.error('Login error:', error);
-                            showNotification('Login failed. Please try again.', 'error');
+                    // Query user from Supabase
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/users?email=eq.${encodeURIComponent(email)}&select=*`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                            }
                         }
+                    );
+                    
+                    if (!response.ok) {
+                        console.error('Login error status:', response.status);
+                        showNotification('Login failed. Please try again.', 'error');
                         return;
                     }
                     
-                    if (data) {
-                        // Store user data in localStorage
-                        localStorage.setItem('user', JSON.stringify({
-                            id: data.id,
-                            name: data.name,
-                            email: data.email,
-                            created_at: data.created_at
-                        }));
+                    const users = await response.json();
+                    
+                    if (users && users.length > 0) {
+                        const user = users[0];
                         
-                        showNotification(`Welcome back, ${data.name}!`, 'success');
-                        
-                        // Redirect to home page after 1 second
-                        setTimeout(() => {
-                            window.location.href = 'index.html';
-                        }, 1000);
+                        if (user.password === hashedPassword) {
+                            // Store user data (without password)
+                            localStorage.setItem('user', JSON.stringify({
+                                id: user.id,
+                                name: user.name,
+                                email: user.email,
+                                created_at: user.created_at
+                            }));
+                            
+                            showNotification(`Welcome back, ${user.name}!`, 'success');
+                            setTimeout(() => {
+                                window.location.href = 'index.html';
+                            }, 1000);
+                        } else {
+                            showNotification('Invalid email or password', 'error');
+                        }
+                    } else {
+                        showNotification('No account found with this email', 'error');
                     }
                     
                 } catch (error) {

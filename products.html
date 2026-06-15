@@ -162,41 +162,30 @@
 
         let currentProducts = [...allProducts];
 
-        // Function to display products
-        function displayProducts(products) {
-            const container = document.getElementById('all-products');
-            const noResults = document.getElementById('no-results');
-            const productsCount = document.getElementById('products-count');
-            
-            if (products.length === 0) {
-                container.style.display = 'none';
-                noResults.style.display = 'block';
-                productsCount.textContent = '0 products found';
-                return;
-            }
-            
-            container.style.display = 'grid';
-            noResults.style.display = 'none';
-            productsCount.textContent = `${products.length} product${products.length !== 1 ? 's' : ''} found`;
-            
-            container.innerHTML = products.map(product => `
-                <div class="product-card" data-category="${product.category}" data-name="${product.name}" data-price="${product.price}">
-                    <div class="product-image">
-                        <img src="${product.image}" 
-                             alt="${product.type} for ${product.name}"
-                             onerror="this.onerror=null; this.src='https://via.placeholder.com/300x250?text=${product.type}+${product.name}'">
-                    </div>
-                    <div class="product-info">
-                        <div class="product-brand">${product.type}</div>
-                        <h3 class="product-title">${product.type} for ${product.name}</h3>
-                        <div class="product-price">$${product.price}</div>
-                        <button class="add-to-cart" onclick="addToCart('${product.type}', '${product.name}', ${product.price}, ${product.id})">
-                            Add to Cart
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
+        // Improved displayProducts function with better image sizing
+function displayProducts(products, containerId, productType) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = products.map(product => `
+        <div class="product-card">
+            <div class="product-image">
+                <img src="${product.image}" 
+                     alt="${productType} for ${product.name}"
+                     loading="lazy"
+                     onerror="this.onerror=null; this.src='https://via.placeholder.com/200x200?text=No+Image'">
+            </div>
+            <div class="product-info">
+                <div class="product-brand">${productType}</div>
+                <h3 class="product-title">${productType} for ${product.name}</h3>
+                <div class="product-price">$${product.price}</div>
+                <button class="add-to-cart" onclick="addToCart('${productType}', '${product.name}', ${product.price})">
+                    Add to Cart
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
 
         // Filter and sort function
         function filterAndSortProducts() {

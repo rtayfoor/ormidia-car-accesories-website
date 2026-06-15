@@ -179,51 +179,90 @@
             let currentModalProduct = null;
             let currentModalVariants = [];
 
-            // Function to get image URL for product
-            function getProductImageUrl(productName, variantName) {
-                // Map product names to folder/image patterns
+            // Complete image mapping for all products
+            function getProductImageUrl(productName, variantName = null) {
+                // Convert product name to filename format
+                const filename = productName.toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/-$/, '');
+                
+                // Specific image mappings based on your files
                 const imageMap = {
                     'Head Rest Pillow': {
-                        folder: 'head-rest-pillow',
-                        prefix: 'head-rest-pillow_',
-                        suffix: '.png',
-                        hasVariants: true
+                        type: 'variant',
+                        baseName: 'head-rest-pillow',
+                        extension: '.png'
+                    },
+                    'Simple Rest Pillow': {
+                        type: 'single',
+                        fileName: 'simple-rest-pillow.png'
                     },
                     'Anti-Slip Mat': {
-                        folder: 'anti-slip-mat',
-                        prefix: 'anti-slip-mat_',
-                        suffix: '.png',
-                        hasVariants: true
+                        type: 'variant',
+                        baseName: 'anti-slip-mat',
+                        extension: '.png'
                     },
                     'Plating Number': {
-                        folder: 'plating-number',
-                        prefix: 'plating-number_',
-                        suffix: '.png',
-                        hasVariants: true
+                        type: 'variant',
+                        baseName: 'plating-number',
+                        extension: '.png'
+                    },
+                    'Pillow Seat Belt': {
+                        type: 'single',
+                        fileName: 'pillow-seat-belt.png'
                     },
                     'Keyring': {
-                        folder: 'keyring',
-                        prefix: 'keyring_',
-                        suffix: '.png',
-                        hasVariants: true
+                        type: 'variant',
+                        baseName: 'keyring',
+                        extension: '.png'
+                    },
+                    'Keyring Small Bag': {
+                        type: 'single',
+                        fileName: 'keyring-small-bag.png'
+                    },
+                    'Drink Holder': {
+                        type: 'single',
+                        fileName: 'drink-holder.png'
+                    },
+                    'Coasters': {
+                        type: 'variant',
+                        baseName: 'coasters',
+                        extension: '.png'
+                    },
+                    'Exhaust': {
+                        type: 'single',
+                        fileName: 'exhaust.png'
+                    },
+                    'Steering Cover Carbon 38cm': {
+                        type: 'single',
+                        fileName: 'steering-cover-carbon-38cm.png'
+                    },
+                    'Sparco 28cm': {
+                        type: 'single',
+                        fileName: 'sparco-28cm.png'
                     }
                 };
                 
                 const config = imageMap[productName];
+                
                 if (!config) {
-                    // Default placeholder for products without images
+                    // Default placeholder for unmapped products
                     return `https://via.placeholder.com/300x200?text=${encodeURIComponent(productName)}`;
                 }
                 
-                if (config.hasVariants && variantName) {
-                    // For products with variants (brand-specific images)
-                    const variantKey = variantName.toLowerCase().replace(/\s+/g, '');
-                    const imageName = `${config.prefix}${variantKey}${config.suffix}`;
-                    return imageName;
-                } else {
-                    // For products without variants or generic image
-                    return `https://via.placeholder.com/300x200?text=${encodeURIComponent(productName)}`;
+                if (config.type === 'single') {
+                    // Single image for products without variants
+                    return config.fileName;
                 }
+                
+                if (config.type === 'variant' && variantName) {
+                    // Variant-based image (e.g., head-rest-pillow_ford.png)
+                    const variantKey = variantName.toLowerCase().replace(/\s+/g, '');
+                    return `${config.baseName}_${variantKey}${config.extension}`;
+                }
+                
+                // Default fallback
+                return `https://via.placeholder.com/300x200?text=${encodeURIComponent(productName)}`;
             }
 
             // Fetch products with their variants from Supabase
@@ -316,7 +355,7 @@
                 if (productsCount) productsCount.textContent = `${products.length} product${products.length !== 1 ? 's' : ''} found`;
                 
                 container.innerHTML = products.map(product => {
-                    // Get preview image for the product (first variant or default)
+                    // Get preview image for the product
                     const productData = productsData[product.id];
                     let previewImage = '';
                     
@@ -380,7 +419,7 @@
                     
                     const imageUrl = getProductImageUrl(product.name, firstVariant.variant_name);
                     const modalImage = document.getElementById('modal-product-image');
-                    if (imageUrl) {
+                    if (imageUrl && !imageUrl.includes('placeholder')) {
                         modalImage.src = imageUrl;
                         modalImage.style.display = 'block';
                         modalImage.onerror = function() {
@@ -391,6 +430,17 @@
                     }
                 } else {
                     document.getElementById('modal-product-price').textContent = `$${parseFloat(product.base_price).toFixed(2)}`;
+                    const imageUrl = getProductImageUrl(product.name, null);
+                    const modalImage = document.getElementById('modal-product-image');
+                    if (imageUrl && !imageUrl.includes('placeholder')) {
+                        modalImage.src = imageUrl;
+                        modalImage.style.display = 'block';
+                        modalImage.onerror = function() {
+                            this.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.name)}`;
+                        };
+                    } else {
+                        modalImage.style.display = 'none';
+                    }
                 }
                 
                 variantSelect.onchange = function() {
@@ -402,7 +452,7 @@
                         
                         const imageUrl = getProductImageUrl(product.name, variantName);
                         const modalImage = document.getElementById('modal-product-image');
-                        if (imageUrl) {
+                        if (imageUrl && !imageUrl.includes('placeholder')) {
                             modalImage.src = imageUrl;
                             modalImage.style.display = 'block';
                             modalImage.onerror = function() {
@@ -429,28 +479,42 @@
                 const selectedOption = variantSelect.options[variantSelect.selectedIndex];
                 const quantity = parseInt(document.getElementById('modal-quantity').value) || 1;
                 
-                if (!selectedOption || !selectedOption.value) {
+                if (currentModalVariants.length > 0 && (!selectedOption || !selectedOption.value)) {
                     showNotification('Please select an option', true);
                     return;
                 }
                 
-                const variantId = selectedOption.value;
-                const variantName = selectedOption.getAttribute('data-name');
-                const variantType = selectedOption.getAttribute('data-type');
-                const price = parseFloat(selectedOption.getAttribute('data-price'));
+                let cartItem;
                 
-                const cartItem = {
-                    id: `${currentModalProduct.id}_${variantId}`,
-                    product_id: currentModalProduct.id,
-                    variant_id: variantId,
-                    name: `${variantName} ${currentModalProduct.name}`,
-                    product_name: currentModalProduct.name,
-                    variant_name: variantName,
-                    variant_type: variantType,
-                    price: price,
-                    quantity: quantity,
-                    image: getProductImageUrl(currentModalProduct.name, variantName)
-                };
+                if (currentModalVariants.length > 0) {
+                    const variantId = selectedOption.value;
+                    const variantName = selectedOption.getAttribute('data-name');
+                    const variantType = selectedOption.getAttribute('data-type');
+                    const price = parseFloat(selectedOption.getAttribute('data-price'));
+                    
+                    cartItem = {
+                        id: `${currentModalProduct.id}_${variantId}`,
+                        product_id: currentModalProduct.id,
+                        variant_id: variantId,
+                        name: `${variantName} ${currentModalProduct.name}`,
+                        product_name: currentModalProduct.name,
+                        variant_name: variantName,
+                        variant_type: variantType,
+                        price: price,
+                        quantity: quantity,
+                        image: getProductImageUrl(currentModalProduct.name, variantName)
+                    };
+                } else {
+                    cartItem = {
+                        id: currentModalProduct.id.toString(),
+                        product_id: currentModalProduct.id,
+                        name: currentModalProduct.name,
+                        product_name: currentModalProduct.name,
+                        price: currentModalProduct.base_price,
+                        quantity: quantity,
+                        image: getProductImageUrl(currentModalProduct.name, null)
+                    };
+                }
                 
                 let cart = JSON.parse(localStorage.getItem('cart')) || [];
                 const existingItem = cart.find(item => item.id === cartItem.id);
@@ -642,10 +706,17 @@
             border-radius: 20px;
             margin-bottom: 0.5rem;
         }
+        .product-image {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+        }
         .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
         }
         .modal-image img {
             max-width: 100%;

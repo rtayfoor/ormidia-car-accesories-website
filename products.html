@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -52,8 +51,6 @@
                     <label for="category-filter">Category:</label>
                     <select id="category-filter" class="filter-select">
                         <option value="all">All Products</option>
-                        <option value="headrest">Head Rest Pillows</option>
-                        <option value="antislip">Anti-Slip Mats</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -135,83 +132,148 @@
     </footer>
 
     <script>
-        // YOUR SUPABASE CREDENTIALS - Configures correctly
+        // Supabase Configuration
         const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
         
-        // Initialize Supabase client
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let allProducts = [];
         let currentProducts = [];
+        let productCategories = new Set();
 
-        // Function to fetch products from Supabase
+        // Fetch products with their variants from Supabase
         async function fetchProducts() {
             try {
                 showLoading(true);
                 
-                // Try to fetch from Supabase
-                const { data, error } = await supabaseClient
+                // First, get all products
+                const { data: products, error: productsError } = await supabase
                     .from('products')
                     .select('*')
                     .order('id', { ascending: true });
                 
-                if (error) {
-                    console.error('Supabase error:', error);
-                    // Check if table exists
-                    if (error.code === '42P01') {
-                        showError('Products table not found. Please create the "products" table in Supabase.');
-                    } else {
-                        showError('Failed to load products. Using demo data.');
-                        useFallbackData();
-                    }
+                if (productsError) {
+                    console.error('Products error:', productsError);
+                    showError('Failed to load products');
                     return;
                 }
                 
-                if (data && data.length > 0) {
-                    allProducts = data;
-                    currentProducts = [...allProducts];
-                    displayProducts(currentProducts);
-                    showNotification(`Loaded ${data.length} products from database`, 'info');
-                } else {
-                    // No data in Supabase, use fallback
-                    console.log('No products found in database, using fallback data');
-                    useFallbackData();
+                if (!products || products.length === 0) {
+                    showError('No products found');
+                    return;
                 }
                 
+                // Get all variants for these products
+                const { data: variants, error: variantsError } = await supabase
+                    .from('product_variants')
+                    .select('*')
+                    .in('product_id', products.map(p => p.id));
+                
+                if (variantsError) {
+                    console.error('Variants error:', variantsError);
+                }
+                
+                // Combine products with their variants
+                const variantsByProduct = {};
+                if (variants) {
+                    variants.forEach(variant => {
+                        if (!variantsByProduct[variant.product_id]) {
+                            variantsByProduct[variant.product_id] = [];
+                        }
+                        variantsByProduct[variant.product_id].push(variant);
+                    });
+                }
+                
+                // Build complete product list with variants
+                allProducts = [];
+                products.forEach(product => {
+                    const productVariants = variantsByProduct[product.id] || [];
+                    
+                    // Add category to set
+                    productCategories.add(product.name);
+                    
+                    if (productVariants.length > 0) {
+                        // Create a product entry for each variant
+                        productVariants.forEach(variant => {
+                            allProducts.push({
+                                id: `${product.id}_${variant.id}`,
+                                product_id: product.id,
+                                variant_id: variant.id,
+                                name: `${variant.variant_name} ${product.name}`,
+                                product_name: product.name,
+                                variant_name: variant.variant_name,
+                                variant_type: variant.variant_type,
+                                description: product.description,
+                                price: variant.price,
+                                base_price: product.base_price,
+                                category: product.name,
+                                image: getImageForProduct(product.name, variant.variant_name)
+                            });
+                        });
+                    } else {
+                        // Product with no variants
+                        allProducts.push({
+                            id: product.id,
+                            product_id: product.id,
+                            name: product.name,
+                            product_name: product.name,
+                            description: product.description,
+                            price: product.base_price,
+                            category: product.name,
+                            image: getImageForProduct(product.name, null)
+                        });
+                    }
+                });
+                
+                currentProducts = [...allProducts];
+                displayProducts(currentProducts);
+                populateCategoryFilter();
+                
+                console.log(`Loaded ${allProducts.length} product variants`);
+                
             } catch (error) {
-                console.error('Error fetching products:', error);
-                showError('Connection error. Using demo products.');
-                useFallbackData();
+                console.error('Error:', error);
+                showError('Connection error. Please try again.');
             } finally {
                 showLoading(false);
             }
         }
-
-        // Fallback data in case Supabase is not configured yet
-        function useFallbackData() {
-            allProducts = [
-                { id: 1, name: "Ford Head Rest Pillow", type: "Head Rest Pillow", category: "headrest", image_url: "head-rest-pillow_ford.png", price: 29.99, brand: "Ford" },
-                { id: 2, name: "Honda Head Rest Pillow", type: "Head Rest Pillow", category: "headrest", image_url: "head-rest-pillow_honda.png", price: 29.99, brand: "Honda" },
-                { id: 3, name: "Isuzu Head Rest Pillow", type: "Head Rest Pillow", category: "headrest", image_url: "head-rest-pillow_isuzu.png", price: 29.99, brand: "Isuzu" },
-                { id: 4, name: "Kia Head Rest Pillow", type: "Head Rest Pillow", category: "headrest", image_url: "head-rest-pillow_kia.png", price: 29.99, brand: "Kia" },
-                { id: 5, name: "Mazda Head Rest Pillow", type: "Head Rest Pillow", category: "headrest", image_url: "head-rest-pillow_mazda.png", price: 29.99, brand: "Mazda" },
-                { id: 6, name: "Mercedes Head Rest Pillow", type: "Head Rest Pillow", category: "headrest", image_url: "head-rest-pillow_mercedes.png", price: 34.99, brand: "Mercedes" },
-                { id: 7, name: "Suzuki Head Rest Pillow", type: "Head Rest Pillow", category: "headrest", image_url: "head-rest-pillow_suzuki.png", price: 29.99, brand: "Suzuki" },
-                { id: 8, name: "BMW Anti-Slip Mat", type: "Anti-Slip Mat", category: "antislip", image_url: "anti-slip-mat_bmw.png", price: 19.99, brand: "BMW" },
-                { id: 9, name: "Chevrolet Anti-Slip Mat", type: "Anti-Slip Mat", category: "antislip", image_url: "anti-slip-mat_chevrolet.png", price: 19.99, brand: "Chevrolet" },
-                { id: 10, name: "Honda Anti-Slip Mat", type: "Anti-Slip Mat", category: "antislip", image_url: "anti-slip-mat_honda.png", price: 19.99, brand: "Honda" },
-                { id: 11, name: "Kia Anti-Slip Mat", type: "Anti-Slip Mat", category: "antislip", image_url: "anti-slip-mat_kia.png", price: 19.99, brand: "Kia" },
-                { id: 12, name: "Mazda Anti-Slip Mat", type: "Anti-Slip Mat", category: "antislip", image_url: "anti-slip-mat_mazda.png", price: 19.99, brand: "Mazda" },
-                { id: 13, name: "Mitsubishi Anti-Slip Mat", type: "Anti-Slip Mat", category: "antislip", image_url: "anti-slip-mat_mitsubishi.png", price: 19.99, brand: "Mitsubishi" },
-                { id: 14, name: "Suzuki Anti-Slip Mat", type: "Anti-Slip Mat", category: "antislip", image_url: "anti-slip-mat_suzuki.png", price: 19.99, brand: "Suzuki" },
-                { id: 15, name: "Toyota Anti-Slip Mat", type: "Anti-Slip Mat", category: "antislip", image_url: "anti-slip-mat_toyota.png", price: 19.99, brand: "Toyota" },
-                { id: 16, name: "Volkswagen Anti-Slip Mat", type: "Anti-Slip Mat", category: "antislip", image_url: "anti-slip-mat_volkswagen.png", price: 19.99, brand: "Volkswagen" }
-            ];
-            currentProducts = [...allProducts];
-            displayProducts(currentProducts);
+        
+        // Helper function to get image based on product and variant
+        function getImageForProduct(productName, variantName) {
+            // Map product names to image filenames
+            if (productName === 'Head Rest Pillow') {
+                if (variantName) {
+                    const imageName = `head-rest-pillow_${variantName.toLowerCase()}.png`;
+                    return imageName;
+                }
+                return 'head-rest-pillow_default.png';
+            }
+            if (productName === 'Anti-Slip Mat') {
+                if (variantName) {
+                    const imageName = `anti-slip-mat_${variantName.toLowerCase()}.png`;
+                    return imageName;
+                }
+                return 'anti-slip-mat_default.png';
+            }
+            return null;
         }
-
+        
+        // Populate category filter with unique categories
+        function populateCategoryFilter() {
+            const categoryFilter = document.getElementById('category-filter');
+            const categories = [...productCategories];
+            
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.toLowerCase().replace(/\s+/g, '-');
+                option.textContent = category;
+                categoryFilter.appendChild(option);
+            });
+        }
+        
+        // Display products
         function displayProducts(products) {
             const container = document.getElementById('all-products');
             const noResults = document.getElementById('no-results');
@@ -229,31 +291,46 @@
             productsCount.textContent = `${products.length} product${products.length !== 1 ? 's' : ''} found`;
             
             container.innerHTML = products.map(product => {
-                const imageUrl = product.image_url || product.image || `https://via.placeholder.com/300x200?text=${product.name}`;
-                const productType = product.type || product.category || 'Accessory';
-                const productName = product.name || product.brand;
-                const productPrice = typeof product.price === 'number' ? product.price.toFixed(2) : product.price;
+                let imageHtml = '';
+                if (product.image) {
+                    imageHtml = `<img src="${product.image}" 
+                                     alt="${product.name}"
+                                     loading="lazy"
+                                     onerror="this.src='https://via.placeholder.com/300x200?text=${product.name}'">`;
+                } else {
+                    imageHtml = `<i class="fas fa-box" style="font-size: 3rem; color: #ccc;"></i>`;
+                }
+                
+                const variantBadge = product.variant_name && product.variant_type === 'brand' 
+                    ? `<span class="variant-badge">${product.variant_name}</span>` 
+                    : '';
                 
                 return `
                 <div class="product-card" data-id="${product.id}">
                     <div class="product-image">
-                        <img src="${imageUrl}" 
-                             alt="${productName}"
-                             loading="lazy"
-                             onerror="this.src='https://via.placeholder.com/300x200?text=${productName}'">
+                        ${imageHtml}
                     </div>
                     <div class="product-info">
-                        <div class="product-brand">${productType}</div>
-                        <h3 class="product-title">${productName}</h3>
-                        <div class="product-price">$${productPrice}</div>
-                        <button class="add-to-cart" onclick='addToCart(${JSON.stringify(product).replace(/'/g, "&#39;")})'>
+                        ${variantBadge}
+                        <div class="product-brand">${product.product_name || product.category}</div>
+                        <h3 class="product-title">${product.name}</h3>
+                        <div class="product-price">$${parseFloat(product.price).toFixed(2)}</div>
+                        <button class="add-to-cart" onclick='addToCart(${JSON.stringify({
+                            id: product.id,
+                            name: product.name,
+                            product_name: product.product_name,
+                            variant_name: product.variant_name,
+                            price: product.price,
+                            image: product.image
+                        }).replace(/'/g, "&#39;")})'>
                             Add to Cart
                         </button>
                     </div>
                 </div>
             `}).join('');
         }
-
+        
+        // Filter and sort products
         function filterAndSortProducts() {
             const category = document.getElementById('category-filter').value;
             const sortBy = document.getElementById('sort-filter').value;
@@ -263,15 +340,15 @@
             
             if (category !== 'all') {
                 filtered = filtered.filter(product => 
-                    (product.category || product.type || '').toLowerCase() === category
+                    (product.category || '').toLowerCase().replace(/\s+/g, '-') === category
                 );
             }
             
             if (searchTerm) {
                 filtered = filtered.filter(product => 
-                    (product.name || '').toLowerCase().includes(searchTerm) || 
-                    (product.type || '').toLowerCase().includes(searchTerm) ||
-                    (product.brand || '').toLowerCase().includes(searchTerm)
+                    product.name.toLowerCase().includes(searchTerm) || 
+                    (product.product_name || '').toLowerCase().includes(searchTerm) ||
+                    (product.variant_name || '').toLowerCase().includes(searchTerm)
                 );
             }
             
@@ -284,7 +361,8 @@
             currentProducts = filtered;
             displayProducts(currentProducts);
         }
-
+        
+        // Add to cart
         function addToCart(product) {
             let cart = JSON.parse(localStorage.getItem('cart')) || [];
             const existingItem = cart.find(item => item.id === product.id);
@@ -293,29 +371,28 @@
                 existingItem.quantity = (existingItem.quantity || 1) + 1;
             } else {
                 cart.push({ 
-                    id: product.id, 
-                    name: product.name || product.brand,
-                    type: product.type || product.category, 
-                    price: product.price, 
+                    id: product.id,
+                    name: product.name,
+                    product_name: product.product_name,
+                    variant_name: product.variant_name,
+                    price: product.price,
                     quantity: 1,
-                    image: product.image_url || product.image
+                    image: product.image
                 });
             }
             
             localStorage.setItem('cart', JSON.stringify(cart));
-            showNotification(`${product.name || product.brand} added to cart!`, 'success');
+            showNotification(`${product.name} added to cart!`, 'success');
             updateCartCount();
         }
-
+        
         function updateCartCount() {
             const cart = JSON.parse(localStorage.getItem('cart')) || [];
             const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
             const cartCount = document.querySelector('.cart-count');
-            if (cartCount) {
-                cartCount.textContent = totalItems;
-            }
+            if (cartCount) cartCount.textContent = totalItems;
         }
-
+        
         function showNotification(message, type = 'success') {
             const notification = document.createElement('div');
             const icon = type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
@@ -324,34 +401,21 @@
             
             const bgColor = type === 'success' ? '#e67e22' : '#3498db';
             notification.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: ${bgColor};
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                z-index: 9999;
-                animation: slideInRight 0.3s ease;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                font-family: 'Inter', sans-serif;
+                position: fixed; bottom: 20px; right: 20px; background: ${bgColor};
+                color: white; padding: 1rem 1.5rem; border-radius: 10px;
+                display: flex; align-items: center; gap: 0.5rem; z-index: 9999;
+                animation: slideInRight 0.3s ease; font-family: 'Inter', sans-serif;
             `;
             
-            setTimeout(() => {
-                notification.style.animation = 'slideOutRight 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
+            setTimeout(() => notification.remove(), 3000);
         }
-
+        
         function showError(message) {
             const container = document.getElementById('all-products');
             if (container) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 3rem; grid-column: 1/-1;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #e67e22; margin-bottom: 1rem;"></i>
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #e67e22;"></i>
                         <h3>${message}</h3>
                         <button onclick="fetchProducts()" class="btn btn-primary" style="margin-top: 1rem;">Try Again</button>
                     </div>
@@ -359,7 +423,7 @@
             }
             showLoading(false);
         }
-
+        
         function showLoading(show) {
             const spinner = document.getElementById('loading-spinner');
             const container = document.getElementById('all-products');
@@ -371,63 +435,47 @@
                 if (container) container.style.display = 'grid';
             }
         }
-
+        
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
             fetchProducts();
             updateCartCount();
             
-            const categoryFilter = document.getElementById('category-filter');
-            const sortFilter = document.getElementById('sort-filter');
-            const searchInput = document.getElementById('search-input');
-            
-            if (categoryFilter) categoryFilter.addEventListener('change', filterAndSortProducts);
-            if (sortFilter) sortFilter.addEventListener('change', filterAndSortProducts);
-            if (searchInput) searchInput.addEventListener('input', filterAndSortProducts);
+            document.getElementById('category-filter').addEventListener('change', filterAndSortProducts);
+            document.getElementById('sort-filter').addEventListener('change', filterAndSortProducts);
+            document.getElementById('search-input').addEventListener('input', filterAndSortProducts);
             
             const menuToggle = document.querySelector('.menu-toggle');
             const navMenu = document.querySelector('.nav-menu');
             if (menuToggle) {
-                menuToggle.addEventListener('click', () => {
-                    navMenu.classList.toggle('active');
-                });
+                menuToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
             }
         });
     </script>
-
+    
     <style>
         .loading-spinner {
             text-align: center;
             padding: 4rem;
             grid-column: 1/-1;
         }
-        
         .loading-spinner i {
             font-size: 3rem;
             color: var(--secondary-color);
             margin-bottom: 1rem;
         }
-        
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+        .variant-badge {
+            display: inline-block;
+            background: var(--secondary-color);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            margin-bottom: 0.5rem;
         }
-        
-        @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
     </style>
 </body>

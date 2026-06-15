@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <!-- Navigation Bar -->
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo">
@@ -37,7 +36,6 @@
         </div>
     </nav>
 
-    <!-- Page Header -->
     <section class="page-header">
         <div class="container">
             <h1>All Products</h1>
@@ -45,7 +43,6 @@
         </div>
     </section>
 
-    <!-- Filter Section -->
     <section class="filter-section">
         <div class="container">
             <div class="filter-bar">
@@ -63,7 +60,6 @@
                         <option value="default">Default</option>
                         <option value="price-low">Price: Low to High</option>
                         <option value="price-high">Price: High to Low</option>
-                        <option value="name">Name: A to Z</option>
                     </select>
                 </div>
                 <div class="search-box">
@@ -74,13 +70,10 @@
         </div>
     </section>
 
-    <!-- Products Grid -->
     <section class="products-page">
         <div class="container">
             <div class="products-count" id="products-count"></div>
-            <div class="products-grid" id="all-products">
-                <!-- Products will load here -->
-            </div>
+            <div class="products-grid" id="all-products"></div>
             <div class="no-results" id="no-results" style="display: none;">
                 <i class="fas fa-search"></i>
                 <h3>No products found</h3>
@@ -89,13 +82,12 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
                 <div class="footer-section">
                     <h3>Ormidia</h3>
-                    <p>Premium car accessories for the modern driver. Quality, style, and performance in every product.</p>
+                    <p>Premium car accessories for the modern driver.</p>
                     <div class="social-links">
                         <a href="#"><i class="fab fa-facebook"></i></a>
                         <a href="#"><i class="fab fa-instagram"></i></a>
@@ -137,57 +129,62 @@
     </footer>
 
     <script>
-        // Complete product database
         const allProducts = [
-            // Head Rest Pillows
-            { id: 1, name: "Ford", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_ford.png", price: 29.99, brand: "Ford" },
-            { id: 2, name: "Honda", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_honda.png", price: 29.99, brand: "Honda" },
-            { id: 3, name: "Isuzu", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_isuzu.png", price: 29.99, brand: "Isuzu" },
-            { id: 4, name: "Kia", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_kia.png", price: 29.99, brand: "Kia" },
-            { id: 5, name: "Mazda", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_mazda.png", price: 29.99, brand: "Mazda" },
-            { id: 6, name: "Mercedes", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_mercedes.png", price: 34.99, brand: "Mercedes" },
-            { id: 7, name: "Suzuki", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_suzuki.png", price: 29.99, brand: "Suzuki" },
-            
-            // Anti-Slip Mats
-            { id: 8, name: "BMW", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_bmw.png", price: 19.99, brand: "BMW" },
-            { id: 9, name: "Chevrolet", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_chevrolet.png", price: 19.99, brand: "Chevrolet" },
-            { id: 10, name: "Honda", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_honda.png", price: 19.99, brand: "Honda" },
-            { id: 11, name: "Kia", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_kia.png", price: 19.99, brand: "Kia" },
-            { id: 12, name: "Mazda", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_mazda.png", price: 19.99, brand: "Mazda" },
-            { id: 13, name: "Mitsubishi", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_mitsubishi.png", price: 19.99, brand: "Mitsubishi" },
-            { id: 14, name: "Suzuki", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_suzuki.png", price: 19.99, brand: "Suzuki" },
-            { id: 15, name: "Toyota", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_toyota.png", price: 19.99, brand: "Toyota" },
-            { id: 16, name: "Volkswagen", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_volkswagen.png", price: 19.99, brand: "Volkswagen" }
+            { id: 1, name: "Ford", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_ford.png", price: 29.99 },
+            { id: 2, name: "Honda", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_honda.png", price: 29.99 },
+            { id: 3, name: "Isuzu", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_isuzu.png", price: 29.99 },
+            { id: 4, name: "Kia", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_kia.png", price: 29.99 },
+            { id: 5, name: "Mazda", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_mazda.png", price: 29.99 },
+            { id: 6, name: "Mercedes", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_mercedes.png", price: 34.99 },
+            { id: 7, name: "Suzuki", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_suzuki.png", price: 29.99 },
+            { id: 8, name: "BMW", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_bmw.png", price: 19.99 },
+            { id: 9, name: "Chevrolet", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_chevrolet.png", price: 19.99 },
+            { id: 10, name: "Honda", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_honda.png", price: 19.99 },
+            { id: 11, name: "Kia", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_kia.png", price: 19.99 },
+            { id: 12, name: "Mazda", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_mazda.png", price: 19.99 },
+            { id: 13, name: "Mitsubishi", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_mitsubishi.png", price: 19.99 },
+            { id: 14, name: "Suzuki", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_suzuki.png", price: 19.99 },
+            { id: 15, name: "Toyota", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_toyota.png", price: 19.99 },
+            { id: 16, name: "Volkswagen", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_volkswagen.png", price: 19.99 }
         ];
 
         let currentProducts = [...allProducts];
 
-        // Improved displayProducts function with better image sizing
-function displayProducts(products, containerId, productType) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = products.map(product => `
-        <div class="product-card">
-            <div class="product-image">
-                <img src="${product.image}" 
-                     alt="${productType} for ${product.name}"
-                     loading="lazy"
-                     onerror="this.onerror=null; this.src='https://via.placeholder.com/200x200?text=No+Image'">
-            </div>
-            <div class="product-info">
-                <div class="product-brand">${productType}</div>
-                <h3 class="product-title">${productType} for ${product.name}</h3>
-                <div class="product-price">$${product.price}</div>
-                <button class="add-to-cart" onclick="addToCart('${productType}', '${product.name}', ${product.price})">
-                    Add to Cart
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
+        function displayProducts(products) {
+            const container = document.getElementById('all-products');
+            const noResults = document.getElementById('no-results');
+            const productsCount = document.getElementById('products-count');
+            
+            if (products.length === 0) {
+                container.style.display = 'none';
+                noResults.style.display = 'block';
+                productsCount.textContent = '0 products found';
+                return;
+            }
+            
+            container.style.display = 'grid';
+            noResults.style.display = 'none';
+            productsCount.textContent = `${products.length} products found`;
+            
+            container.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <div class="product-image">
+                        <img src="${product.image}" 
+                             alt="${product.type} for ${product.name}"
+                             onerror="this.src='https://via.placeholder.com/300x200?text=${product.type}'">
+                    </div>
+                    <div class="product-info">
+                        <div class="product-brand">${product.type}</div>
+                        <h3 class="product-title">${product.type} for ${product.name}</h3>
+                        <div class="product-price">$${product.price}</div>
+                        <button class="add-to-cart" onclick="addToCart('${product.type}', '${product.name}', ${product.price}, ${product.id})">
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-        // Filter and sort function
         function filterAndSortProducts() {
             const category = document.getElementById('category-filter').value;
             const sortBy = document.getElementById('sort-filter').value;
@@ -195,271 +192,76 @@ function displayProducts(products, containerId, productType) {
             
             let filtered = [...allProducts];
             
-            // Filter by category
             if (category !== 'all') {
                 filtered = filtered.filter(product => product.category === category);
             }
             
-            // Filter by search
             if (searchTerm) {
                 filtered = filtered.filter(product => 
                     product.name.toLowerCase().includes(searchTerm) || 
-                    product.type.toLowerCase().includes(searchTerm) ||
-                    product.brand.toLowerCase().includes(searchTerm)
+                    product.type.toLowerCase().includes(searchTerm)
                 );
             }
             
-            // Sort products
-            switch(sortBy) {
-                case 'price-low':
-                    filtered.sort((a, b) => a.price - b.price);
-                    break;
-                case 'price-high':
-                    filtered.sort((a, b) => b.price - a.price);
-                    break;
-                case 'name':
-                    filtered.sort((a, b) => a.name.localeCompare(b.name));
-                    break;
-                default:
-                    filtered.sort((a, b) => a.id - b.id);
+            if (sortBy === 'price-low') {
+                filtered.sort((a, b) => a.price - b.price);
+            } else if (sortBy === 'price-high') {
+                filtered.sort((a, b) => b.price - a.price);
             }
             
             currentProducts = filtered;
             displayProducts(currentProducts);
         }
 
-        // Cart function
         function addToCart(type, brand, price, id) {
-            console.log(`Added to cart: ${type} for ${brand} - $${price}`);
-            
-            // Get existing cart
             let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            
-            // Check if product already in cart
             const existingItem = cart.find(item => item.id === id);
             
             if (existingItem) {
-                existingItem.quantity += 1;
+                existingItem.quantity = (existingItem.quantity || 1) + 1;
             } else {
-                cart.push({
-                    id: id,
-                    type: type,
-                    brand: brand,
-                    price: price,
-                    quantity: 1
-                });
+                cart.push({ id: id, type: type, brand: brand, price: price, quantity: 1 });
             }
             
-            // Save to localStorage
             localStorage.setItem('cart', JSON.stringify(cart));
-            
-            // Show notification
             showNotification(`${type} for ${brand} added to cart!`);
-            
-            // Update cart count
             updateCartCount();
         }
 
-        // Update cart count
         function updateCartCount() {
             const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            const cartCountElement = document.querySelector('.cart-count');
-            if (cartCountElement) {
-                cartCountElement.textContent = totalItems;
-            }
+            const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+            const cartCount = document.querySelector('.cart-count');
+            if (cartCount) cartCount.textContent = totalItems;
         }
 
-        // Notification function
         function showNotification(message) {
             const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.innerHTML = `
-                <i class="fas fa-check-circle"></i>
-                <span>${message}</span>
+            notification.innerHTML = `<i class="fas fa-check-circle"></i><span>${message}</span>`;
+            notification.style.cssText = `
+                position: fixed; bottom: 20px; right: 20px; background: #e67e22;
+                color: white; padding: 1rem 1.5rem; border-radius: 10px;
+                display: flex; align-items: center; gap: 0.5rem; z-index: 9999;
+                animation: slideInRight 0.3s ease; font-family: 'Inter', sans-serif;
             `;
             document.body.appendChild(notification);
-            
-            notification.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: #e67e22;
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                z-index: 9999;
-                animation: slideInRight 0.3s ease;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                font-family: 'Inter', sans-serif;
-            `;
-            
-            setTimeout(() => {
-                notification.style.animation = 'slideOutRight 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
+            setTimeout(() => notification.remove(), 3000);
         }
 
-        // Event listeners
         document.addEventListener('DOMContentLoaded', () => {
             displayProducts(currentProducts);
             updateCartCount();
             
-            // Mobile menu toggle
-            const menuToggle = document.querySelector('.menu-toggle');
-            const navMenu = document.querySelector('.nav-menu');
-            if (menuToggle) {
-                menuToggle.addEventListener('click', () => {
-                    navMenu.classList.toggle('active');
-                });
-            }
-            
-            // Filter event listeners
             document.getElementById('category-filter').addEventListener('change', filterAndSortProducts);
             document.getElementById('sort-filter').addEventListener('change', filterAndSortProducts);
             document.getElementById('search-input').addEventListener('input', filterAndSortProducts);
+            
+            const menuToggle = document.querySelector('.menu-toggle');
+            const navMenu = document.querySelector('.nav-menu');
+            if (menuToggle) {
+                menuToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
+            }
         });
     </script>
-
-    <style>
-        /* Additional styles for products page */
-        .page-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 6rem 2rem 3rem;
-            text-align: center;
-        }
-        
-        .page-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .filter-section {
-            padding: 2rem;
-            background: var(--background-light);
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .filter-bar {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .filter-group label {
-            font-weight: 600;
-            color: var(--text-dark);
-        }
-        
-        .filter-select {
-            padding: 0.5rem 1rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-        }
-        
-        .search-box {
-            position: relative;
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        .search-box input {
-            width: 100%;
-            padding: 0.5rem 2.5rem 0.5rem 1rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .search-box i {
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-light);
-        }
-        
-        .products-page {
-            padding: 3rem 2rem 5rem;
-            min-height: 60vh;
-        }
-        
-        .products-count {
-            max-width: 1200px;
-            margin: 0 auto 2rem;
-            color: var(--text-light);
-            font-size: 0.9rem;
-        }
-        
-        .no-results {
-            text-align: center;
-            padding: 4rem;
-            color: var(--text-light);
-        }
-        
-        .no-results i {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            color: var(--secondary-color);
-        }
-        
-        .no-results h3 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            color: var(--text-dark);
-        }
-        
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .filter-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .filter-group {
-                justify-content: space-between;
-            }
-            
-            .page-header h1 {
-                font-size: 1.8rem;
-            }
-        }
-    </style>
 </body>
 </html>

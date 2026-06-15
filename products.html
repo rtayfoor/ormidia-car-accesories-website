@@ -27,9 +27,9 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-count">0</span>
                 </a>
-                <a href="auth.html" class="user-icon">
-                    <i class="fas fa-user"></i>
-                </a>
+                <div id="auth-icon" class="user-icon">
+                    <a href="auth.html"><i class="fas fa-user"></i></a>
+                </div>
                 <div class="menu-toggle">
                     <i class="fas fa-bars"></i>
                 </div>
@@ -175,16 +175,62 @@
             let allProducts = [];
             let currentProducts = [];
             let productCategories = new Set();
-            let productsData = {}; // Store products with their variants
+            let productsData = {};
             let currentModalProduct = null;
             let currentModalVariants = [];
+
+            // Function to get image URL for product
+            function getProductImageUrl(productName, variantName) {
+                // Map product names to folder/image patterns
+                const imageMap = {
+                    'Head Rest Pillow': {
+                        folder: 'head-rest-pillow',
+                        prefix: 'head-rest-pillow_',
+                        suffix: '.png',
+                        hasVariants: true
+                    },
+                    'Anti-Slip Mat': {
+                        folder: 'anti-slip-mat',
+                        prefix: 'anti-slip-mat_',
+                        suffix: '.png',
+                        hasVariants: true
+                    },
+                    'Plating Number': {
+                        folder: 'plating-number',
+                        prefix: 'plating-number_',
+                        suffix: '.png',
+                        hasVariants: true
+                    },
+                    'Keyring': {
+                        folder: 'keyring',
+                        prefix: 'keyring_',
+                        suffix: '.png',
+                        hasVariants: true
+                    }
+                };
+                
+                const config = imageMap[productName];
+                if (!config) {
+                    // Default placeholder for products without images
+                    return `https://via.placeholder.com/300x200?text=${encodeURIComponent(productName)}`;
+                }
+                
+                if (config.hasVariants && variantName) {
+                    // For products with variants (brand-specific images)
+                    const variantKey = variantName.toLowerCase().replace(/\s+/g, '');
+                    const imageName = `${config.prefix}${variantKey}${config.suffix}`;
+                    return imageName;
+                } else {
+                    // For products without variants or generic image
+                    return `https://via.placeholder.com/300x200?text=${encodeURIComponent(productName)}`;
+                }
+            }
 
             // Fetch products with their variants from Supabase
             async function fetchProducts() {
                 try {
                     showLoading(true);
                     
-                    // Get all products
                     const { data: products, error: productsError } = await _supabase
                         .from('products')
                         .select('*')
@@ -192,14 +238,12 @@
                     
                     if (productsError) throw productsError;
                     
-                    // Get all variants
                     const { data: variants, error: variantsError } = await _supabase
                         .from('product_variants')
                         .select('*');
                     
                     if (variantsError) throw variantsError;
                     
-                    // Group variants by product
                     const variantsByProduct = {};
                     if (variants) {
                         variants.forEach(variant => {
@@ -210,7 +254,6 @@
                         });
                     }
                     
-                    // Store products with their variants
                     products.forEach(product => {
                         productsData[product.id] = {
                             ...product,
@@ -219,7 +262,6 @@
                         productCategories.add(product.name);
                     });
                     
-                    // Build display products (grouped by product, not individual variants)
                     allProducts = products.map(product => ({
                         id: product.id,
                         name: product.name,
@@ -240,16 +282,6 @@
                 } finally {
                     showLoading(false);
                 }
-            }
-            
-            function getImageForProduct(productName, variantName) {
-                if (productName === 'Head Rest Pillow' && variantName) {
-                    return `head-rest-pillow_${variantName.toLowerCase()}.png`;
-                }
-                if (productName === 'Anti-Slip Mat' && variantName) {
-                    return `anti-slip-mat_${variantName.toLowerCase()}.png`;
-                }
-                return null;
             }
             
             function populateCategoryFilter() {
@@ -284,13 +316,27 @@
                 if (productsCount) productsCount.textContent = `${products.length} product${products.length !== 1 ? 's' : ''} found`;
                 
                 container.innerHTML = products.map(product => {
+                    // Get preview image for the product (first variant or default)
+                    const productData = productsData[product.id];
+                    let previewImage = '';
+                    
+                    if (productData && productData.variants && productData.variants.length > 0) {
+                        const firstVariant = productData.variants[0];
+                        previewImage = getProductImageUrl(product.name, firstVariant.variant_name);
+                    } else {
+                        previewImage = getProductImageUrl(product.name, null);
+                    }
+                    
                     const hasVariants = product.hasVariants;
                     const variantBadge = hasVariants ? `<span class="variant-badge">${product.variantCount} options available</span>` : '';
                     
                     return `
                     <div class="product-card" data-id="${product.id}">
                         <div class="product-image">
-                            <i class="fas fa-box" style="font-size: 3rem; color: #ccc;"></i>
+                            <img src="${previewImage}" 
+                                 alt="${product.name}"
+                                 loading="lazy"
+                                 onerror="this.src='https://via.placeholder.com/300x200?text=${encodeURIComponent(product.name)}'">
                         </div>
                         <div class="product-info">
                             ${variantBadge}
@@ -305,7 +351,6 @@
                 `}).join('');
             }
             
-            // Open modal to select variant
             window.openVariantModal = function(productId) {
                 const product = productsData[productId];
                 if (!product) return;
@@ -313,16 +358,13 @@
                 currentModalProduct = product;
                 currentModalVariants = product.variants || [];
                 
-                // Update modal content
                 document.getElementById('modal-product-name').textContent = product.name;
                 document.getElementById('modal-product-description').textContent = product.description || 'Premium quality car accessory';
                 
-                // Populate variant select
                 const variantSelect = document.getElementById('variant-select');
                 variantSelect.innerHTML = '<option value="">Choose an option...</option>';
                 
                 if (currentModalVariants.length > 0) {
-                    // Group variants by type or just show all
                     currentModalVariants.forEach(variant => {
                         const option = document.createElement('option');
                         option.value = variant.id;
@@ -333,16 +375,17 @@
                         variantSelect.appendChild(option);
                     });
                     
-                    // Set initial price display
                     const firstVariant = currentModalVariants[0];
                     document.getElementById('modal-product-price').textContent = `$${parseFloat(firstVariant.price).toFixed(2)}`;
                     
-                    // Update image based on first variant
-                    const imageUrl = getImageForProduct(product.name, firstVariant.variant_name);
+                    const imageUrl = getProductImageUrl(product.name, firstVariant.variant_name);
                     const modalImage = document.getElementById('modal-product-image');
                     if (imageUrl) {
                         modalImage.src = imageUrl;
                         modalImage.style.display = 'block';
+                        modalImage.onerror = function() {
+                            this.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.name)}`;
+                        };
                     } else {
                         modalImage.style.display = 'none';
                     }
@@ -350,7 +393,6 @@
                     document.getElementById('modal-product-price').textContent = `$${parseFloat(product.base_price).toFixed(2)}`;
                 }
                 
-                // Update price when variant changes
                 variantSelect.onchange = function() {
                     const selected = variantSelect.options[variantSelect.selectedIndex];
                     if (selected && selected.value) {
@@ -358,40 +400,37 @@
                         const variantName = selected.getAttribute('data-name');
                         document.getElementById('modal-product-price').textContent = `$${parseFloat(price).toFixed(2)}`;
                         
-                        // Update image
-                        const imageUrl = getImageForProduct(product.name, variantName);
+                        const imageUrl = getProductImageUrl(product.name, variantName);
                         const modalImage = document.getElementById('modal-product-image');
                         if (imageUrl) {
                             modalImage.src = imageUrl;
                             modalImage.style.display = 'block';
+                            modalImage.onerror = function() {
+                                this.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.name)}`;
+                            };
                         } else {
                             modalImage.style.display = 'none';
                         }
                     }
                 };
                 
-                // Reset quantity
                 document.getElementById('modal-quantity').value = 1;
-                
-                // Show modal
                 document.getElementById('variant-modal').style.display = 'flex';
             };
             
-            // Close modal
             function closeModal() {
                 document.getElementById('variant-modal').style.display = 'none';
                 currentModalProduct = null;
                 currentModalVariants = [];
             }
             
-            // Add selected variant to cart
             function addSelectedToCart() {
                 const variantSelect = document.getElementById('variant-select');
                 const selectedOption = variantSelect.options[variantSelect.selectedIndex];
                 const quantity = parseInt(document.getElementById('modal-quantity').value) || 1;
                 
                 if (!selectedOption || !selectedOption.value) {
-                    showNotification('Please select an option', 'error');
+                    showNotification('Please select an option', true);
                     return;
                 }
                 
@@ -410,7 +449,7 @@
                     variant_type: variantType,
                     price: price,
                     quantity: quantity,
-                    image: getImageForProduct(currentModalProduct.name, variantName)
+                    image: getProductImageUrl(currentModalProduct.name, variantName)
                 };
                 
                 let cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -469,24 +508,54 @@
                 if (cartCount) cartCount.textContent = totalItems;
             }
             
-            function showNotification(message, type = 'success') {
+            function updateAuthUI() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const authIcon = document.getElementById('auth-icon');
+                
+                if (authIcon) {
+                    if (user && user.name) {
+                        authIcon.innerHTML = `
+                            <div class="user-menu" style="position: relative; cursor: pointer;">
+                                <i class="fas fa-user-circle"></i>
+                                <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
+                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100;">
+                                    <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
+                                    <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
+                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none;">Logout</a>
+                                </div>
+                            </div>
+                        `;
+                        
+                        const userMenu = authIcon.querySelector('.user-menu');
+                        const dropdown = authIcon.querySelector('.user-dropdown');
+                        if (userMenu && dropdown) {
+                            userMenu.addEventListener('mouseenter', () => dropdown.style.display = 'block');
+                            userMenu.addEventListener('mouseleave', () => dropdown.style.display = 'none');
+                        }
+                    } else {
+                        authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
+                    }
+                }
+            }
+            
+            window.logout = function() {
+                localStorage.removeItem('user');
+                showNotification('Logged out successfully!');
+                setTimeout(() => window.location.reload(), 1000);
+            };
+            
+            function showNotification(message, isError = false) {
                 const notification = document.createElement('div');
-                const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
-                notification.innerHTML = `<i class="fas ${icon}"></i><span>${escapeHtml(message)}</span>`;
+                notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i><span>${message}</span>`;
                 document.body.appendChild(notification);
                 
-                const bgColor = type === 'success' ? '#e67e22' : '#e74c3c';
                 notification.style.cssText = `
-                    position: fixed; bottom: 20px; right: 20px; background: ${bgColor};
-                    color: white; padding: 1rem 1.5rem; border-radius: 10px;
-                    display: flex; align-items: center; gap: 0.5rem; z-index: 10000;
-                    animation: slideInRight 0.3s ease; font-family: 'Inter', sans-serif;
+                    position: fixed; bottom: 20px; right: 20px; background: ${isError ? '#e74c3c' : '#27ae60'};
+                    color: white; padding: 1rem 1.5rem; border-radius: 10px; display: flex;
+                    align-items: center; gap: 0.5rem; z-index: 10000; animation: slideInRight 0.3s ease;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-family: 'Inter', sans-serif;
                 `;
-                
-                setTimeout(() => {
-                    notification.style.animation = 'slideOutRight 0.3s ease';
-                    setTimeout(() => notification.remove(), 300);
-                }, 3000);
+                setTimeout(() => notification.remove(), 3000);
             }
             
             function escapeHtml(str) {
@@ -502,13 +571,11 @@
             function showError(message) {
                 const container = document.getElementById('all-products');
                 if (container) {
-                    container.innerHTML = `
-                        <div style="text-align: center; padding: 3rem; grid-column: 1/-1;">
-                            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #e67e22;"></i>
-                            <h3>${escapeHtml(message)}</h3>
-                            <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 1rem;">Try Again</button>
-                        </div>
-                    `;
+                    container.innerHTML = `<div style="text-align: center; padding: 3rem; grid-column: 1/-1;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #e67e22;"></i>
+                        <h3>${escapeHtml(message)}</h3>
+                        <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 1rem;">Try Again</button>
+                    </div>`;
                 }
                 showLoading(false);
             }
@@ -529,8 +596,8 @@
             document.addEventListener('DOMContentLoaded', () => {
                 fetchProducts();
                 updateCartCount();
+                updateAuthUI();
                 
-                // Modal close buttons
                 document.querySelector('.modal-close').onclick = closeModal;
                 window.onclick = function(event) {
                     const modal = document.getElementById('variant-modal');
@@ -538,7 +605,6 @@
                 };
                 document.getElementById('modal-add-to-cart').onclick = addSelectedToCart;
                 
-                // Filters
                 const categoryFilter = document.getElementById('category-filter');
                 const sortFilter = document.getElementById('sort-filter');
                 const searchInput = document.getElementById('search-input');
@@ -547,7 +613,6 @@
                 if (sortFilter) sortFilter.addEventListener('change', filterAndSortProducts);
                 if (searchInput) searchInput.addEventListener('input', filterAndSortProducts);
                 
-                // Mobile menu
                 const menuToggle = document.querySelector('.menu-toggle');
                 const navMenu = document.querySelector('.nav-menu');
                 if (menuToggle) {
@@ -577,8 +642,20 @@
             border-radius: 20px;
             margin-bottom: 0.5rem;
         }
-        
-        /* Modal Styles */
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .modal-image img {
+            max-width: 100%;
+            max-height: 200px;
+            object-fit: contain;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
         .modal {
             position: fixed;
             top: 0;
@@ -608,18 +685,10 @@
             font-size: 28px;
             cursor: pointer;
             color: #999;
-            transition: var(--transition);
-        }
-        .modal-close:hover {
-            color: var(--secondary-color);
         }
         .modal-header {
             padding: 1.5rem;
             border-bottom: 1px solid #eee;
-        }
-        .modal-header h2 {
-            margin: 0;
-            color: var(--primary-color);
         }
         .modal-body {
             padding: 1.5rem;
@@ -632,11 +701,6 @@
             min-width: 150px;
             text-align: center;
         }
-        .modal-image img {
-            max-width: 100%;
-            max-height: 150px;
-            object-fit: contain;
-        }
         .modal-info {
             flex: 2;
             min-width: 200px;
@@ -644,17 +708,11 @@
         .variant-selector {
             margin: 1rem 0;
         }
-        .variant-selector label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
         .variant-select {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #ddd;
             border-radius: 8px;
-            font-family: 'Inter', sans-serif;
         }
         .modal-price {
             font-size: 1.5rem;
@@ -662,46 +720,15 @@
             color: var(--secondary-color);
             margin: 1rem 0;
         }
-        .modal-price span:first-child {
-            font-size: 0.9rem;
-            color: var(--text-light);
-            font-weight: normal;
-        }
-        .modal-quantity {
-            margin: 1rem 0;
-        }
-        .modal-quantity label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
         .modal-quantity input {
             width: 100px;
             padding: 0.5rem;
             border: 1px solid #ddd;
             border-radius: 8px;
         }
-        #modal-add-to-cart {
-            width: 100%;
-            margin-top: 1rem;
-        }
         @keyframes slideUp {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
     </style>
 </body>

@@ -282,7 +282,45 @@
                 setTimeout(() => notification.remove(), 300);
             }, 3000);
         }
+        // Check authentication status and update UI
+function updateAuthUI() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const authIcon = document.getElementById('auth-icon');
+    
+    if (authIcon) {
+        if (user && user.name) {
+            authIcon.innerHTML = `
+                <div class="user-menu">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="user-name-display">${user.name.split(' ')[0]}</span>
+                    <div class="user-dropdown">
+                        <div class="user-name">${user.name}</div>
+                        <a href="profile.html">My Profile</a>
+                        <a href="orders.html">My Orders</a>
+                        <a href="#" onclick="logout()" class="logout">Logout</a>
+                    </div>
+                </div>
+            `;
+        } else {
+            authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
+        }
+    }
+}
 
+// Logout function
+window.logout = function() {
+    localStorage.removeItem('user');
+    showNotification('Logged out successfully!');
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+};
+
+// Call on page load
+document.addEventListener('DOMContentLoaded', () => {
+    updateAuthUI();
+    // ... rest of your existing code
+});
         // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
             updateCartCount();
@@ -316,6 +354,7 @@
                     contactForm.reset();
                 });
             }
+            
         });
     </script>
 

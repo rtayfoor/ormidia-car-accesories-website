@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <nav class="navbar">
@@ -72,6 +74,10 @@
 
     <section class="products-page">
         <div class="container">
+            <div class="loading-spinner" id="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading products...</p>
+            </div>
             <div class="products-count" id="products-count"></div>
             <div class="products-grid" id="all-products"></div>
             <div class="no-results" id="no-results" style="display: none;">
@@ -129,33 +135,84 @@
     </footer>
 
     <script>
-        const allProducts = [
-            { id: 1, name: "Ford", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_ford.png", price: 29.99 },
-            { id: 2, name: "Honda", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_honda.png", price: 29.99 },
-            { id: 3, name: "Isuzu", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_isuzu.png", price: 29.99 },
-            { id: 4, name: "Kia", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_kia.png", price: 29.99 },
-            { id: 5, name: "Mazda", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_mazda.png", price: 29.99 },
-            { id: 6, name: "Mercedes", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_mercedes.png", price: 34.99 },
-            { id: 7, name: "Suzuki", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_suzuki.png", price: 29.99 },
-            { id: 8, name: "BMW", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_bmw.png", price: 19.99 },
-            { id: 9, name: "Chevrolet", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_chevrolet.png", price: 19.99 },
-            { id: 10, name: "Honda", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_honda.png", price: 19.99 },
-            { id: 11, name: "Kia", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_kia.png", price: 19.99 },
-            { id: 12, name: "Mazda", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_mazda.png", price: 19.99 },
-            { id: 13, name: "Mitsubishi", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_mitsubishi.png", price: 19.99 },
-            { id: 14, name: "Suzuki", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_suzuki.png", price: 19.99 },
-            { id: 15, name: "Toyota", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_toyota.png", price: 19.99 },
-            { id: 16, name: "Volkswagen", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_volkswagen.png", price: 19.99 }
-        ];
+        // Supabase Configuration - REPLACE WITH YOUR ACTUAL CREDENTIALS
+        const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';  // Replace with your Supabase URL
+        const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1Sy';  // Replace with your Supabase anon key
+        
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let allProducts = [];
+        let currentProducts = [];
 
-        let currentProducts = [...allProducts];
+        // Function to fetch products from Supabase
+        async function fetchProducts() {
+            try {
+                showLoading(true);
+                
+                // Fetch products from Supabase
+                const { data, error } = await supabase
+                    .from('products')  // Replace with your actual table name
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error('Supabase error:', error);
+                    showError('Failed to load products. Please try again later.');
+                    return;
+                }
+                
+                if (data && data.length > 0) {
+                    allProducts = data;
+                    currentProducts = [...allProducts];
+                    displayProducts(currentProducts);
+                } else {
+                    // If no data in Supabase, use fallback data
+                    console.log('No products found in database, using fallback data');
+                    useFallbackData();
+                }
+                
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                showError('Connection error. Using demo products.');
+                useFallbackData();
+            } finally {
+                showLoading(false);
+            }
+        }
 
+        // Fallback data in case Supabase is not configured yet
+        function useFallbackData() {
+            allProducts = [
+                { id: 1, name: "Ford", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_ford.png", price: 29.99, brand: "Ford" },
+                { id: 2, name: "Honda", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_honda.png", price: 29.99, brand: "Honda" },
+                { id: 3, name: "Isuzu", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_isuzu.png", price: 29.99, brand: "Isuzu" },
+                { id: 4, name: "Kia", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_kia.png", price: 29.99, brand: "Kia" },
+                { id: 5, name: "Mazda", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_mazda.png", price: 29.99, brand: "Mazda" },
+                { id: 6, name: "Mercedes", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_mercedes.png", price: 34.99, brand: "Mercedes" },
+                { id: 7, name: "Suzuki", type: "Head Rest Pillow", category: "headrest", image: "head-rest-pillow_suzuki.png", price: 29.99, brand: "Suzuki" },
+                { id: 8, name: "BMW", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_bmw.png", price: 19.99, brand: "BMW" },
+                { id: 9, name: "Chevrolet", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_chevrolet.png", price: 19.99, brand: "Chevrolet" },
+                { id: 10, name: "Honda", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_honda.png", price: 19.99, brand: "Honda" },
+                { id: 11, name: "Kia", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_kia.png", price: 19.99, brand: "Kia" },
+                { id: 12, name: "Mazda", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_mazda.png", price: 19.99, brand: "Mazda" },
+                { id: 13, name: "Mitsubishi", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_mitsubishi.png", price: 19.99, brand: "Mitsubishi" },
+                { id: 14, name: "Suzuki", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_suzuki.png", price: 19.99, brand: "Suzuki" },
+                { id: 15, name: "Toyota", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_toyota.png", price: 19.99, brand: "Toyota" },
+                { id: 16, name: "Volkswagen", type: "Anti-Slip Mat", category: "antislip", image: "anti-slip-mat_volkswagen.png", price: 19.99, brand: "Volkswagen" }
+            ];
+            currentProducts = [...allProducts];
+            displayProducts(currentProducts);
+            showNotification('Using demo products. Connect Supabase to use live data.', 'info');
+        }
+
+        // Display products function
         function displayProducts(products) {
             const container = document.getElementById('all-products');
             const noResults = document.getElementById('no-results');
             const productsCount = document.getElementById('products-count');
             
-            if (products.length === 0) {
+            if (!products || products.length === 0) {
                 container.style.display = 'none';
                 noResults.style.display = 'block';
                 productsCount.textContent = '0 products found';
@@ -164,20 +221,21 @@
             
             container.style.display = 'grid';
             noResults.style.display = 'none';
-            productsCount.textContent = `${products.length} products found`;
+            productsCount.textContent = `${products.length} product${products.length !== 1 ? 's' : ''} found`;
             
             container.innerHTML = products.map(product => `
-                <div class="product-card">
+                <div class="product-card" data-id="${product.id}">
                     <div class="product-image">
-                        <img src="${product.image}" 
-                             alt="${product.type} for ${product.name}"
-                             onerror="this.src='https://via.placeholder.com/300x200?text=${product.type}'">
+                        <img src="${product.image_url || product.image}" 
+                             alt="${product.type || product.category} for ${product.name}"
+                             loading="lazy"
+                             onerror="this.src='https://via.placeholder.com/300x200?text=${product.name}'">
                     </div>
                     <div class="product-info">
-                        <div class="product-brand">${product.type}</div>
-                        <h3 class="product-title">${product.type} for ${product.name}</h3>
-                        <div class="product-price">$${product.price}</div>
-                        <button class="add-to-cart" onclick="addToCart('${product.type}', '${product.name}', ${product.price}, ${product.id})">
+                        <div class="product-brand">${product.type || product.category}</div>
+                        <h3 class="product-title">${product.name}</h3>
+                        <div class="product-price">$${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}</div>
+                        <button class="add-to-cart" onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})">
                             Add to Cart
                         </button>
                     </div>
@@ -185,6 +243,7 @@
             `).join('');
         }
 
+        // Filter and sort products
         function filterAndSortProducts() {
             const category = document.getElementById('category-filter').value;
             const sortBy = document.getElementById('sort-filter').value;
@@ -192,17 +251,23 @@
             
             let filtered = [...allProducts];
             
+            // Filter by category
             if (category !== 'all') {
-                filtered = filtered.filter(product => product.category === category);
-            }
-            
-            if (searchTerm) {
                 filtered = filtered.filter(product => 
-                    product.name.toLowerCase().includes(searchTerm) || 
-                    product.type.toLowerCase().includes(searchTerm)
+                    (product.category || product.type).toLowerCase() === category
                 );
             }
             
+            // Filter by search
+            if (searchTerm) {
+                filtered = filtered.filter(product => 
+                    product.name.toLowerCase().includes(searchTerm) || 
+                    (product.type || product.category).toLowerCase().includes(searchTerm) ||
+                    (product.brand || '').toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Sort products
             if (sortBy === 'price-low') {
                 filtered.sort((a, b) => a.price - b.price);
             } else if (sortBy === 'price-high') {
@@ -213,55 +278,153 @@
             displayProducts(currentProducts);
         }
 
-        function addToCart(type, brand, price, id) {
+        // Add to cart function
+        function addToCart(product) {
             let cart = JSON.parse(localStorage.getItem('cart')) || [];
-            const existingItem = cart.find(item => item.id === id);
+            const existingItem = cart.find(item => item.id === product.id);
             
             if (existingItem) {
                 existingItem.quantity = (existingItem.quantity || 1) + 1;
             } else {
-                cart.push({ id: id, type: type, brand: brand, price: price, quantity: 1 });
+                cart.push({ 
+                    id: product.id, 
+                    name: product.name,
+                    type: product.type || product.category, 
+                    price: product.price, 
+                    quantity: 1,
+                    image: product.image_url || product.image
+                });
             }
             
             localStorage.setItem('cart', JSON.stringify(cart));
-            showNotification(`${type} for ${brand} added to cart!`);
+            showNotification(`${product.name} added to cart!`, 'success');
             updateCartCount();
         }
 
+        // Update cart count in navbar
         function updateCartCount() {
             const cart = JSON.parse(localStorage.getItem('cart')) || [];
             const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
             const cartCount = document.querySelector('.cart-count');
-            if (cartCount) cartCount.textContent = totalItems;
+            if (cartCount) {
+                cartCount.textContent = totalItems;
+            }
         }
 
-        function showNotification(message) {
+        // Show notification
+        function showNotification(message, type = 'success') {
             const notification = document.createElement('div');
-            notification.innerHTML = `<i class="fas fa-check-circle"></i><span>${message}</span>`;
-            notification.style.cssText = `
-                position: fixed; bottom: 20px; right: 20px; background: #e67e22;
-                color: white; padding: 1rem 1.5rem; border-radius: 10px;
-                display: flex; align-items: center; gap: 0.5rem; z-index: 9999;
-                animation: slideInRight 0.3s ease; font-family: 'Inter', sans-serif;
-            `;
+            notification.className = 'notification';
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
+            notification.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
             document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 3000);
+            
+            const bgColor = type === 'success' ? '#e67e22' : '#3498db';
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: ${bgColor};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                z-index: 9999;
+                animation: slideInRight 0.3s ease;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                font-family: 'Inter', sans-serif;
+            `;
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
         }
 
+        function showError(message) {
+            const container = document.getElementById('all-products');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 3rem; grid-column: 1/-1;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #e67e22; margin-bottom: 1rem;"></i>
+                    <h3>${message}</h3>
+                    <button onclick="fetchProducts()" class="btn btn-primary" style="margin-top: 1rem;">Try Again</button>
+                </div>
+            `;
+        }
+
+        function showLoading(show) {
+            const spinner = document.getElementById('loading-spinner');
+            const container = document.getElementById('all-products');
+            if (show) {
+                if (spinner) spinner.style.display = 'block';
+                if (container) container.style.display = 'none';
+            } else {
+                if (spinner) spinner.style.display = 'none';
+                if (container) container.style.display = 'grid';
+            }
+        }
+
+        // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
-            displayProducts(currentProducts);
+            fetchProducts();
             updateCartCount();
             
-            document.getElementById('category-filter').addEventListener('change', filterAndSortProducts);
-            document.getElementById('sort-filter').addEventListener('change', filterAndSortProducts);
-            document.getElementById('search-input').addEventListener('input', filterAndSortProducts);
+            // Event listeners
+            const categoryFilter = document.getElementById('category-filter');
+            const sortFilter = document.getElementById('sort-filter');
+            const searchInput = document.getElementById('search-input');
             
+            if (categoryFilter) categoryFilter.addEventListener('change', filterAndSortProducts);
+            if (sortFilter) sortFilter.addEventListener('change', filterAndSortProducts);
+            if (searchInput) searchInput.addEventListener('input', filterAndSortProducts);
+            
+            // Mobile menu toggle
             const menuToggle = document.querySelector('.menu-toggle');
             const navMenu = document.querySelector('.nav-menu');
             if (menuToggle) {
-                menuToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
+                menuToggle.addEventListener('click', () => {
+                    navMenu.classList.toggle('active');
+                });
             }
         });
     </script>
+
+    <style>
+        .loading-spinner {
+            text-align: center;
+            padding: 4rem;
+            grid-column: 1/-1;
+        }
+        
+        .loading-spinner i {
+            font-size: 3rem;
+            color: var(--secondary-color);
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
 </body>
 </html>

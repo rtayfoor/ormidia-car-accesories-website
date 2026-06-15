@@ -306,7 +306,44 @@ function updateAuthUI() {
         }
     }
 }
+// Update user authentication UI
+function updateAuthUI() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const authIcon = document.getElementById('auth-icon');
+    
+    if (authIcon) {
+        if (user && user.name) {
+            authIcon.innerHTML = `
+                <div class="user-menu">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="user-name-display">${user.name.split(' ')[0]}</span>
+                    <div class="user-dropdown">
+                        <div class="user-name">${user.name}</div>
+                        <div class="user-email">${user.email}</div>
+                        <a href="#" onclick="logout()" class="logout">Logout</a>
+                    </div>
+                </div>
+            `;
+        } else {
+            authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
+        }
+    }
+}
 
+// Logout function
+window.logout = function() {
+    localStorage.removeItem('user');
+    showNotification('Logged out successfully!');
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+};
+
+// Add to your existing DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    updateAuthUI();
+    // ... rest of your code
+});
 // Logout function
 window.logout = function() {
     localStorage.removeItem('user');

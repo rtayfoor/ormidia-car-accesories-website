@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"/>
+  <title>Products | Ormidia Car Accessories</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
+  <style>
+    :root {
+      --red: #D0021B;
+      --red-bright: #e8021e;
+      --red-light: #fef2f2;
+      --yellow: #e6a800;
+      --black: #1a1a1a;
+      --white: #ffffff;
+      --off-white: #f7f8fa;
+      --border: #e4e7ec;
+      --grey: #6b7280;
+      --grey-dark: #374151;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--white);
+      color: var(--black);
+      font-family: 'Barlow Condensed', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ─── NAV (identical to index.html) ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; height: 70px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 12px rgba(0,0,0,0.06);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 12px; cursor: pointer; text-decoration: none; }
+    .nav-logo img { height: 48px; width: 48px; border-radius: 50%; object-fit: cover; }
+    .nav-brand { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--black); }
+    .nav-brand span { color: var(--red); }
+    .nav-links { display: flex; gap: 36px; list-style: none; }
+    .nav-links a {
+      font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 15px;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--grey-dark);
+      text-decoration: none; transition: color 0.2s; position: relative; cursor: pointer;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute; bottom: -4px; left: 0; right: 100%;
+      height: 2px; background: var(--red); transition: right 0.25s ease;
+    }
+    .nav-links a:hover { color: var(--red); }
+    .nav-links a:hover::after { right: 0; }
+    .nav-links a.active { color: var(--red); }
+    .nav-links a.active::after { right: 0; }
+    .nav-cta {
+      background: var(--red); color: var(--white) !important; padding: 8px 20px;
+      border-radius: 3px; font-weight: 700 !important; letter-spacing: 2px !important;
+      transition: background 0.2s, transform 0.15s !important;
+    }
+    .nav-cta:hover { background: var(--red-bright) !important; transform: translateY(-1px); }
+    .nav-cta::after { display: none !important; }
+
+    /* hamburger */
+    .hamburger {
+      display: none; flex-direction: column; cursor: pointer;
+      background: transparent; border: none; z-index: 101; gap: 6px; padding: 8px;
+    }
+    .hamburger span { display: block; width: 26px; height: 2.5px; background: var(--black); border-radius: 4px; transition: all 0.3s; }
+    .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(6px,6px); background: var(--red); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(6px,-6px); background: var(--red); }
+
+    @media (max-width: 880px) {
+      nav { padding: 0 20px; }
+      .hamburger { display: flex; }
+      .nav-links {
+        position: fixed; top: 70px; right: -100%; width: 75%; max-width: 300px;
+        height: calc(100vh - 70px); background: var(--white);
+        flex-direction: column; justify-content: flex-start; align-items: center;
+        padding-top: 40px; gap: 32px;
+        box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+        transition: right 0.35s ease;
+      }
+      .nav-links.open { right: 0; }
+      .nav-links a { font-size: 18px; }
+      .nav-cta { display: none; }
+    }
+
+    /* ─── PAGE HEADER ─── */
+    .page-header {
+      padding: 120px 48px 60px;
+      background: var(--off-white);
+      border-bottom: 1px solid var(--border);
+      position: relative; overflow: hidden;
+    }
+    .page-header::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 50% 80% at 100% 50%, rgba(208,2,27,0.05), transparent 60%);
+      pointer-events: none;
+    }
+    .page-header-inner { max-width: 1280px; margin: 0 auto; position: relative; }
+    .breadcrumb {
+      font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--grey);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .breadcrumb a { color: var(--grey); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--red); }
+    .breadcrumb .sep { color: var(--border); }
+    .breadcrumb .current { color: var(--red); }
+    .page-header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(42px, 6vw, 72px);
+      letter-spacing: 2px; line-height: 1; color: var(--black);
+    }
+    .page-header h1 span { color: var(--red); }
+    .page-header p { font-size: 17px; color: var(--grey); margin-top: 12px; }
+
+    /* ─── MAIN CONTENT ─── */
+    .products-section { padding: 60px 48px 100px; max-width: 1280px; margin: 0 auto; }
+
+    /* ─── SECTION TAG (matches index) ─── */
+    .section-tag {
+      font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase; color: var(--red);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 10px;
+    }
+    .section-tag::before { content: ''; display: inline-block; width: 24px; height: 2px; background: var(--red); }
+
+    /* ─── FILTERS ─── */
+    .filters-bar {
+      display: flex; flex-direction: column; gap: 16px; margin-bottom: 40px;
+      padding-bottom: 28px; border-bottom: 1px solid var(--border);
+    }
+    .filter-row {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .filter-row-header {
+      display: flex; justify-content: space-between; align-items: center; width: 100%;
+      flex-wrap: wrap; gap: 12px; margin-bottom: 4px;
+    }
+    .filter-label {
+      font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--grey-dark);
+      min-width: 80px;
+    }
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 8px 20px;
+      border: 1.5px solid var(--border);
+      background: var(--white); border-radius: 3px;
+      cursor: pointer; font-family: 'Rajdhani', sans-serif;
+      font-size: 14px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--grey-dark);
+      transition: all 0.2s;
+    }
+    .filter-btn:hover { border-color: var(--red); color: var(--red); }
+    .filter-btn.active { background: var(--red); border-color: var(--red); color: var(--white); }
+    .product-count {
+      font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600;
+      letter-spacing: 1px; color: var(--grey); white-space: nowrap;
+    }
+    .product-count strong { color: var(--black); }
+
+    /* ─── SEARCH BOX ─── */
+    .search-box {
+      position: relative;
+      max-width: 300px;
+      width: 100%;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 8px 16px 8px 36px;
+      border: 1.5px solid var(--border);
+      border-radius: 3px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--black);
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-box input:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(208,2,27,0.1);
+    }
+    .search-box .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--grey);
+      font-size: 14px;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    .search-box input:focus + .search-icon {
+      color: var(--red);
+    }
+
+    /* ─── PRODUCTS GRID ─── */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .product-card {
+      background: var(--white); border: 1.5px solid var(--border);
+      border-radius: 6px; overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      cursor: pointer; position: relative;
+    }
+    .product-card::before {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 3px; background: var(--red);
+      transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease;
+      z-index: 1;
+    }
+    .product-card:hover { transform: translateY(-6px); box-shadow: 0 12px 36px rgba(0,0,0,0.1); border-color: rgba(208,2,27,0.2); }
+    .product-card:hover::before { transform: scaleX(1); }
+
+    .product-image {
+      width: 100%; height: 210px;
+      background: var(--off-white);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .product-image img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.3s;
+    }
+    .product-card:hover .product-image img { transform: scale(1.04); }
+    .product-image-placeholder {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      color: #cbd5e1;
+    }
+    .product-image-placeholder i { font-size: 48px; }
+    .product-image-placeholder span { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+
+    .prod-badge {
+      position: absolute; top: 12px; left: 12px;
+      background: var(--red); color: var(--white);
+      font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 2px; z-index: 2;
+    }
+
+    .product-info { padding: 20px 22px; }
+    .product-name {
+      font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700;
+      color: var(--black); margin-bottom: 6px; letter-spacing: 0.3px;
+    }
+    .product-price {
+      font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+      color: var(--red); letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .product-price small { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 400; color: var(--grey); letter-spacing: 0; }
+    .product-brands { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .brand-tag {
+      background: var(--red-light); padding: 3px 10px; border-radius: 2px;
+      font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase; color: var(--red);
+      border: 1px solid rgba(208,2,27,0.15);
+    }
+    .view-details {
+      padding-top: 14px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase; color: var(--red);
+      transition: gap 0.2s;
+    }
+    .product-card:hover .view-details { gap: 8px; }
+
+    /* ─── STATES ─── */
+    .state-box {
+      grid-column: 1 / -1; text-align: center; padding: 80px 20px;
+      color: var(--grey); font-family: 'Rajdhani', sans-serif;
+      font-size: 18px; font-weight: 600; letter-spacing: 1px;
+    }
+    .state-box i { display: block; font-size: 40px; margin-bottom: 16px; color: var(--border); }
+
+    /* ─── MODAL ─── */
+    .modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+      z-index: 2000; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: var(--white); border-radius: 8px;
+      max-width: 860px; width: 100%; max-height: 90vh;
+      overflow-y: auto; position: relative;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+      border: 1px solid var(--border);
+    }
+
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: var(--off-white); border: 1px solid var(--border);
+      width: 36px; height: 36px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; color: var(--grey-dark);
+      transition: background 0.2s, color 0.2s; z-index: 10;
+    }
+    .modal-close:hover { background: var(--red); color: var(--white); border-color: var(--red); }
+
+    .modal-inner {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    }
+
+    .modal-image {
+      background: var(--off-white); border-right: 1px solid var(--border);
+      min-height: 340px; display: flex; align-items: center; justify-content: center;
+      border-radius: 8px 0 0 8px; overflow: hidden;
+    }
+    .modal-image img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px 0 0 8px; transition: all 0.3s; }
+    .modal-image i { font-size: 64px; color: #cbd5e1; }
+
+    .modal-body { padding: 32px; }
+
+    .modal-eyebrow {
+      font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+      letter-spacing: 3px; text-transform: uppercase; color: var(--red);
+      margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+    }
+    .modal-eyebrow::before { content: ''; display: inline-block; width: 18px; height: 2px; background: var(--red); }
+
+    .modal-title {
+      font-family: 'Bebas Neue', sans-serif; font-size: 36px;
+      letter-spacing: 1px; color: var(--black); margin-bottom: 10px; line-height: 1;
+    }
+    .modal-desc { font-size: 15px; color: var(--grey); line-height: 1.65; margin-bottom: 24px; }
+
+    .variant-selector { margin-bottom: 20px; }
+    .variant-label {
+      font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--grey-dark);
+      margin-bottom: 10px; display: block;
+    }
+    .variant-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+    .variant-btn {
+      padding: 8px 16px; border: 1.5px solid var(--border);
+      background: var(--white); border-radius: 3px; cursor: pointer;
+      font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase; color: var(--grey-dark);
+      transition: all 0.2s;
+    }
+    .variant-btn:hover { border-color: var(--red); color: var(--red); }
+    .variant-btn.selected { background: var(--red); border-color: var(--red); color: var(--white); }
+
+    .price-display {
+      background: var(--off-white); border: 1px solid var(--border);
+      border-radius: 4px; padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .price-label { font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--grey); }
+    .price-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--red); letter-spacing: 1px; }
+
+    .btn-cart {
+      width: 100%; padding: 14px;
+      background: var(--red); color: var(--white);
+      border: none; border-radius: 3px; cursor: pointer;
+      font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.2s, transform 0.15s;
+      box-shadow: 0 4px 16px rgba(208,2,27,0.2);
+    }
+    .btn-cart:hover { background: var(--red-bright); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(208,2,27,0.3); }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: var(--black); color: var(--white);
+      font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 1px;
+      padding: 14px 28px; border-radius: 4px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.2);
+      opacity: 0; transition: opacity 0.3s, transform 0.3s; z-index: 3000;
+      display: flex; align-items: center; gap: 10px; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast i { color: #4ade80; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--black); border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 36px 48px; text-align: center;
+    }
+    footer p { font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 1px; color: #555; }
+    footer strong { color: #FFD700; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 768px) {
+      .page-header { padding: 100px 20px 40px; }
+      .products-section { padding: 40px 20px 80px; }
+      .modal-inner { grid-template-columns: 1fr; }
+      .modal-image { min-height: 220px; border-right: none; border-bottom: 1px solid var(--border); border-radius: 8px 8px 0 0; }
+      .modal-image img { border-radius: 8px 8px 0 0; }
+      .modal-body { padding: 20px; }
+      footer { padding: 28px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="index.html" class="nav-logo">
+      <img src="logo.jpg" alt="Ormidia CA Logo" onerror="this.style.display='none'"/>
+      <div class="nav-brand">Ormidia <span>CA</span></div>
+    </a>
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="products.html" class="active">Products</a></li>
+      <li><a href="index.html#about">About</a></li>
+      <li><a href="index.html#contact">Contact</a></li>
+      <li><a href="products.html" class="nav-cta">Shop Now</a></li>
+    </ul>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div class="breadcrumb">
+        <a href="index.html">Home</a>
+        <span class="sep">›</span>
+        <span class="current">Products</span>
+      </div>
+      <h1>Our <span>Products</span></h1>
+      <p>Premium car accessories — engineered for performance, designed for style.</p>
+    </div>
+  </div>
+
+  <!-- PRODUCTS -->
+  <section class="products-section" id="products">
+    <div class="filters-bar">
+      <div class="filter-row-header">
+        <div class="product-count" id="productCount"></div>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Search accessories..." />
+          <i class="fas fa-search search-icon"></i>
+        </div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Category:</span>
+        <div class="filters" id="categoryFilters">
+          <!-- Category buttons will be generated dynamically -->
+        </div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Brand:</span>
+        <div class="filters" id="brandFilters">
+          <!-- Brand buttons will be generated dynamically -->
+        </div>
+      </div>
+    </div>
+    <div class="products-grid" id="productsGrid">
+      <div class="state-box"><i class="fas fa-spinner fa-spin"></i>Loading products…</div>
+    </div>
+  </section>
+
+  <!-- MODAL -->
+  <div class="modal" id="productModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()" title="Close">&times;</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>© 2025 <strong>Ormidia Car Accessories – Paul</strong>. All rights reserved.</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="cart.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    // ─── HAMBURGER ───
+    const hamburger = document.getElementById('hamburger');
+    const navLinks  = document.getElementById('navLinks');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('open');
+      navLinks.classList.toggle('open');
+    });
+
+    // ─── SUPABASE ───
+    const SUPABASE_URL      = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
+
+    let supabaseClient   = null;
+    let allProducts      = [];
+    let allVariants      = [];
+    let currentFilter    = 'all';
+    let currentCategory  = 'all';
+    let currentProduct   = null;
+    let currentVariant   = null;
+    let searchTerm       = '';
+
+    // ─── IMAGE / ICON MAPS ───
+    const imageMap = {
+      'head-rest-pillow': 'images/head-rest-pillow.jpg',
+      'simple-rest-pillow': 'images/simple-rest-pillow.png',
+      'anti-slip-mat': 'images/anti-slip-mat.jpg',
+      'plating-number': 'images/plating-number.jpg',
+      'pillow-seat-belt': 'images/pillow-seat-belt.jpg',
+      'keyring': 'images/keyring.jpg',
+      'keyring-small-bag': 'images/keyring-small-bag.jpg',
+      'drink-holder': 'images/drink-holder.jpg',
+      'coasters': 'images/coasters.jpg',
+      'exhaust': 'images/exhaust.jpg',
+      'steering-cover-carbon-38cm': 'images/steering-cover-carbon.jpg',
+      'sparco-28cm': 'images/sparco.jpg',
+      'head-rest-pillow_bmw': 'images/head-rest-pillow_bmw.png',
+      'head-rest-pillow_honda': 'images/head-rest-pillow_honda.png',
+      'head-rest-pillow_kia': 'images/head-rest-pillow_kia.png',
+      'head-rest-pillow_mercedes': 'images/head-rest-pillow_mercedes.png',
+      'head-rest-pillow_ford': 'images/head-rest-pillow_ford.png',
+      'head-rest-pillow_isuzu': 'images/head-rest-pillow_isuzu.png',
+      'head-rest-pillow_mazda': 'images/head-rest-pillow_mazda.png',
+      'head-rest-pillow_suzuki': 'images/head-rest-pillow_suzuki.png',
+      'anti-slip-mat_volkswagen': 'images/anti-slip-mat_volkswagen.png',
+      'anti-slip-mat_mazda': 'images/anti-slip-mat_mazda.png',
+      'anti-slip-mat_chevrolet': 'images/anti-slip-mat_chevrolet.png',
+      'anti-slip-mat_kia': 'images/anti-slip-mat_kia.png',
+      'anti-slip-mat_bmw': 'images/anti-slip-mat_bmw.png',
+      'anti-slip-mat_suzuki': 'images/anti-slip-mat_suzuki.png',
+      'anti-slip-mat_toyota': 'images/anti-slip-mat_toyota.png',
+      'anti-slip-mat_mitsubishi': 'images/anti-slip-mat_mitsubishi.png',
+      'anti-slip-mat_honda': 'images/anti-slip-mat_honda.png',
+    };
+
+    const iconMap = {
+      'Head Rest Pillow': 'fa-car-side',
+      'Simple Rest Pillow': 'fa-couch',
+      'Anti-Slip Mat': 'fa-hand-peace',
+      'Plating Number': 'fa-grip-lines',
+      'Pillow Seat Belt': 'fa-shield-halved',
+      'Keyring': 'fa-key',
+      'Keyring Small Bag': 'fa-bag-shopping',
+      'Drink Holder': 'fa-mug-hot',
+      'Coasters': 'fa-circle',
+      'Exhaust': 'fa-fan',
+      'Steering Cover Carbon 38cm': 'fa-circle-dot',
+      'Sparco 28cm': 'fa-circle-dot'
+    };
+
+    function slugify(str) {
+      return (str || '').toLowerCase().replace(/ /g, '-').replace(/[^a-z0-9-]/g, '');
+    }
+
+    function getImageUrl(productName, variantName) {
+      if (variantName) {
+        const key = `${slugify(productName)}_${slugify(variantName)}`;
+        if (imageMap[key]) return imageMap[key];
+      }
+      return imageMap[slugify(productName)] || null;
+    }
+
+    function getIcon(name) { return iconMap[name] || 'fa-car'; }
+
+    function esc(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    const categories = [
+      { name: 'all', label: 'All' },
+      { name: 'Lighting', label: 'Lighting 💡' },
+      { name: 'Exterior', label: 'Exterior 🛡️' },
+      { name: 'Audio & Tech', label: 'Audio & Tech 🎵' },
+      { name: 'Interior', label: 'Interior 🚗' },
+      { name: 'Performance', label: 'Performance ⚙️' },
+      { name: 'Care & Cleaning', label: 'Care & Cleaning 🧹' },
+      { name: 'Tools', label: 'Tools 🔧' },
+      { name: 'Custom Styling', label: 'Custom Styling 🎨' }
+    ];
+
+    const categoryMapping = {
+      1: 'Interior', // Head Rest Pillow
+      2: 'Interior', // Simple Rest Pillow
+      3: 'Interior', // Anti-Slip Mat
+      4: 'Exterior', // Plating Number
+      5: 'Interior', // Pillow Seat Belt
+      6: 'Custom Styling', // Keyring
+      7: 'Custom Styling', // Keyring Small Bag
+      8: 'Interior', // Drink Holder
+      9: 'Interior', // Coasters
+      10: 'Performance', // Exhaust
+      11: 'Interior', // Steering Cover Carbon 38cm
+      12: 'Interior' // Sparco 28cm
+    };
+
+    function getProductCategory(product) {
+      if (categoryMapping[product.id]) {
+        return categoryMapping[product.id];
+      }
+      const name = (product.name || '').toLowerCase();
+      const desc = (product.description || '').toLowerCase();
+      
+      if (name.includes('light') || name.includes('led') || name.includes('fog') || name.includes('bulb') ||
+          desc.includes('light') || desc.includes('led') || desc.includes('fog') || desc.includes('bulb')) {
+        return 'Lighting';
+      }
+      if (name.includes('stereo') || name.includes('speaker') || name.includes('cam') || name.includes('gps') || name.includes('audio') ||
+          desc.includes('stereo') || desc.includes('speaker') || desc.includes('cam') || desc.includes('gps') || desc.includes('audio')) {
+        return 'Audio & Tech';
+      }
+      if (name.includes('exhaust') || name.includes('filter') || name.includes('suspension') || name.includes('tuning') ||
+          desc.includes('exhaust') || desc.includes('filter') || desc.includes('suspension') || desc.includes('tuning')) {
+        return 'Performance';
+      }
+      if (name.includes('polish') || name.includes('wax') || name.includes('clean') || name.includes('wash') ||
+          desc.includes('polish') || desc.includes('wax') || desc.includes('clean') || desc.includes('wash')) {
+        return 'Care & Cleaning';
+      }
+      if (name.includes('jack') || name.includes('starter') || name.includes('inflator') || name.includes('emergency') || name.includes('tool') ||
+          desc.includes('jack') || desc.includes('starter') || desc.includes('inflator') || desc.includes('emergency') || desc.includes('tool')) {
+        return 'Tools';
+      }
+      if (name.includes('decal') || name.includes('wrap') || name.includes('badge') || name.includes('keyring') ||
+          desc.includes('decal') || desc.includes('wrap') || desc.includes('badge') || desc.includes('keyring')) {
+        return 'Custom Styling';
+      }
+      if (name.includes('kit') || name.includes('spoiler') || name.includes('trim') || name.includes('plate') || name.includes('mudguard') ||
+          desc.includes('kit') || desc.includes('spoiler') || desc.includes('trim') || desc.includes('plate') || desc.includes('mudguard')) {
+        return 'Exterior';
+      }
+      if (name.includes('pillow') || name.includes('seat') || name.includes('mat') || name.includes('cover') || name.includes('holder') || name.includes('coaster') || name.includes('organizer') ||
+          desc.includes('pillow') || desc.includes('seat') || desc.includes('mat') || desc.includes('cover') || desc.includes('holder') || desc.includes('coaster') || desc.includes('organizer')) {
+        return 'Interior';
+      }
+      return 'Interior';
+    }
+
+    // ─── INIT ───
+    async function init() {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      try {
+        const [{ data: products, error: pe }, { data: variants, error: ve }] = await Promise.all([
+          supabaseClient.from('products').select('*').order('id'),
+          supabaseClient.from('product_variants').select('*')
+        ]);
+        if (pe) throw pe;
+        if (ve) throw ve;
+        allProducts = products;
+        allVariants = variants;
+      } catch (err) {
+        console.warn('Supabase fetch failed. Falling back to local data:', err);
+        allProducts = getLocalProductsFallback();
+        allVariants = getLocalVariantsFallback();
+      }
+
+      // Parse category from URL query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const catParam = urlParams.get('category');
+      if (catParam) {
+        const matched = categories.find(c => c.name.toLowerCase() === catParam.toLowerCase());
+        if (matched) {
+          currentCategory = matched.name;
+        }
+      }
+
+      // Setup search bar listener
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          searchTerm = e.target.value.toLowerCase().trim();
+          renderProducts();
+        });
+      }
+
+      buildFilters();
+      renderProducts();
+    }
+
+    // ─── FILTERS ───
+    function buildFilters() {
+      // 1. Build Category Filters
+      const catContainer = document.getElementById('categoryFilters');
+      catContainer.innerHTML = categories.map(c => `
+        <button class="filter-btn ${c.name === currentCategory ? 'active' : ''}" data-category="${esc(c.name)}">
+          ${esc(c.label)}
+        </button>
+      `).join('');
+
+      // Add event listeners to category buttons
+      catContainer.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          catContainer.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentCategory = btn.dataset.category;
+          
+          // Update URL query parameter without full page reload
+          const url = new URL(window.location);
+          if (currentCategory === 'all') {
+            url.searchParams.delete('category');
+          } else {
+            url.searchParams.set('category', currentCategory);
+          }
+          window.history.pushState({}, '', url);
+
+          renderProducts();
+        });
+      });
+
+      // 2. Build Brand Filters
+      const brands = ['all', ...new Set(
+        allVariants.filter(v => v.variant_type === 'brand' && v.variant_name).map(v => v.variant_name)
+      )];
+      const brandContainer = document.getElementById('brandFilters');
+      brandContainer.innerHTML = brands.map(b => `
+        <button class="filter-btn ${b === currentFilter ? 'active' : ''}" data-brand="${esc(b)}">
+          ${b === 'all' ? 'All' : esc(b)}
+        </button>`).join('');
+
+      // Add event listeners to brand buttons
+      brandContainer.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          brandContainer.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentFilter = btn.dataset.brand;
+          renderProducts();
+        });
+      });
+    }
+
+    // ─── RENDER ───
+    function renderProducts() {
+      const grid = document.getElementById('productsGrid');
+      let list = [...allProducts];
+
+      // Filter by category
+      if (currentCategory !== 'all') {
+        list = list.filter(p => getProductCategory(p) === currentCategory);
+      }
+
+      // Filter by brand
+      if (currentFilter !== 'all') {
+        const ids = new Set(allVariants.filter(v => v.variant_type === 'brand' && v.variant_name === currentFilter).map(v => v.product_id));
+        list = list.filter(p => ids.has(p.id));
+      }
+
+      // Filter by search term
+      if (searchTerm) {
+        list = list.filter(p => 
+          p.name.toLowerCase().includes(searchTerm) || 
+          (p.description || '').toLowerCase().includes(searchTerm)
+        );
+      }
+
+      const countEl = document.getElementById('productCount');
+      countEl.innerHTML = `Showing <strong>${list.length}</strong> product${list.length !== 1 ? 's' : ''}`;
+
+      if (!list.length) {
+        grid.innerHTML = '<div class="state-box"><i class="fas fa-box-open"></i>No products found for this filter.</div>';
+        return;
+      }
+
+      grid.innerHTML = list.map(product => {
+        const variants   = allVariants.filter(v => v.product_id === product.id);
+        const brands     = variants.filter(v => v.variant_type === 'brand');
+        const minPrice   = Math.min(...variants.map(v => v.price), product.base_price);
+        const firstBrand = brands[0];
+        const imgUrl     = firstBrand ? getImageUrl(product.name, firstBrand.variant_name) : getImageUrl(product.name);
+
+        return `<div class="product-card" onclick="openModal(${product.id})">
+          <div class="product-image">
+            ${imgUrl
+              ? `<img src="${imgUrl}" alt="${esc(product.name)}" loading="lazy"
+                   onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder\\'><i class=\\'fas ${getIcon(product.name)}\\'></i><span>${esc(product.name)}</span></div>'">`
+              : `<div class="product-image-placeholder"><i class="fas ${getIcon(product.name)}"></i><span>${esc(product.name)}</span></div>`}
+          </div>
+          <div class="product-info">
+            <div class="product-name">${esc(product.name)}</div>
+            <div class="product-price">€${minPrice}${brands.length ? '<small> from</small>' : ''}</div>
+            ${brands.length ? `<div class="product-brands">
+              ${brands.slice(0,5).map(v => `<span class="brand-tag">${esc(v.variant_name)}</span>`).join('')}
+              ${brands.length > 5 ? `<span class="brand-tag">+${brands.length-5} more</span>` : ''}
+            </div>` : ''}
+            <div class="view-details">
+              View Details <i class="fas fa-arrow-right"></i>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ─── MODAL ───
+    function openModal(productId) {
+      const product = allProducts.find(p => p.id === productId);
+      if (!product) return;
+      currentProduct = product;
+      const variants = allVariants.filter(v => v.product_id === productId);
+      currentVariant = variants[0] || null;
+
+      const byType = {};
+      variants.forEach(v => { (byType[v.variant_type] = byType[v.variant_type] || []).push(v); });
+
+      const imgUrl = currentVariant
+        ? getImageUrl(product.name, currentVariant.variant_name)
+        : getImageUrl(product.name);
+
+      document.getElementById('modalContent').innerHTML = `
+        <div class="modal-inner">
+          <div class="modal-image" id="modalImg">
+            ${imgUrl
+              ? `<img src="${imgUrl}" alt="${esc(product.name)}" onerror="this.parentElement.innerHTML='<i class=\\'fas ${getIcon(product.name)} fa-4x\\'></i>'">`
+              : `<i class="fas ${getIcon(product.name)} fa-4x"></i>`}
+          </div>
+          <div class="modal-body">
+            <div class="modal-eyebrow">Car Accessories</div>
+            <div class="modal-title">${esc(product.name)}</div>
+            <p class="modal-desc">${esc(product.description || 'Premium car accessory crafted for quality, durability, and style.')}</p>
+            <div id="variantSelectors">${renderVariantSelectors(byType)}</div>
+            <div class="price-display">
+              <span class="price-label">Price</span>
+              <span class="price-value" id="modalPrice">€${currentVariant ? currentVariant.price : product.base_price}</span>
+            </div>
+            <button class="btn-cart" onclick="addToCart()">
+              <i class="fas fa-cart-plus"></i> Add to Cart
+            </button>
+          </div>
+        </div>`;
+
+      document.getElementById('productModal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function renderVariantSelectors(byType) {
+      return Object.entries(byType).map(([type, variants]) => `
+        <div class="variant-selector">
+          <span class="variant-label">Select ${type.charAt(0).toUpperCase() + type.slice(1)}:</span>
+          <div class="variant-buttons">
+            ${variants.map(v => `
+              <button class="variant-btn ${currentVariant?.id === v.id ? 'selected' : ''}"
+                      onclick="selectVariant(${v.id})">
+                ${esc(v.variant_name)}
+              </button>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+
+    window.selectVariant = function(variantId) {
+      const variant = allVariants.find(v => v.id === variantId);
+      if (!variant) return;
+      currentVariant = variant;
+      document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('selected'));
+      event.target.classList.add('selected');
+      document.getElementById('modalPrice').textContent = `€${variant.price}`;
+      const imgUrl = getImageUrl(currentProduct.name, variant.variant_name) || getImageUrl(currentProduct.name);
+      const imgBox = document.getElementById('modalImg');
+      imgBox.innerHTML = imgUrl
+        ? `<img src="${imgUrl}" alt="${esc(currentProduct.name)}" onerror="this.parentElement.innerHTML='<i class=\\'fas ${getIcon(currentProduct.name)} fa-4x\\'></i>'">`
+        : `<i class="fas ${getIcon(currentProduct.name)} fa-4x"></i>`;
+    };
+
+    function closeModal() {
+      document.getElementById('productModal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    window.addToCart = function() {
+      const p = currentProduct, v = currentVariant;
+      // Attach image for cart display
+      const itemWithImage = {
+        ...p,
+        _imageUrl: getImageUrl(p.name, v?.variant_name) || getImageUrl(p.name)
+      };
+      Cart.addItem(itemWithImage, v);
+      closeModal();
+      showToast(`${p.name}${v ? ' – ' + v.variant_name : ''} added to cart!`);
+      // Open cart drawer so user sees item added
+      setTimeout(() => Cart.open(), 350);
+    };
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // close on backdrop / escape
+    document.getElementById('productModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+    function getLocalProductsFallback() {
+      return [
+        { id: 1, name: 'Head Rest Pillow', description: 'Premium head rest pillow for cars', base_price: 20 },
+        { id: 2, name: 'Simple Rest Pillow', description: 'Basic comfortable rest pillow', base_price: 8 },
+        { id: 3, name: 'Anti-Slip Mat', description: 'Prevents items from sliding', base_price: 5 },
+        { id: 4, name: 'Plating Number', description: 'Custom license plate frame', base_price: 10 },
+        { id: 5, name: 'Pillow Seat Belt', description: 'Comfortable seat belt pillow', base_price: 15 },
+        { id: 6, name: 'Keyring', description: 'Premium car keyring', base_price: 5 },
+        { id: 7, name: 'Keyring Small Bag', description: 'Keyring with small bag', base_price: 10 },
+        { id: 8, name: 'Drink Holder', description: 'Car cup holder organizer', base_price: 5 },
+        { id: 9, name: 'Coasters', description: 'Car cup holder coasters', base_price: 3 },
+        { id: 10, name: 'Exhaust', description: 'Performance exhaust system', base_price: 25 },
+        { id: 11, name: 'Steering Cover Carbon 38cm', description: 'Carbon fiber steering wheel cover 38cm', base_price: 20 },
+        { id: 12, name: 'Sparco 28cm', description: 'Sparco steering wheel cover 28cm', base_price: 15 }
+      ];
+    }
+
+    function getLocalVariantsFallback() {
+      return [
+        { id: 1, product_id: 1, variant_name: 'Mercedes', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 2, product_id: 1, variant_name: 'BMW', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 3, product_id: 1, variant_name: 'Honda', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 4, product_id: 1, variant_name: 'Kia', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 5, product_id: 1, variant_name: 'Ford', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 6, product_id: 1, variant_name: 'Isuzu', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 7, product_id: 1, variant_name: 'Mazda', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 8, product_id: 1, variant_name: 'Suzuki', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 9, product_id: 3, variant_name: 'Volkswagen', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 10, product_id: 3, variant_name: 'Mazda', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 11, product_id: 3, variant_name: 'Chevrolet', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 12, product_id: 3, variant_name: 'Kia', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 13, product_id: 3, variant_name: 'BMW', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 14, product_id: 3, variant_name: 'Suzuki', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 15, product_id: 3, variant_name: 'Toyota', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 16, product_id: 3, variant_name: 'Mitsubishi', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 17, product_id: 3, variant_name: 'Honda', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 18, product_id: 4, variant_name: 'Mercedes', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 19, product_id: 4, variant_name: 'BMW', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 20, product_id: 4, variant_name: 'Toyota', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 21, product_id: 4, variant_name: 'Audi', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 22, product_id: 4, variant_name: 'Mazda', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 23, product_id: 4, variant_name: 'Ford', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 24, product_id: 4, variant_name: 'Nissan', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 25, product_id: 4, variant_name: 'Suzuki', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 26, product_id: 4, variant_name: 'Honda', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 27, product_id: 4, variant_name: 'Renault', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 28, product_id: 4, variant_name: 'Volkswagen', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 29, product_id: 5, variant_name: 'Mitsubishi', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 30, product_id: 5, variant_name: 'Honda', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 31, product_id: 5, variant_name: 'Nissan', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 32, product_id: 5, variant_name: 'BMW', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 33, product_id: 5, variant_name: 'Mazda', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 34, product_id: 5, variant_name: 'Ford', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 35, product_id: 5, variant_name: 'AMG', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 36, product_id: 5, variant_name: 'Toyota', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 37, product_id: 5, variant_name: 'Suzuki', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 38, product_id: 5, variant_name: 'Merc', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 39, product_id: 5, variant_name: 'Isuzu', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 40, product_id: 5, variant_name: 'Volvo', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 41, product_id: 5, variant_name: 'TRD', variant_type: 'brand', price: 15, stock_quantity: 0 },
+        { id: 42, product_id: 5, variant_name: '2pcs pack', variant_type: 'pack', price: 10, stock_quantity: 0 },
+        { id: 43, product_id: 6, variant_name: 'AMG', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 44, product_id: 6, variant_name: 'Mitsubishi', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 45, product_id: 6, variant_name: 'Volvo', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 46, product_id: 6, variant_name: 'Volkswagen', variant_type: 'brand', price: 5, stock_quantity: 0 },
+        { id: 47, product_id: 7, variant_name: 'Honda', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 48, product_id: 7, variant_name: 'Mazda', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 49, product_id: 7, variant_name: 'Mitsubishi', variant_type: 'brand', price: 10, stock_quantity: 0 },
+        { id: 50, product_id: 9, variant_name: 'Volkswagen', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 51, product_id: 9, variant_name: 'BMW', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 52, product_id: 9, variant_name: 'Honda', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 53, product_id: 9, variant_name: 'Mazda', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 54, product_id: 9, variant_name: 'Nissan', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 55, product_id: 9, variant_name: 'Mitsubishi', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 56, product_id: 9, variant_name: 'Suzuki', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 57, product_id: 9, variant_name: 'Merc', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 58, product_id: 9, variant_name: 'Toyota', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 59, product_id: 9, variant_name: 'Ford', variant_type: 'brand', price: 3, stock_quantity: 0 },
+        { id: 60, product_id: 10, variant_name: 'Standard', variant_type: 'option', price: 25, stock_quantity: 0 },
+        { id: 61, product_id: 10, variant_name: 'Premium', variant_type: 'option', price: 30, stock_quantity: 0 },
+        { id: 62, product_id: 11, variant_name: 'Mazda', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 63, product_id: 11, variant_name: 'Nissan', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 64, product_id: 11, variant_name: 'Isuzu', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 65, product_id: 11, variant_name: 'Volkswagen', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 66, product_id: 11, variant_name: 'Honda', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 67, product_id: 11, variant_name: 'Suzuki', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 68, product_id: 11, variant_name: 'BMW', variant_type: 'brand', price: 20, stock_quantity: 0 },
+        { id: 69, product_id: 12, variant_name: 'Black', variant_type: 'color', price: 15, stock_quantity: 0 },
+        { id: 70, product_id: 12, variant_name: 'Carbon', variant_type: 'color', price: 15, stock_quantity: 0 },
+        { id: 71, product_id: 12, variant_name: 'Grey', variant_type: 'color', price: 15, stock_quantity: 0 },
+        { id: 72, product_id: 12, variant_name: 'Dark Grey', variant_type: 'color', price: 15, stock_quantity: 0 }
+      ];
+    }
+
+    init();
+  </script>
+</body>
+</html>

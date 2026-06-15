@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"/>
+  <title>Checkout | Ormidia Car Accessories</title>
+  <meta name="description" content="Complete your order of premium car accessories from Ormidia Car Accessories, Ormidia, Cyprus."/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
+  <style>
+    :root {
+      --red: #D0021B;
+      --red-bright: #e8021e;
+      --red-light: #fef2f2;
+      --black: #1a1a1a;
+      --white: #ffffff;
+      --off-white: #f7f8fa;
+      --border: #e4e7ec;
+      --grey: #6b7280;
+      --grey-dark: #374151;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--off-white);
+      color: var(--black);
+      font-family: 'Barlow Condensed', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; height: 70px;
+      background: rgba(255,255,255,0.97);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 12px rgba(0,0,0,0.06);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 12px; cursor: pointer; text-decoration: none; }
+    .nav-logo img { height: 48px; width: 48px; border-radius: 50%; object-fit: cover; }
+    .nav-brand { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--black); }
+    .nav-brand span { color: var(--red); }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-back {
+      font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase; color: var(--grey-dark);
+      text-decoration: none; display: flex; align-items: center; gap: 8px;
+      transition: color 0.2s;
+    }
+    .nav-back:hover { color: var(--red); }
+    .nav-secure {
+      display: flex; align-items: center; gap: 6px;
+      font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase; color: var(--grey);
+    }
+    .nav-secure i { color: #22c55e; }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .nav-secure { display: none; }
+    }
+
+    /* ─── MAIN ─── */
+    .checkout-wrap {
+      max-width: 1100px; margin: 0 auto;
+      padding: 100px 24px 80px;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 32px;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .checkout-wrap { grid-template-columns: 1fr; }
+      .order-summary { order: -1; }
+    }
+
+    /* ─── SECTION CARD ─── */
+    .checkout-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px;
+    }
+
+    .card-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px; letter-spacing: 1.5px; color: var(--black);
+      margin-bottom: 6px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .card-title i { color: var(--red); font-size: 22px; }
+    .card-subtitle {
+      font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600;
+      letter-spacing: 1px; color: var(--grey); margin-bottom: 28px;
+      text-transform: uppercase;
+    }
+
+    /* ─── FORM ─── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .form-group { display: flex; flex-direction: column; gap: 7px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--grey-dark);
+      display: flex; align-items: center; gap: 4px;
+    }
+    label .req { color: var(--red); }
+
+    input, textarea {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px; color: var(--black);
+      background: var(--white);
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, textarea:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(208,2,27,0.1);
+    }
+    input.error, textarea.error {
+      border-color: var(--red);
+      background: var(--red-light);
+    }
+    textarea { resize: vertical; min-height: 90px; }
+    .field-error {
+      font-family: 'Rajdhani', sans-serif; font-size: 12px; font-weight: 600;
+      letter-spacing: 0.5px; color: var(--red); display: none;
+    }
+    .field-error.show { display: block; }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .form-group.full { grid-column: 1; }
+    }
+
+    /* ─── SUBMIT BUTTON ─── */
+    .btn-place-order {
+      margin-top: 28px; width: 100%; padding: 16px;
+      background: var(--red); color: var(--white);
+      border: none; border-radius: 4px; cursor: pointer;
+      font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.2s, transform 0.15s;
+      box-shadow: 0 6px 20px rgba(208,2,27,0.25);
+    }
+    .btn-place-order:hover:not(:disabled) { background: var(--red-bright); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(208,2,27,0.35); }
+    .btn-place-order:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+    .order-note {
+      margin-top: 14px; text-align: center;
+      font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 600;
+      letter-spacing: 0.5px; color: var(--grey);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .order-note i { color: #22c55e; }
+
+    /* ─── ORDER SUMMARY ─── */
+    .order-summary {}
+    .summary-items { margin-bottom: 20px; max-height: 380px; overflow-y: auto; }
+    .summary-items::-webkit-scrollbar { width: 4px; }
+    .summary-items::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .summary-item {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 12px 0; border-bottom: 1px solid var(--off-white);
+      gap: 10px;
+    }
+    .summary-item:last-child { border-bottom: none; }
+    .summary-item-info { flex: 1; min-width: 0; }
+    .summary-item-name {
+      font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700;
+      color: var(--black); margin-bottom: 2px;
+    }
+    .summary-item-meta {
+      font-size: 13px; color: var(--grey); font-weight: 500;
+    }
+    .summary-item-price {
+      font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+      color: var(--red); letter-spacing: 0.5px; white-space: nowrap;
+    }
+    .summary-item-qty {
+      display: inline-block;
+      background: var(--off-white); border-radius: 3px;
+      padding: 1px 8px; font-size: 12px; font-weight: 700;
+      letter-spacing: 0.5px; color: var(--grey-dark);
+      margin-right: 6px;
+    }
+
+    .summary-divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    .summary-row {
+      display: flex; justify-content: space-between;
+      font-family: 'Rajdhani', sans-serif; font-size: 14px;
+      font-weight: 600; letter-spacing: 0.5px; color: var(--grey);
+      margin-bottom: 8px;
+    }
+    .summary-row.total {
+      font-size: 16px; font-weight: 700; color: var(--black);
+      text-transform: uppercase; letter-spacing: 1.5px;
+      padding-top: 8px;
+    }
+    .summary-row.total .total-price {
+      font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+      color: var(--red); letter-spacing: 1px;
+    }
+
+    .delivery-note {
+      margin-top: 16px; padding: 12px 16px;
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: 4px;
+      font-family: 'Rajdhani', sans-serif; font-size: 13px;
+      font-weight: 600; letter-spacing: 0.5px; color: #15803d;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .delivery-note i { margin-top: 1px; flex-shrink: 0; }
+
+    .empty-cart-notice {
+      text-align: center; padding: 40px 20px;
+      color: var(--grey);
+      font-family: 'Rajdhani', sans-serif; font-size: 16px;
+      font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    }
+    .empty-cart-notice i { display: block; font-size: 48px; color: var(--border); margin-bottom: 12px; }
+    .empty-cart-notice a {
+      display: inline-block; margin-top: 14px;
+      background: var(--red); color: #fff; text-decoration: none;
+      padding: 10px 24px; border-radius: 3px;
+      font-size: 14px; font-weight: 700; letter-spacing: 1.5px;
+      transition: background 0.2s;
+    }
+    .empty-cart-notice a:hover { background: var(--red-bright); }
+
+    /* ─── SUCCESS OVERLAY ─── */
+    #successOverlay {
+      display: none; position: fixed; inset: 0;
+      background: var(--white); z-index: 9999;
+      flex-direction: column; align-items: center; justify-content: center;
+      padding: 40px 24px; text-align: center;
+    }
+    #successOverlay.show { display: flex; }
+
+    .success-icon {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: #f0fdf4; border: 3px solid #22c55e;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 28px;
+      animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .success-icon i { font-size: 40px; color: #22c55e; }
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .success-eyebrow {
+      font-family: 'Rajdhani', sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase; color: #22c55e;
+      margin-bottom: 12px;
+    }
+    .success-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(36px, 6vw, 64px);
+      letter-spacing: 2px; color: var(--black);
+      line-height: 1; margin-bottom: 16px;
+    }
+    .success-title span { color: var(--red); }
+    .success-text {
+      font-size: 16px; color: var(--grey); max-width: 480px;
+      line-height: 1.65; margin-bottom: 8px;
+    }
+    .success-order-id {
+      display: inline-block; margin-bottom: 32px;
+      background: var(--off-white); border: 1px solid var(--border);
+      border-radius: 4px; padding: 8px 20px;
+      font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700;
+      letter-spacing: 2px; color: var(--grey-dark);
+    }
+    .success-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .btn-home {
+      padding: 12px 28px; background: var(--black); color: var(--white);
+      border-radius: 3px; text-decoration: none;
+      font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      transition: background 0.2s;
+    }
+    .btn-home:hover { background: #333; }
+    .btn-shop-more {
+      padding: 12px 28px; background: var(--red); color: var(--white);
+      border-radius: 3px; text-decoration: none;
+      font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      transition: background 0.2s;
+    }
+    .btn-shop-more:hover { background: var(--red-bright); }
+
+    /* ─── SPINNER ─── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .fa-spin-custom { animation: spin 0.8s linear infinite; }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="index.html" class="nav-logo">
+      <img src="logo.jpg" alt="Ormidia CA Logo" onerror="this.style.display='none'"/>
+      <div class="nav-brand">Ormidia <span>CA</span></div>
+    </a>
+    <div class="nav-right">
+      <a href="products.html" class="nav-back">
+        <i class="fas fa-arrow-left"></i> Back to Products
+      </a>
+      <span class="nav-secure"><i class="fas fa-lock"></i> Secure Checkout</span>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="checkout-wrap">
+
+    <!-- LEFT: FORM -->
+    <div class="checkout-card" id="formCard">
+      <h1 class="card-title"><i class="fas fa-user-circle"></i> Your Details</h1>
+      <p class="card-subtitle">Fill in your info — we'll arrange delivery with you</p>
+
+      <form id="checkoutForm" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="custName">Full Name <span class="req">*</span></label>
+            <input type="text" id="custName" placeholder="e.g. Nikos Papadopoulos" autocomplete="name"/>
+            <span class="field-error" id="errName">Please enter your full name.</span>
+          </div>
+          <div class="form-group">
+            <label for="custPhone">Phone Number <span class="req">*</span></label>
+            <input type="tel" id="custPhone" placeholder="e.g. 99876586" autocomplete="tel"/>
+            <span class="field-error" id="errPhone">Please enter your phone number.</span>
+          </div>
+          <div class="form-group full">
+            <label for="custEmail">Email Address</label>
+            <input type="email" id="custEmail" placeholder="you@example.com" autocomplete="email"/>
+            <span class="field-error" id="errEmail">Please enter a valid email.</span>
+          </div>
+          <div class="form-group full">
+            <label for="custAddress">Delivery Address <span class="req">*</span></label>
+            <input type="text" id="custAddress" placeholder="Street, City, Postal Code" autocomplete="street-address"/>
+            <span class="field-error" id="errAddress">Please enter your delivery address.</span>
+          </div>
+          <div class="form-group full">
+            <label for="custNotes">Order Notes <span style="font-weight:400;color:var(--grey)">(optional)</span></label>
+            <textarea id="custNotes" placeholder="Any special requests, preferred delivery time, etc."></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-place-order" id="placeOrderBtn">
+          <i class="fas fa-check-circle"></i> Place Order
+        </button>
+        <p class="order-note">
+          <i class="fas fa-shield-halved"></i>
+          Your information is safe. We will contact you to confirm delivery.
+        </p>
+      </form>
+    </div>
+
+    <!-- RIGHT: ORDER SUMMARY -->
+    <div class="checkout-card order-summary">
+      <div class="card-title"><i class="fas fa-receipt"></i> Order Summary</div>
+      <p class="card-subtitle" id="summaryCount">Loading cart…</p>
+      <div class="summary-items" id="summaryItems"></div>
+      <div class="summary-divider"></div>
+      <div id="summaryTotals"></div>
+      <div class="delivery-note">
+        <i class="fas fa-truck"></i>
+        <span>Delivery will be arranged with you after order confirmation. We serve Ormidia and surrounding areas.</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- SUCCESS OVERLAY -->
+  <div id="successOverlay">
+    <div class="success-icon"><i class="fas fa-check"></i></div>
+    <p class="success-eyebrow">Order Confirmed</p>
+    <h2 class="success-title">Thank You <span>For Your Order!</span></h2>
+    <p class="success-text">We've received your order and will contact you shortly on your phone number to confirm delivery details.</p>
+    <div class="success-order-id" id="successOrderId">Order #—</div>
+    <div class="success-actions">
+      <a href="index.html" class="btn-home"><i class="fas fa-home"></i> Home</a>
+      <a href="products.html" class="btn-shop-more"><i class="fas fa-shopping-bag"></i> Shop More</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="cart.js"></script>
+  <script src="auth.js"></script>
+  <script>
+    const SUPABASE_URL      = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
+    let supabaseClient = null;
+    try {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch(e) {
+      console.warn('Supabase init failed', e);
+    }
+
+    // Pre-fill form if user is logged in
+    function prefillFromUser() {
+      const user = window.Auth?.getUser();
+      if (!user) return;
+      const name = user.user_metadata?.full_name || '';
+      const email = user.email || '';
+      if (name) document.getElementById('custName').value = name;
+      if (email) document.getElementById('custEmail').value = email;
+    }
+    // Wait for auth to resolve then prefill
+    setTimeout(prefillFromUser, 600);
+
+    /* ─── RENDER ORDER SUMMARY ─── */
+    function renderSummary() {
+      const items = Cart.getItems();
+      const countEl = document.getElementById('summaryCount');
+      const itemsEl = document.getElementById('summaryItems');
+      const totalsEl = document.getElementById('summaryTotals');
+      const placeBtn = document.getElementById('placeOrderBtn');
+
+      if (!items.length) {
+        countEl.textContent = '0 items';
+        itemsEl.innerHTML = `
+          <div class="empty-cart-notice">
+            <i class="fas fa-shopping-cart"></i>
+            Your cart is empty
+            <a href="products.html">Browse Products</a>
+          </div>`;
+        totalsEl.innerHTML = '';
+        placeBtn.disabled = true;
+        return;
+      }
+
+      countEl.textContent = `${Cart.getCount()} item${Cart.getCount() !== 1 ? 's' : ''}`;
+      placeBtn.disabled = false;
+
+      itemsEl.innerHTML = items.map(item => `
+        <div class="summary-item">
+          <div class="summary-item-info">
+            <div class="summary-item-name">${escHtml(item.name)}</div>
+            <div class="summary-item-meta">
+              <span class="summary-item-qty">×${item.quantity}</span>
+              ${item.variant_name ? escHtml(item.variant_name) : ''}
+            </div>
+          </div>
+          <div class="summary-item-price">€${(item.price * item.quantity).toFixed(2)}</div>
+        </div>`).join('');
+
+      const total = Cart.getTotal();
+      totalsEl.innerHTML = `
+        <div class="summary-row">
+          <span>Subtotal</span><span>€${total.toFixed(2)}</span>
+        </div>
+        <div class="summary-row">
+          <span>Delivery</span><span style="color:#22c55e;font-weight:700;">TBD</span>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <span class="total-price">€${total.toFixed(2)}</span>
+        </div>`;
+    }
+
+    function escHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, m =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    /* ─── VALIDATION ─── */
+    function validateField(id, errId, condition) {
+      const el = document.getElementById(id);
+      const err = document.getElementById(errId);
+      if (!condition(el.value.trim())) {
+        el.classList.add('error');
+        err.classList.add('show');
+        return false;
+      }
+      el.classList.remove('error');
+      err.classList.remove('show');
+      return true;
+    }
+
+    function clearError(id, errId) {
+      document.getElementById(id)?.classList.remove('error');
+      document.getElementById(errId)?.classList.remove('show');
+    }
+
+    ['custName','custPhone','custEmail','custAddress'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', () => clearError(id, 'err'+id.replace('cust','')));
+    });
+
+    /* ─── SUBMIT ─── */
+    document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Validate
+      let ok = true;
+      ok = validateField('custName',    'errName',    v => v.length >= 2) && ok;
+      ok = validateField('custPhone',   'errPhone',   v => v.length >= 6) && ok;
+      ok = validateField('custAddress', 'errAddress', v => v.length >= 5) && ok;
+
+      const emailVal = document.getElementById('custEmail').value.trim();
+      if (emailVal) {
+        ok = validateField('custEmail', 'errEmail', v => /^[^@]+@[^@]+\.[^@]+$/.test(v)) && ok;
+      }
+
+      if (!ok) return;
+
+      const items = Cart.getItems();
+      if (!items.length) return;
+
+      // Show loading
+      const btn = document.getElementById('placeOrderBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-circle-notch fa-spin-custom"></i> Placing Order…';
+
+      const orderData = {
+        customer_name:    document.getElementById('custName').value.trim(),
+        customer_phone:   document.getElementById('custPhone').value.trim(),
+        customer_email:   emailVal || null,
+        delivery_address: document.getElementById('custAddress').value.trim(),
+        notes:            document.getElementById('custNotes').value.trim() || null,
+        items:            items,
+        total:            parseFloat(Cart.getTotal().toFixed(2)),
+        status:           'pending',
+        user_id:          window.Auth?.getUser()?.id || null,
+      };
+
+      let orderId = null;
+
+      // Try saving to Supabase
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('orders')
+            .insert([orderData])
+            .select('id')
+            .single();
+          if (error) throw error;
+          orderId = data?.id;
+        } catch (err) {
+          console.warn('Supabase order save failed, saving locally:', err);
+        }
+      }
+
+      // Fallback: save to localStorage with a generated ID
+      if (!orderId) {
+        const localOrders = JSON.parse(localStorage.getItem('ormidia_orders') || '[]');
+        const localId = `L${Date.now()}`;
+        localOrders.push({ ...orderData, local_id: localId, created_at: new Date().toISOString() });
+        localStorage.setItem('ormidia_orders', JSON.stringify(localOrders));
+        orderId = localId;
+      }
+
+      // Clear cart
+      Cart.clear();
+
+      // Show success
+      document.getElementById('successOrderId').textContent = `Order #${orderId}`;
+      document.getElementById('successOverlay').classList.add('show');
+    });
+
+    /* ─── BOOT ─── */
+    renderSummary();
+  </script>
+</body>
+</html>

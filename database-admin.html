@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ORMIDIA Database Admin - Full Control Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f2f5;
+      color: #1e293b;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .app-container {
+      display: flex;
+      height: 100vh;
+    }
+    /* Sidebar */
+    .sidebar {
+      width: 300px;
+      background: white;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 2px solid #E30613;
+      background: linear-gradient(135deg, #fff 0%, #fef5f5 100%);
+    }
+    .sidebar-header h2 {
+      font-size: 1.3rem;
+      color: #E30613;
+    }
+    .sidebar-header p {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 5px;
+    }
+    .db-list {
+      flex: 1;
+      padding: 1rem;
+    }
+    .db-item {
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+    .db-item:hover {
+      background: #fef9f5;
+      border-color: #E30613;
+      transform: translateX(5px);
+    }
+    .db-item.active {
+      background: #E30613;
+      color: white;
+      border-color: #E30613;
+    }
+    .db-name {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .db-size {
+      font-size: 0.7rem;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .toolbar {
+      background: white;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .toolbar h3 {
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary { background: #E30613; color: white; }
+    .btn-primary:hover { background: #b80510; transform: translateY(-1px); }
+    .btn-outline { background: white; border: 1px solid #cbd5e1; }
+    .btn-outline:hover { border-color: #E30613; color: #E30613; }
+    .btn-danger { background: #fee2e2; color: #b91c1c; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
+    /* Tables List */
+    .tables-list {
+      background: white;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      overflow-x: auto;
+    }
+    .table-chip {
+      padding: 6px 14px;
+      background: #f1f5f9;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    .table-chip:hover { background: #e2e8f0; }
+    .table-chip.active { background: #E30613; color: white; }
+    /* Data Viewer */
+    .data-viewer {
+      flex: 1;
+      overflow: auto;
+      padding: 1.5rem;
+      background: #f8fafc;
+    }
+    .data-table {
+      width: 100%;
+      background: white;
+      border-radius: 12px;
+      border-collapse: collapse;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .data-table th {
+      background: #f8fafc;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      background: white;
+    }
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .data-table tr:hover { background: #fef9f5; }
+    .action-icons i {
+      margin: 0 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    .edit-row { color: #3b82f6; }
+    .delete-row { color: #E30613; }
+    /* Query Editor */
+    .query-editor {
+      background: white;
+      border-top: 1px solid #e2e8f0;
+      padding: 1rem;
+    }
+    .query-editor textarea {
+      width: 100%;
+      font-family: monospace;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      visibility: hidden;
+      opacity: 0;
+      transition: 0.2s;
+    }
+    .modal.active { visibility: visible; opacity: 1; }
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 600px;
+      border-radius: 16px;
+      padding: 1.5rem;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-content input, .modal-content textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0 16px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+    }
+    .flex-buttons { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #1e293b;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      z-index: 2100;
+      font-size: 0.85rem;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .page-btn {
+      padding: 5px 10px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .page-btn.active { background: #E30613; color: white; border-color: #E30613; }
+    .sql-result { margin-top: 10px; }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h2><i class="fas fa-database"></i> ORMIDIA DB Admin</h2>
+      <p>Full Database Control Panel</p>
+    </div>
+    <div class="db-list" id="dbList">
+      <div class="loading">Loading databases...</div>
+    </div>
+    <div style="padding: 1rem; border-top: 1px solid #e2e8f0;">
+      <button class="btn btn-primary btn-sm" id="createDbBtn" style="width: 100%;">
+        <i class="fas fa-plus"></i> New Database
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="toolbar">
+      <h3 id="currentDbTitle"><i class="fas fa-server"></i> Select a database</h3>
+      <div>
+        <button class="btn btn-outline btn-sm" id="refreshTablesBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+        <button class="btn btn-primary btn-sm" id="createTableBtn"><i class="fas fa-plus"></i> New Table</button>
+        <button class="btn btn-outline btn-sm" id="showQueryBtn"><i class="fas fa-terminal"></i> SQL Query</button>
+      </div>
+    </div>
+
+    <div class="tables-list" id="tablesList"></div>
+
+    <div class="data-viewer" id="dataViewer">
+      <div class="loading">Select a table to view/edit data</div>
+    </div>
+
+    <!-- Query Editor (hidden by default) -->
+    <div class="query-editor" id="queryEditor" style="display: none;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <strong><i class="fas fa-terminal"></i> SQL Query</strong>
+        <button class="btn btn-sm btn-outline" id="closeQueryBtn">Close</button>
+      </div>
+      <textarea id="sqlQuery" rows="4" placeholder="SELECT * FROM products WHERE price < 20"></textarea>
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button class="btn btn-primary btn-sm" id="executeQueryBtn"><i class="fas fa-play"></i> Execute</button>
+      </div>
+      <div id="queryResult" class="sql-result"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div id="createDbModal" class="modal"><div class="modal-content"><h3>Create Database</h3><input type="text" id="newDbName" placeholder="database_name"><div class="flex-buttons"><button class="btn btn-outline" id="cancelDbModal">Cancel</button><button class="btn btn-primary" id="confirmCreateDb">Create</button></div></div></div>
+<div id="createTableModal" class="modal"><div class="modal-content"><h3>Create Table</h3><input type="text" id="newTableName" placeholder="table_name"><textarea id="columnsDef" rows="6" placeholder="id SERIAL PRIMARY KEY&#10;name VARCHAR(100) NOT NULL&#10;created_at TIMESTAMP DEFAULT NOW()"></textarea><div class="flex-buttons"><button class="btn btn-outline" id="cancelTableModal">Cancel</button><button class="btn btn-primary" id="confirmCreateTable">Create</button></div></div></div>
+<div id="editRowModal" class="modal"><div class="modal-content"><h3>Edit Row</h3><div id="editRowFields"></div><div class="flex-buttons"><button class="btn btn-outline" id="cancelEditModal">Cancel</button><button class="btn btn-primary" id="confirmEditRow">Save</button></div></div></div>
+<div id="insertRowModal" class="modal"><div class="modal-content"><h3>Insert Row</h3><div id="insertRowFields"></div><div class="flex-buttons"><button class="btn btn-outline" id="cancelInsertModal">Cancel</button><button class="btn btn-primary" id="confirmInsertRow">Insert</button></div></div></div>
+
+<script>
+let currentDatabase = null;
+let currentTableName = null;
+let currentColumns = [];
+let currentPrimaryKey = null;
+let currentPage = 1;
+let totalPages = 1;
+
+function showToast(msg, isError = false) {
+  let toast = document.querySelector('.toast');
+  if (!toast) { toast = document.createElement('div'); toast.className = 'toast'; document.body.appendChild(toast); }
+  toast.style.background = isError ? '#dc2626' : '#1e293b';
+  toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${msg}`;
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 3000);
+}
+
+async function apiCall(endpoint, method = 'GET', body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(endpoint, opts);
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+async function loadDatabases() {
+  try {
+    const data = await apiCall('/api/admin/databases');
+    const container = document.getElementById('dbList');
+    const systemDbs = ['postgres', 'template0', 'template1'];
+    const userDbs = data.databases.filter(db => !systemDbs.includes(db));
+    
+    if (userDbs.length === 0) {
+      container.innerHTML = '<div class="loading">No databases found</div>';
+      return;
+    }
+    
+    container.innerHTML = userDbs.map(db => `
+      <div class="db-item" data-db="${db}">
+        <div class="db-name"><i class="fas fa-database"></i> ${db}</div>
+        <div class="db-size">Click to manage</div>
+      </div>
+    `).join('');
+    
+    document.querySelectorAll('.db-item').forEach(el => {
+      el.addEventListener('click', () => selectDatabase(el.dataset.db));
+    });
+  } catch (err) {
+    document.getElementById('dbList').innerHTML = `<div class="loading" style="color:#E30613;">Error: ${err.message}</div>`;
+  }
+}
+
+async function selectDatabase(dbName) {
+  currentDatabase = dbName;
+  currentPage = 1;
+  document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${dbName}`;
+  
+  // Highlight selected database
+  document.querySelectorAll('.db-item').forEach(el => {
+    el.classList.remove('active');
+    if (el.dataset.db === dbName) el.classList.add('active');
+  });
+  
+  await loadTables();
+}
+
+async function loadTables() {
+  if (!currentDatabase) return;
+  try {
+    const data = await apiCall(`/api/admin/${currentDatabase}/tables`);
+    const container = document.getElementById('tablesList');
+    
+    if (data.tables.length === 0) {
+      container.innerHTML = '<div class="loading">No tables yet. Create one!</div>';
+      return;
+    }
+    
+    container.innerHTML = data.tables.map(table => `
+      <div class="table-chip" data-table="${table.tablename}">
+        📄 ${table.tablename} <span style="font-size:0.7rem;">(${table.column_count} cols)</span>
+      </div>
+    `).join('');
+    
+    document.querySelectorAll('.table-chip').forEach(el => {
+      el.addEventListener('click', () => loadTableData(el.dataset.table));
+    });
+    
+    if (data.tables.length > 0) loadTableData(data.tables[0].tablename);
+  } catch (err) {
+    showToast(err.message, true);
+  }
+}
+
+async function loadTableData(tableName, page = 1) {
+  currentTableName = tableName;
+  currentPage = page;
+  
+  try {
+    const data = await apiCall(`/api/admin/${currentDatabase}/data/${tableName}?page=${page}&limit=50`);
+    currentColumns = data.columns;
+    currentPrimaryKey = data.columns.find(c => c.isPrimary)?.name || data.columns[0]?.name;
+    totalPages = data.pagination.totalPages;
+    
+    renderTable(data.columns, data.rows, tableName, data.pagination);
+    
+    // Highlight active table
+    document.querySelectorAll('.table-chip').forEach(el => {
+      el.classList.remove('active');
+      if (el.dataset.table === tableName) el.classList.add('active');
+    });
+  } catch (err) {
+    document.getElementById('dataViewer').innerHTML = `<div class="loading" style="color:#E30613;">Error: ${err.message}</div>`;
+  }
+}
+
+function renderTable(columns, rows, tableName, pagination) {
+  if (!columns.length) {
+    document.getElementById('dataViewer').innerHTML = '<div class="loading">No columns found</div>';
+    return;
+  }
+  
+  let html = `<div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+    <strong><i class="fas fa-table"></i> ${tableName} (${pagination.totalRows} total rows)</strong>
+    <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
+  </div>
+  <div style="overflow-x: auto;">
+  <table class="data-table">
+    <thead><tr>${columns.map(col => `<th>${col.name}<br><small style="font-weight:normal;">${col.type}</small></th>`).join('')}<th style="width:100px">Actions</th></tr></thead>
+    <tbody>`;
+  
+  if (rows.length === 0) {
+    html += `<tr><td colspan="${columns.length + 1}" style="text-align:center;">No data. Click "Insert Row" to add</td></tr>`;
+  } else {
+    rows.forEach(row => {
+      html += `<tr>`;
+      columns.forEach(col => {
+        let val = row[col.name];
+        let display = (val === null || val === undefined) ? '<span style="color:#999;">NULL</span>' : 
+                      (typeof val === 'object' ? JSON.stringify(val) : String(val));
+        if (String(display).length > 100) display = display.substring(0, 100) + '...';
+        html += `<td style="max-width:300px; overflow-x:auto;">${display}</td>`;
+      });
+      html += `<td class="action-icons">
+        <i class="fas fa-edit edit-row" title="Edit"></i>
+        <i class="fas fa-trash-alt delete-row" title="Delete"></i>
+      </td></tr>`;
+    });
+  }
+  html += `</tbody></table></div>`;
+  
+  // Add pagination
+  if (pagination.totalPages > 1) {
+    html += `<div class="pagination">`;
+    for (let i = 1; i <= Math.min(pagination.totalPages, 10); i++) {
+      html += `<button class="page-btn ${i === pagination.currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+    }
+    html += `</div>`;
+  }
+  
+  document.getElementById('dataViewer').innerHTML = html;
+  
+  document.getElementById('insertRowBtn')?.addEventListener('click', () => openInsertRowModal(columns));
+  document.querySelectorAll('.edit-row').forEach((btn, idx) => btn.addEventListener('click', () => openEditRowModal(rows[idx], columns)));
+  document.querySelectorAll('.delete-row').forEach((btn, idx) => btn.addEventListener('click', () => deleteRow(rows[idx])));
+  document.querySelectorAll('.page-btn').forEach(btn => {
+    btn.addEventListener('click', () => loadTableData(tableName, parseInt(btn.dataset.page)));
+  });
+}
+
+function openInsertRowModal(columns) {
+  const container = document.getElementById('insertRowFields');
+  container.innerHTML = columns.map(col => `
+    <label>${col.name} (${col.type})</label>
+    <input type="text" id="ins_${col.name}" placeholder="Enter value">
+  `).join('');
+  document.getElementById('insertRowModal').classList.add('active');
+}
+
+document.getElementById('confirmInsertRow')?.addEventListener('click', async () => {
+  const rowData = {};
+  for (let col of currentColumns) {
+    const val = document.getElementById(`ins_${col.name}`)?.value;
+    if (val && val.trim()) rowData[col.name] = val;
+  }
+  try {
+    await apiCall(`/api/admin/${currentDatabase}/row/${currentTableName}`, 'POST', { row: rowData });
+    showToast('Row inserted successfully');
+    document.getElementById('insertRowModal').classList.remove('active');
+    loadTableData(currentTableName, currentPage);
+  } catch (err) { showToast(err.message, true); }
+});
+
+function openEditRowModal(row, columns) {
+  const container = document.getElementById('editRowFields');
+  container.innerHTML = columns.map(col => `
+    <label>${col.name}</label>
+    <input type="text" id="edit_${col.name}" value="${escapeHtml(String(row[col.name] || ''))}">
+  `).join('');
+  document.getElementById('editRowModal').classList.add('active');
+  window.editRowData = row;
+}
+
+document.getElementById('confirmEditRow')?.addEventListener('click', async () => {
+  const updatedRow = {};
+  for (let col of currentColumns) {
+    updatedRow[col.name] = document.getElementById(`edit_${col.name}`)?.value || null;
+  }
+  try {
+    await apiCall(`/api/admin/${currentDatabase}/row/${currentTableName}`, 'PUT', {
+      pkCol: currentPrimaryKey,
+      pkValue: window.editRowData[currentPrimaryKey],
+      updatedRow
+    });
+    showToast('Row updated');
+    document.getElementById('editRowModal').classList.remove('active');
+    loadTableData(currentTableName, currentPage);
+  } catch (err) { showToast(err.message, true); }
+});
+
+async function deleteRow(row) {
+  if (!confirm('Delete this row permanently?')) return;
+  try {
+    await apiCall(`/api/admin/${currentDatabase}/row/${currentTableName}`, 'DELETE', {
+      pkCol: currentPrimaryKey,
+      pkValue: row[currentPrimaryKey]
+    });
+    showToast('Row deleted');
+    loadTableData(currentTableName, currentPage);
+  } catch (err) { showToast(err.message, true); }
+}
+
+// Database actions
+document.getElementById('createDbBtn')?.addEventListener('click', () => document.getElementById('createDbModal').classList.add('active'));
+document.getElementById('cancelDbModal')?.addEventListener('click', () => document.getElementById('createDbModal').classList.remove('active'));
+document.getElementById('confirmCreateDb')?.addEventListener('click', async () => {
+  const dbName = document.getElementById('newDbName').value.trim();
+  if (!dbName) return showToast('Enter database name', true);
+  try {
+    await apiCall('/api/admin/databases', 'POST', { dbName });
+    showToast(`Database ${dbName} created`);
+    document.getElementById('createDbModal').classList.remove('active');
+    loadDatabases();
+  } catch (err) { showToast(err.message, true); }
+});
+
+// Table actions
+document.getElementById('createTableBtn')?.addEventListener('click', () => {
+  if (!currentDatabase) return showToast('Select a database first', true);
+  document.getElementById('createTableModal').classList.add('active');
+});
+document.getElementById('cancelTableModal')?.addEventListener('click', () => document.getElementById('createTableModal').classList.remove('active'));
+document.getElementById('confirmCreateTable')?.addEventListener('click', async () => {
+  const tableName = document.getElementById('newTableName').value.trim();
+  const columnsDef = document.getElementById('columnsDef').value;
+  if (!tableName || !columnsDef) return showToast('Table name and columns required', true);
+  try {
+    await apiCall(`/api/admin/${currentDatabase}/tables`, 'POST', { tableName, columnsDefinition: columnsDef });
+    showToast(`Table ${tableName} created`);
+    document.getElementById('createTableModal').classList.remove('active');
+    loadTables();
+  } catch (err) { showToast(err.message, true); }
+});
+
+document.getElementById('refreshTablesBtn')?.addEventListener('click', () => loadTables());
+document.getElementById('cancelEditModal')?.addEventListener('click', () => document.getElementById('editRowModal').classList.remove('active'));
+document.getElementById('cancelInsertModal')?.addEventListener('click', () => document.getElementById('insertRowModal').classList.remove('active'));
+
+// SQL Query
+let queryVisible = false;
+document.getElementById('showQueryBtn')?.addEventListener('click', () => {
+  const editor = document.getElementById('queryEditor');
+  queryVisible = !queryVisible;
+  editor.style.display = queryVisible ? 'block' : 'none';
+});
+document.getElementById('closeQueryBtn')?.addEventListener('click', () => {
+  document.getElementById('queryEditor').style.display = 'none';
+  queryVisible = false;
+});
+document.getElementById('executeQueryBtn')?.addEventListener('click', async () => {
+  if (!currentDatabase) return showToast('Select a database first', true);
+  const sql = document.getElementById('sqlQuery').value.trim();
+  if (!sql) return showToast('Enter SQL query', true);
+  
+  try {
+    const data = await apiCall('/api/admin/query', 'POST', { database: currentDatabase, sql });
+    const resultDiv = document.getElementById('queryResult');
+    if (data.rows && data.rows.length > 0) {
+      const columns = Object.keys(data.rows[0]);
+      let html = `<div style="margin-top: 10px; overflow-x: auto;"><table class="data-table"><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+      data.rows.forEach(row => {
+        html += `<tr>${columns.map(c => `<td>${escapeHtml(String(row[c] || 'NULL'))}</td>`).join('')}</tr>`;
+      });
+      html += `</tbody></table><div style="margin-top: 8px;">✅ ${data.rowCount} rows returned</div></div>`;
+      resultDiv.innerHTML = html;
+    } else {
+      resultDiv.innerHTML = `<div style="margin-top: 10px;">✅ Query executed successfully. ${data.rowCount || 0} rows affected.</div>`;
+    }
+  } catch (err) {
+    document.getElementById('queryResult').innerHTML = `<div style="margin-top: 10px; color: #E30613;">❌ Error: ${err.message}</div>`;
+  }
+});
+
+function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+
+loadDatabases();
+</script>
+</body>
+</html>

@@ -306,6 +306,45 @@ function updateAuthUI() {
         }
     }
 }
+        // Add this to your index.html script section
+function updateAuthUI() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const authIcon = document.getElementById('auth-icon');
+    
+    if (authIcon) {
+        if (user && user.name) {
+            authIcon.innerHTML = `
+                <div class="user-menu" style="position: relative; cursor: pointer;">
+                    <i class="fas fa-user-circle"></i>
+                    <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
+                    <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100;">
+                        <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
+                        <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
+                        <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none;">Logout</a>
+                    </div>
+                </div>
+            `;
+            
+            // Add hover event
+            const userMenu = authIcon.querySelector('.user-menu');
+            const dropdown = authIcon.querySelector('.user-dropdown');
+            if (userMenu && dropdown) {
+                userMenu.addEventListener('mouseenter', () => dropdown.style.display = 'block');
+                userMenu.addEventListener('mouseleave', () => dropdown.style.display = 'none');
+            }
+        } else {
+            authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
+        }
+    }
+}
+
+window.logout = function() {
+    localStorage.removeItem('user');
+    showNotification('Logged out successfully!');
+    setTimeout(() => window.location.reload(), 1000);
+};
+
+// Call updateAuthUI in your DOMContentLoaded
 // Update user authentication UI
 function updateAuthUI() {
     const user = JSON.parse(localStorage.getItem('user'));

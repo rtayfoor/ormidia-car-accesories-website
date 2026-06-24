@@ -79,7 +79,7 @@
                         <span>Total:</span>
                         <span id="total">$0.00</span>
                     </div>
-                    <button class="btn btn-primary btn-block" onclick="proceedToCheckout()">Proceed to Checkout</button>
+                    <button class="btn btn-primary btn-block" id="checkout-btn" onclick="proceedToCheckout()">Proceed to Checkout</button>
                     <button class="btn btn-secondary btn-block" onclick="clearCart()">Clear Cart</button>
                 </div>
             </div>
@@ -89,7 +89,7 @@
     <!-- Checkout Modal -->
     <div id="checkout-modal" class="modal" style="display: none;">
         <div class="modal-content">
-            <span class="modal-close">&times;</span>
+            <span class="modal-close" id="checkout-modal-close">&times;</span>
             <div class="modal-header">
                 <h2>Checkout</h2>
             </div>
@@ -187,520 +187,6 @@
         </div>
     </footer>
 
-    <script>
-        (function() {
-            // Supabase Configuration
-            const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
-            const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
-            
-            const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            
-            // Cart ID from localStorage
-            let cartId = localStorage.getItem('cartId') || generateCartId();
-            
-            function generateCartId() {
-                const id = 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('cartId', id);
-                return id;
-            }
-            
-            // Get cart from localStorage
-            function getCart() {
-                return JSON.parse(localStorage.getItem('cart')) || [];
-            }
-            
-            // Save cart to localStorage
-            function saveCart(cart) {
-                localStorage.setItem('cart', JSON.stringify(cart));
-            }
-            
-            // Show loading spinner
-            function showLoading(show) {
-                const spinner = document.getElementById('loading-spinner');
-                if (spinner) {
-                    spinner.style.display = show ? 'block' : 'none';
-                }
-            }
-            
-            // Load and display cart items
-            async function loadCart() {
-                const cart = getCart();
-                const cartItemsList = document.getElementById('cart-items-list');
-                const emptyCart = document.getElementById('empty-cart');
-                const cartSummary = document.getElementById('cart-summary');
-                
-                if (cart.length === 0) {
-                    cartItemsList.innerHTML = '';
-                    emptyCart.style.display = 'block';
-                    cartSummary.style.display = 'none';
-                    updateCartCount();
-                    return;
-                }
-                
-                emptyCart.style.display = 'none';
-                cartSummary.style.display = 'block';
-                
-                let subtotal = 0;
-                
-                // Check stock availability for each item
-                const stockCheckPromises = cart.map(async (item) => {
-                    try {
-                        let availableStock = 0;
-                        if (item.variant_id) {
-                            const { data, error } = await _supabase
-                                .rpc('get_available_stock', {
-                                    p_variant_id: item.variant_id,
-                                    p_cart_id: cartId
-                                });
-                            if (!error) availableStock = data || 0;
-                        } else {
-                            const { data, error } = await _supabase
-                                .rpc('get_product_available_stock', {
-                                    p_product_id: item.product_id,
-                                    p_cart_id: cartId
-                                });
-                            if (!error) availableStock = data || 0;
-                        }
-                        return { ...item, availableStock };
-                    } catch (error) {
-                        console.error('Error checking stock:', error);
-                        return { ...item, availableStock: 0 };
-                    }
-                });
-                
-                const itemsWithStock = await Promise.all(stockCheckPromises);
-                
-                cartItemsList.innerHTML = itemsWithStock.map((item, index) => {
-                    const itemTotal = item.price * item.quantity;
-                    subtotal += itemTotal;
-                    
-                    const isOutOfStock = item.availableStock < item.quantity;
-                    
-                    return `
-                        <div class="cart-item" data-index="${index}" style="${isOutOfStock ? 'border-left: 4px solid #e74c3c;' : ''}">
-                            <div class="cart-item-image">
-                                ${item.image ? 
-                                    `<img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/80x80?text=Product'">` :
-                                    `<i class="fas fa-box" style="font-size: 2rem; color: #ccc;"></i>`
-                                }
-                            </div>
-                            <div class="cart-item-details">
-                                <h4>${escapeHtml(item.name)}</h4>
-                                <p class="item-brand">${escapeHtml(item.product_name || 'Accessory')}</p>
-                                <p class="item-price">$${item.price.toFixed(2)}</p>
-                                ${isOutOfStock ? 
-                                    `<p style="color: #e74c3c; font-size: 0.8rem; margin-top: 0.25rem;">
-                                        <i class="fas fa-exclamation-triangle"></i> 
-                                        Only ${item.availableStock} available in stock
-                                    </p>` : 
-                                    ''
-                                }
-                            </div>
-                            <div class="cart-item-quantity">
-                                <button onclick="updateQuantity(${index}, -1)" ${isOutOfStock ? 'disabled' : ''}>-</button>
-                                <span>${item.quantity}</span>
-                                <button onclick="updateQuantity(${index}, 1)" ${isOutOfStock ? 'disabled' : ''}>+</button>
-                            </div>
-                            <div class="cart-item-total">
-                                $${itemTotal.toFixed(2)}
-                            </div>
-                            <div class="cart-item-remove">
-                                <button onclick="removeItem(${index})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                // Update summary
-                const shipping = subtotal > 50 ? 0 : 10;
-                const tax = subtotal * 0.1;
-                const total = subtotal + shipping + tax;
-                
-                document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-                document.getElementById('shipping').textContent = shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`;
-                document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
-                document.getElementById('total').textContent = `$${total.toFixed(2)}`;
-                
-                // Check if any item is out of stock
-                const hasOutOfStock = itemsWithStock.some(item => item.availableStock < item.quantity);
-                const checkoutBtn = document.querySelector('.cart-summary .btn-primary');
-                if (checkoutBtn) {
-                    checkoutBtn.disabled = hasOutOfStock;
-                    checkoutBtn.title = hasOutOfStock ? 'Some items are out of stock' : '';
-                    checkoutBtn.style.opacity = hasOutOfStock ? '0.5' : '1';
-                    checkoutBtn.style.cursor = hasOutOfStock ? 'not-allowed' : 'pointer';
-                }
-                
-                updateCartCount();
-            }
-            
-            // Update quantity
-            window.updateQuantity = async function(index, change) {
-                const cart = getCart();
-                
-                if (cart[index]) {
-                    const newQuantity = cart[index].quantity + change;
-                    
-                    if (newQuantity <= 0) {
-                        // Remove item and release stock
-                        await removeItem(index);
-                        return;
-                    }
-                    
-                    // Check if enough stock available
-                    let availableStock = 0;
-                    if (cart[index].variant_id) {
-                        const { data, error } = await _supabase
-                            .rpc('get_available_stock', {
-                                p_variant_id: cart[index].variant_id,
-                                p_cart_id: cartId
-                            });
-                        if (!error) availableStock = data || 0;
-                    } else {
-                        const { data, error } = await _supabase
-                            .rpc('get_product_available_stock', {
-                                p_product_id: cart[index].product_id,
-                                p_cart_id: cartId
-                            });
-                        if (!error) availableStock = data || 0;
-                    }
-                    
-                    if (newQuantity > availableStock) {
-                        showNotification(`Only ${availableStock} items available in stock`, true);
-                        return;
-                    }
-                    
-                    // Update reservation
-                    const { error } = await _supabase
-                        .rpc('reserve_stock', {
-                            p_cart_id: cartId,
-                            p_product_id: cart[index].product_id,
-                            p_variant_id: cart[index].variant_id || null,
-                            p_quantity: change > 0 ? 1 : -1
-                        });
-                    
-                    if (error) {
-                        console.error('Error updating reservation:', error);
-                        showNotification('Failed to update stock reservation', true);
-                        return;
-                    }
-                    
-                    cart[index].quantity = newQuantity;
-                    saveCart(cart);
-                    await loadCart();
-                }
-            };
-            
-            // Remove item
-            window.removeItem = async function(index) {
-                const cart = getCart();
-                const item = cart[index];
-                
-                if (item) {
-                    // Release stock reservation
-                    try {
-                        await _supabase
-                            .rpc('release_stock', {
-                                p_cart_id: cartId,
-                                p_product_id: item.product_id,
-                                p_variant_id: item.variant_id || null
-                            });
-                    } catch (error) {
-                        console.error('Error releasing stock:', error);
-                    }
-                    
-                    cart.splice(index, 1);
-                    saveCart(cart);
-                    await loadCart();
-                    showNotification('Item removed from cart');
-                }
-            };
-            
-            // Clear entire cart
-            window.clearCart = async function() {
-                if (confirm('Are you sure you want to clear your entire cart?')) {
-                    // Release all stock reservations
-                    try {
-                        await _supabase
-                            .rpc('release_stock', {
-                                p_cart_id: cartId,
-                                p_product_id: null,
-                                p_variant_id: null
-                            });
-                    } catch (error) {
-                        console.error('Error releasing stock:', error);
-                    }
-                    
-                    localStorage.removeItem('cart');
-                    await loadCart();
-                    showNotification('Cart cleared');
-                }
-            };
-            
-            // Proceed to checkout
-            window.proceedToCheckout = function() {
-                const user = JSON.parse(localStorage.getItem('user'));
-                const cart = getCart();
-                
-                if (cart.length === 0) {
-                    showNotification('Your cart is empty', true);
-                    return;
-                }
-                
-                // Check if user is logged in
-                if (!user || !user.id) {
-                    showNotification('Please login to continue', true);
-                    setTimeout(() => {
-                        window.location.href = 'auth.html';
-                    }, 1500);
-                    return;
-                }
-                
-                // Pre-fill form with user data
-                document.getElementById('full-name').value = user.name || '';
-                document.getElementById('email').value = user.email || '';
-                
-                // Show modal
-                document.getElementById('checkout-modal').style.display = 'flex';
-            };
-            
-            // Handle checkout form submission
-            document.getElementById('checkout-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const fullName = document.getElementById('full-name').value;
-                const email = document.getElementById('email').value;
-                const phone = document.getElementById('phone').value;
-                const address = document.getElementById('address').value;
-                const paymentMethod = document.getElementById('payment-method').value;
-                const cart = getCart();
-                const user = JSON.parse(localStorage.getItem('user'));
-                
-                if (!paymentMethod) {
-                    showNotification('Please select a payment method', true);
-                    return;
-                }
-                
-                // Disable submit button
-                const submitBtn = document.getElementById('place-order-btn');
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Processing...';
-                
-                showLoading(true);
-                
-                try {
-                    // Prepare items for checkout
-                    const items = cart.map(item => ({
-                        product_id: item.product_id,
-                        variant_id: item.variant_id || null,
-                        quantity: item.quantity
-                    }));
-                    
-                    // Process checkout with Supabase
-                    const { data, error } = await _supabase
-                        .rpc('process_checkout', {
-                            p_cart_id: cartId,
-                            p_items: items
-                        });
-                    
-                    if (error) {
-                        throw new Error(error.message || 'Failed to process order');
-                    }
-                    
-                    // Calculate totals
-                    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                    const shipping = subtotal > 50 ? 0 : 10;
-                    const tax = subtotal * 0.1;
-                    const total = subtotal + shipping + tax;
-                    
-                    // Create order object
-                    const order = {
-                        orderId: 'ORD-' + Date.now(),
-                        userId: user.id,
-                        customerName: fullName,
-                        email: email,
-                        phone: phone,
-                        address: address,
-                        paymentMethod: paymentMethod,
-                        items: cart,
-                        subtotal: subtotal,
-                        shipping: shipping,
-                        tax: tax,
-                        total: total,
-                        status: 'confirmed',
-                        date: new Date().toISOString(),
-                        reservationId: cartId
-                    };
-                    
-                    // Save order to localStorage (in production, save to Supabase orders table)
-                    const orders = JSON.parse(localStorage.getItem('orders')) || [];
-                    orders.push(order);
-                    localStorage.setItem('orders', JSON.stringify(orders));
-                    
-                    // Clear cart
-                    localStorage.removeItem('cart');
-                    
-                    // Close modal
-                    closeModal();
-                    
-                    // Show order confirmation
-                    document.getElementById('order-id-display').textContent = order.orderId;
-                    document.getElementById('order-confirmation-modal').style.display = 'flex';
-                    
-                    showNotification(`Order placed successfully! Order ID: ${order.orderId}`);
-                    
-                    // Update cart count
-                    updateCartCount();
-                    
-                    // Refresh cart display
-                    await loadCart();
-                    
-                } catch (error) {
-                    console.error('Checkout error:', error);
-                    showNotification(error.message || 'Failed to process checkout. Please try again.', true);
-                    
-                    // Re-enable submit button
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Place Order';
-                    
-                } finally {
-                    showLoading(false);
-                }
-            });
-            
-            // Close modal
-            function closeModal() {
-                document.getElementById('checkout-modal').style.display = 'none';
-                document.getElementById('checkout-form').reset();
-                
-                const submitBtn = document.getElementById('place-order-btn');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Place Order';
-            }
-            
-            // Update cart count in navbar
-            function updateCartCount() {
-                const cart = getCart();
-                const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-                const cartCount = document.querySelector('.cart-count');
-                if (cartCount) cartCount.textContent = totalItems;
-            }
-            
-            // Update auth UI
-            function updateAuthUI() {
-                const user = JSON.parse(localStorage.getItem('user'));
-                const authIcon = document.getElementById('auth-icon');
-                
-                if (authIcon) {
-                    if (user && user.name) {
-                        authIcon.innerHTML = `
-                            <div class="user-menu" style="position: relative; cursor: pointer;">
-                                <i class="fas fa-user-circle"></i>
-                                <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
-                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100;">
-                                    <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
-                                    <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
-                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none;">Logout</a>
-                                </div>
-                            </div>
-                        `;
-                        
-                        const userMenu = authIcon.querySelector('.user-menu');
-                        const dropdown = authIcon.querySelector('.user-dropdown');
-                        if (userMenu && dropdown) {
-                            userMenu.addEventListener('mouseenter', () => dropdown.style.display = 'block');
-                            userMenu.addEventListener('mouseleave', () => dropdown.style.display = 'none');
-                        }
-                    } else {
-                        authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
-                    }
-                }
-            }
-            
-            window.logout = function() {
-                localStorage.removeItem('user');
-                showNotification('Logged out successfully!');
-                setTimeout(() => window.location.reload(), 1000);
-            };
-            
-            function showNotification(message, isError = false) {
-                const notification = document.createElement('div');
-                notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i><span>${message}</span>`;
-                document.body.appendChild(notification);
-                
-                notification.style.cssText = `
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    background: ${isError ? '#e74c3c' : '#27ae60'};
-                    color: white;
-                    padding: 1rem 1.5rem;
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    z-index: 10000;
-                    animation: slideInRight 0.3s ease;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                    font-family: 'Inter', sans-serif;
-                `;
-                
-                setTimeout(() => notification.remove(), 3000);
-            }
-            
-            function escapeHtml(str) {
-                if (!str) return '';
-                return str.replace(/[&<>]/g, function(m) {
-                    if (m === '&') return '&amp;';
-                    if (m === '<') return '&lt;';
-                    if (m === '>') return '&gt;';
-                    return m;
-                });
-            }
-            
-            // Initialize
-            document.addEventListener('DOMContentLoaded', () => {
-                loadCart();
-                updateAuthUI();
-                
-                // Modal close
-                const closeBtn = document.querySelector('.modal-close');
-                if (closeBtn) {
-                    closeBtn.onclick = closeModal;
-                }
-                
-                window.onclick = function(event) {
-                    const checkoutModal = document.getElementById('checkout-modal');
-                    const confirmationModal = document.getElementById('order-confirmation-modal');
-                    if (event.target === checkoutModal) closeModal();
-                    if (event.target === confirmationModal) {
-                        confirmationModal.style.display = 'none';
-                    }
-                };
-                
-                // Mobile menu toggle
-                const menuToggle = document.querySelector('.menu-toggle');
-                const navMenu = document.querySelector('.nav-menu');
-                if (menuToggle) {
-                    menuToggle.addEventListener('click', () => {
-                        navMenu.classList.toggle('active');
-                    });
-                }
-                
-                // Cleanup expired reservations periodically
-                setInterval(async () => {
-                    try {
-                        await _supabase.rpc('cleanup_expired_reservations');
-                    } catch (error) {
-                        console.error('Error cleaning up reservations:', error);
-                    }
-                }, 5 * 60 * 1000);
-            });
-        })();
-    </script>
-    
     <style>
         .cart-section {
             padding: 8rem 2rem 5rem;
@@ -997,6 +483,12 @@
             color: var(--secondary-color);
         }
         
+        .stock-warning {
+            color: #e74c3c;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+        }
+        
         @keyframes slideUp {
             from {
                 transform: translateY(50px);
@@ -1064,5 +556,522 @@
             }
         }
     </style>
+
+    <script>
+        (function() {
+            // Supabase Configuration
+            const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
+            
+            const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            // Cart ID from localStorage
+            let cartId = localStorage.getItem('cartId') || generateCartId();
+            
+            function generateCartId() {
+                const id = 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('cartId', id);
+                return id;
+            }
+            
+            // Get cart from localStorage
+            function getCart() {
+                return JSON.parse(localStorage.getItem('cart')) || [];
+            }
+            
+            // Save cart to localStorage
+            function saveCart(cart) {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
+            
+            // Show loading spinner
+            function showLoading(show) {
+                const spinner = document.getElementById('loading-spinner');
+                if (spinner) {
+                    spinner.style.display = show ? 'block' : 'none';
+                }
+            }
+            
+            // Load and display cart items
+            async function loadCart() {
+                const cart = getCart();
+                const cartItemsList = document.getElementById('cart-items-list');
+                const emptyCart = document.getElementById('empty-cart');
+                const cartSummary = document.getElementById('cart-summary');
+                
+                if (cart.length === 0) {
+                    cartItemsList.innerHTML = '';
+                    emptyCart.style.display = 'block';
+                    cartSummary.style.display = 'none';
+                    updateCartCount();
+                    return;
+                }
+                
+                emptyCart.style.display = 'none';
+                cartSummary.style.display = 'block';
+                
+                let subtotal = 0;
+                
+                // Check stock availability for each item
+                const stockCheckPromises = cart.map(async (item) => {
+                    try {
+                        let availableStock = 0;
+                        if (item.variant_id) {
+                            const { data, error } = await _supabase
+                                .rpc('get_available_stock', {
+                                    p_variant_id: item.variant_id,
+                                    p_cart_id: cartId
+                                });
+                            if (!error) availableStock = data || 0;
+                        } else {
+                            const { data, error } = await _supabase
+                                .rpc('get_product_available_stock', {
+                                    p_product_id: item.product_id,
+                                    p_cart_id: cartId
+                                });
+                            if (!error) availableStock = data || 0;
+                        }
+                        return { ...item, availableStock };
+                    } catch (error) {
+                        console.error('Error checking stock:', error);
+                        return { ...item, availableStock: 0 };
+                    }
+                });
+                
+                const itemsWithStock = await Promise.all(stockCheckPromises);
+                
+                cartItemsList.innerHTML = itemsWithStock.map((item, index) => {
+                    const itemTotal = item.price * item.quantity;
+                    subtotal += itemTotal;
+                    
+                    const isOutOfStock = item.availableStock < item.quantity;
+                    
+                    return `
+                        <div class="cart-item" data-index="${index}" style="${isOutOfStock ? 'border-left: 4px solid #e74c3c;' : ''}">
+                            <div class="cart-item-image">
+                                ${item.image ? 
+                                    `<img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/80x80?text=Product'">` :
+                                    `<i class="fas fa-box" style="font-size: 2rem; color: #ccc;"></i>`
+                                }
+                            </div>
+                            <div class="cart-item-details">
+                                <h4>${escapeHtml(item.name)}</h4>
+                                <p class="item-brand">${escapeHtml(item.product_name || 'Accessory')}</p>
+                                <p class="item-price">$${item.price.toFixed(2)}</p>
+                                ${isOutOfStock ? 
+                                    `<p class="stock-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> 
+                                        Only ${item.availableStock} available in stock
+                                    </p>` : 
+                                    ''
+                                }
+                            </div>
+                            <div class="cart-item-quantity">
+                                <button onclick="updateQuantity(${index}, -1)" ${isOutOfStock ? 'disabled' : ''}>-</button>
+                                <span>${item.quantity}</span>
+                                <button onclick="updateQuantity(${index}, 1)" ${isOutOfStock ? 'disabled' : ''}>+</button>
+                            </div>
+                            <div class="cart-item-total">
+                                $${itemTotal.toFixed(2)}
+                            </div>
+                            <div class="cart-item-remove">
+                                <button onclick="removeItem(${index})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Update summary
+                const shipping = subtotal > 50 ? 0 : 10;
+                const tax = subtotal * 0.1;
+                const total = subtotal + shipping + tax;
+                
+                document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+                document.getElementById('shipping').textContent = shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`;
+                document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+                document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+                
+                // Check if any item is out of stock
+                const hasOutOfStock = itemsWithStock.some(item => item.availableStock < item.quantity);
+                const checkoutBtn = document.getElementById('checkout-btn');
+                if (checkoutBtn) {
+                    checkoutBtn.disabled = hasOutOfStock;
+                    checkoutBtn.title = hasOutOfStock ? 'Some items are out of stock' : '';
+                    checkoutBtn.style.opacity = hasOutOfStock ? '0.5' : '1';
+                    checkoutBtn.style.cursor = hasOutOfStock ? 'not-allowed' : 'pointer';
+                }
+                
+                updateCartCount();
+            }
+            
+            // Update quantity
+            window.updateQuantity = async function(index, change) {
+                const cart = getCart();
+                
+                if (cart[index]) {
+                    const newQuantity = cart[index].quantity + change;
+                    
+                    if (newQuantity <= 0) {
+                        await removeItem(index);
+                        return;
+                    }
+                    
+                    // Check if enough stock available
+                    let availableStock = 0;
+                    if (cart[index].variant_id) {
+                        const { data, error } = await _supabase
+                            .rpc('get_available_stock', {
+                                p_variant_id: cart[index].variant_id,
+                                p_cart_id: cartId
+                            });
+                        if (!error) availableStock = data || 0;
+                    } else {
+                        const { data, error } = await _supabase
+                            .rpc('get_product_available_stock', {
+                                p_product_id: cart[index].product_id,
+                                p_cart_id: cartId
+                            });
+                        if (!error) availableStock = data || 0;
+                    }
+                    
+                    if (newQuantity > availableStock) {
+                        showNotification(`Only ${availableStock} items available in stock`, true);
+                        return;
+                    }
+                    
+                    // Update reservation
+                    const { error } = await _supabase
+                        .rpc('reserve_stock', {
+                            p_cart_id: cartId,
+                            p_product_id: cart[index].product_id,
+                            p_variant_id: cart[index].variant_id || null,
+                            p_quantity: change > 0 ? 1 : -1
+                        });
+                    
+                    if (error) {
+                        console.error('Error updating reservation:', error);
+                        showNotification('Failed to update stock reservation', true);
+                        return;
+                    }
+                    
+                    cart[index].quantity = newQuantity;
+                    saveCart(cart);
+                    await loadCart();
+                }
+            };
+            
+            // Remove item
+            window.removeItem = async function(index) {
+                const cart = getCart();
+                const item = cart[index];
+                
+                if (item) {
+                    // Release stock reservation
+                    try {
+                        await _supabase
+                            .rpc('release_stock', {
+                                p_cart_id: cartId,
+                                p_product_id: item.product_id,
+                                p_variant_id: item.variant_id || null
+                            });
+                    } catch (error) {
+                        console.error('Error releasing stock:', error);
+                    }
+                    
+                    cart.splice(index, 1);
+                    saveCart(cart);
+                    await loadCart();
+                    showNotification('Item removed from cart');
+                }
+            };
+            
+            // Clear entire cart
+            window.clearCart = async function() {
+                if (confirm('Are you sure you want to clear your entire cart?')) {
+                    // Release all stock reservations
+                    try {
+                        await _supabase
+                            .rpc('release_stock', {
+                                p_cart_id: cartId,
+                                p_product_id: null,
+                                p_variant_id: null
+                            });
+                    } catch (error) {
+                        console.error('Error releasing stock:', error);
+                    }
+                    
+                    localStorage.removeItem('cart');
+                    await loadCart();
+                    showNotification('Cart cleared');
+                }
+            };
+            
+            // Proceed to checkout
+            window.proceedToCheckout = function() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const cart = getCart();
+                
+                if (cart.length === 0) {
+                    showNotification('Your cart is empty', true);
+                    return;
+                }
+                
+                // Check if user is logged in
+                if (!user || !user.id) {
+                    showNotification('Please login to continue', true);
+                    setTimeout(() => {
+                        window.location.href = 'auth.html';
+                    }, 1500);
+                    return;
+                }
+                
+                // Pre-fill form with user data
+                document.getElementById('full-name').value = user.name || '';
+                document.getElementById('email').value = user.email || '';
+                
+                // Show modal
+                document.getElementById('checkout-modal').style.display = 'flex';
+            };
+            
+            // Handle checkout form submission
+            document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const fullName = document.getElementById('full-name').value;
+                const email = document.getElementById('email').value;
+                const phone = document.getElementById('phone').value;
+                const address = document.getElementById('address').value;
+                const paymentMethod = document.getElementById('payment-method').value;
+                const cart = getCart();
+                const user = JSON.parse(localStorage.getItem('user'));
+                
+                if (!paymentMethod) {
+                    showNotification('Please select a payment method', true);
+                    return;
+                }
+                
+                // Disable submit button
+                const submitBtn = document.getElementById('place-order-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
+                
+                showLoading(true);
+                
+                try {
+                    // Prepare items for checkout
+                    const items = cart.map(item => ({
+                        product_id: item.product_id,
+                        variant_id: item.variant_id || null,
+                        quantity: item.quantity
+                    }));
+                    
+                    // Process checkout with Supabase
+                    const { data, error } = await _supabase
+                        .rpc('process_checkout', {
+                            p_cart_id: cartId,
+                            p_items: items
+                        });
+                    
+                    if (error) {
+                        throw new Error(error.message || 'Failed to process order');
+                    }
+                    
+                    // Calculate totals
+                    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    const shipping = subtotal > 50 ? 0 : 10;
+                    const tax = subtotal * 0.1;
+                    const total = subtotal + shipping + tax;
+                    
+                    // Create order object
+                    const order = {
+                        orderId: 'ORD-' + Date.now(),
+                        userId: user.id,
+                        customerName: fullName,
+                        email: email,
+                        phone: phone,
+                        address: address,
+                        paymentMethod: paymentMethod,
+                        items: cart,
+                        subtotal: subtotal,
+                        shipping: shipping,
+                        tax: tax,
+                        total: total,
+                        status: 'confirmed',
+                        date: new Date().toISOString(),
+                        reservationId: cartId
+                    };
+                    
+                    // Save order to localStorage (in production, save to Supabase orders table)
+                    const orders = JSON.parse(localStorage.getItem('orders')) || [];
+                    orders.push(order);
+                    localStorage.setItem('orders', JSON.stringify(orders));
+                    
+                    // Clear cart
+                    localStorage.removeItem('cart');
+                    
+                    // Close modal
+                    closeCheckoutModal();
+                    
+                    // Show order confirmation
+                    document.getElementById('order-id-display').textContent = order.orderId;
+                    document.getElementById('order-confirmation-modal').style.display = 'flex';
+                    
+                    showNotification(`Order placed successfully! Order ID: ${order.orderId}`);
+                    
+                    // Update cart count
+                    updateCartCount();
+                    
+                    // Refresh cart display
+                    await loadCart();
+                    
+                } catch (error) {
+                    console.error('Checkout error:', error);
+                    showNotification(error.message || 'Failed to process checkout. Please try again.', true);
+                    
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Place Order';
+                    
+                } finally {
+                    showLoading(false);
+                }
+            });
+            
+            // Close checkout modal
+            function closeCheckoutModal() {
+                const modal = document.getElementById('checkout-modal');
+                if (modal) modal.style.display = 'none';
+                document.getElementById('checkout-form').reset();
+                
+                const submitBtn = document.getElementById('place-order-btn');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Place Order';
+                }
+            }
+            
+            // Update cart count in navbar
+            function updateCartCount() {
+                const cart = getCart();
+                const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+                const cartCount = document.querySelector('.cart-count');
+                if (cartCount) cartCount.textContent = totalItems;
+            }
+            
+            // Update auth UI
+            function updateAuthUI() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const authIcon = document.getElementById('auth-icon');
+                
+                if (authIcon) {
+                    if (user && user.name) {
+                        authIcon.innerHTML = `
+                            <div class="user-menu" style="position: relative; cursor: pointer;">
+                                <i class="fas fa-user-circle"></i>
+                                <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
+                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100;">
+                                    <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
+                                    <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
+                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none;">Logout</a>
+                                </div>
+                            </div>
+                        `;
+                        
+                        const userMenu = authIcon.querySelector('.user-menu');
+                        const dropdown = authIcon.querySelector('.user-dropdown');
+                        if (userMenu && dropdown) {
+                            userMenu.addEventListener('mouseenter', () => dropdown.style.display = 'block');
+                            userMenu.addEventListener('mouseleave', () => dropdown.style.display = 'none');
+                        }
+                    } else {
+                        authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
+                    }
+                }
+            }
+            
+            window.logout = function() {
+                localStorage.removeItem('user');
+                showNotification('Logged out successfully!');
+                setTimeout(() => window.location.reload(), 1000);
+            };
+            
+            function showNotification(message, isError = false) {
+                const notification = document.createElement('div');
+                notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i><span>${message}</span>`;
+                document.body.appendChild(notification);
+                
+                notification.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: ${isError ? '#e74c3c' : '#27ae60'};
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    z-index: 10000;
+                    animation: slideInRight 0.3s ease;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                    font-family: 'Inter', sans-serif;
+                `;
+                
+                setTimeout(() => notification.remove(), 3000);
+            }
+            
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/[&<>]/g, function(m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    return m;
+                });
+            }
+            
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function() {
+                loadCart();
+                updateAuthUI();
+                
+                // Modal close buttons
+                const closeBtn = document.getElementById('checkout-modal-close');
+                if (closeBtn) {
+                    closeBtn.onclick = closeCheckoutModal;
+                }
+                
+                // Close checkout modal on outside click
+                window.onclick = function(event) {
+                    const checkoutModal = document.getElementById('checkout-modal');
+                    const confirmationModal = document.getElementById('order-confirmation-modal');
+                    if (event.target === checkoutModal) closeCheckoutModal();
+                    if (event.target === confirmationModal) {
+                        confirmationModal.style.display = 'none';
+                    }
+                };
+                
+                // Mobile menu toggle
+                const menuToggle = document.querySelector('.menu-toggle');
+                const navMenu = document.querySelector('.nav-menu');
+                if (menuToggle) {
+                    menuToggle.addEventListener('click', function() {
+                        if (navMenu) navMenu.classList.toggle('active');
+                    });
+                }
+                
+                // Cleanup expired reservations periodically
+                setInterval(async () => {
+                    try {
+                        await _supabase.rpc('cleanup_expired_reservations');
+                    } catch (error) {
+                        console.error('Error cleaning up reservations:', error);
+                    }
+                }, 5 * 60 * 1000);
+            });
+        })();
+    </script>
 </body>
 </html>

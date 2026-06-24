@@ -96,19 +96,19 @@
             <div class="modal-body">
                 <form id="checkout-form">
                     <div class="form-group">
-                        <label for="full-name">Full Name</label>
+                        <label for="full-name">Full Name <span style="color: red;">*</span></label>
                         <input type="text" id="full-name" required>
                     </div>
                     <div class="form-group">
-                        <label for="email">Email Address</label>
+                        <label for="email">Email Address <span style="color: red;">*</span></label>
                         <input type="email" id="email" required>
                     </div>
                     <div class="form-group">
-                        <label for="phone">Phone Number</label>
+                        <label for="phone">Phone Number <span style="color: red;">*</span></label>
                         <input type="tel" id="phone" required>
                     </div>
                     <div class="form-group">
-                        <label for="address">Shipping Address</label>
+                        <label for="address">Shipping Address <span style="color: red;">*</span></label>
                         <textarea id="address" rows="3" required></textarea>
                     </div>
                     <div class="form-group">
@@ -116,7 +116,7 @@
                         <textarea id="notes" rows="2" placeholder="Any special instructions..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="payment-method">Payment Method</label>
+                        <label for="payment-method">Payment Method <span style="color: red;">*</span></label>
                         <select id="payment-method" required>
                             <option value="">Select payment method</option>
                             <option value="credit-card">Credit Card</option>
@@ -137,7 +137,7 @@
                 <i class="fas fa-check-circle" style="font-size: 4rem; color: #27ae60; margin-bottom: 1rem;"></i>
                 <h2 style="color: #27ae60;">Order Placed!</h2>
                 <p>Your order has been successfully placed.</p>
-                <p style="font-size: 0.9rem; color: #666;">Order ID: <span id="order-id-display"></span></p>
+                <p style="font-size: 0.9rem; color: #666;">Order ID: <strong id="order-id-display"></strong></p>
                 <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">We'll send you a confirmation email shortly.</p>
                 <button onclick="window.location.href='products.html'" class="btn btn-primary" style="margin-top: 1rem;">
                     Continue Shopping
@@ -844,14 +844,19 @@
             document.getElementById('checkout-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                const fullName = document.getElementById('full-name').value;
-                const email = document.getElementById('email').value;
-                const phone = document.getElementById('phone').value;
-                const address = document.getElementById('address').value;
-                const notes = document.getElementById('notes').value;
+                const fullName = document.getElementById('full-name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const address = document.getElementById('address').value.trim();
+                const notes = document.getElementById('notes').value.trim();
                 const paymentMethod = document.getElementById('payment-method').value;
                 const cart = getCart();
                 const user = JSON.parse(localStorage.getItem('user'));
+                
+                if (!fullName || !email || !phone || !address) {
+                    showNotification('Please fill in all required fields', true);
+                    return;
+                }
                 
                 if (!paymentMethod) {
                     showNotification('Please select a payment method', true);
@@ -866,63 +871,37 @@
                 showLoading(true);
                 
                 try {
-                    // Calculate totals
-                    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                    const shipping = subtotal > 50 ? 0 : 10;
-                    const tax = subtotal * 0.1;
-                    const total = subtotal + shipping + tax;
-                    
-                    // Prepare items for checkout (for stock processing)
-                    const stockItems = cart.map(item => ({
-                        product_id: item.product_id,
-                        variant_id: item.variant_id || null,
-                        quantity: item.quantity
-                    }));
-                    
-                    // Process stock checkout with Supabase
-                    const { data: stockData, error: stockError } = await _supabase
-                        .rpc('process_checkout', {
-                            p_cart_id: cartId,
-                            p_items: stockItems
-                        });
-                    
-                    if (stockError) {
-                        throw new Error(stockError.message || 'Failed to process stock');
-                    }
-                    
-                    // Prepare order items for database
+                    // Prepare order items for the database
                     const orderItems = cart.map(item => ({
                         product_id: item.product_id,
                         variant_id: item.variant_id || null,
                         product_name: item.product_name,
                         variant_name: item.variant_name || null,
                         variant_type: item.variant_type || null,
-                        price: item.price,
-                        quantity: item.quantity,
+                        price: parseFloat(item.price),
+                        quantity: parseInt(item.quantity),
                         image: item.image || null
                     }));
                     
-                    // Save order to Supabase orders table
-                    const { data: orderData, error: orderError } = await _supabase
-                        .from('orders')
-                        .insert([{
-                            customer_name: fullName,
-                            customer_phone: phone,
-                            customer_email: email,
-                            delivery_address: address,
-                            notes: notes || null,
-                            items: orderItems,
-                            total: total,
-                            status: 'pending',
-                            user_id: user.id
-                        }])
-                        .select();
+                    // Call the checkout_with_order function
+                    const { data, error } = await _supabase
+                        .rpc('checkout_with_order', {
+                            p_cart_id: cartId,
+                            p_customer_name: fullName,
+                            p_customer_phone: phone,
+                            p_customer_email: email,
+                            p_delivery_address: address,
+                            p_notes: notes || null,
+                            p_user_id: user.id,
+                            p_items: orderItems
+                        });
                     
-                    if (orderError) {
-                        throw new Error(orderError.message || 'Failed to save order');
+                    if (error) {
+                        console.error('Checkout error:', error);
+                        throw new Error(error.message || 'Failed to process order');
                     }
                     
-                    const savedOrder = orderData[0];
+                    const orderResult = data;
                     
                     // Clear cart
                     localStorage.removeItem('cart');
@@ -931,10 +910,10 @@
                     closeCheckoutModal();
                     
                     // Show order confirmation
-                    document.getElementById('order-id-display').textContent = savedOrder.id;
+                    document.getElementById('order-id-display').textContent = orderResult.order_id;
                     document.getElementById('order-confirmation-modal').style.display = 'flex';
                     
-                    showNotification(`Order placed successfully! Order ID: ${savedOrder.id}`);
+                    showNotification(`Order placed successfully! Order ID: ${orderResult.order_id}`);
                     
                     // Update cart count
                     updateCartCount();

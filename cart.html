@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Keep existing styles */
         .cart-section {
             padding: 8rem 2rem 5rem;
             min-height: 70vh;
@@ -82,17 +81,11 @@
             border-radius: 10px;
             display: inline-block;
             margin-top: 4px;
-        }
-        .reservation-status.active {
             background: #dcfce7;
             color: #166534;
         }
-        .reservation-status.expired {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        .reservation-status .timer {
-            font-weight: 600;
+        .reservation-status i {
+            margin-right: 4px;
         }
         .cart-item-quantity {
             display: flex;
@@ -100,13 +93,18 @@
             gap: 0.5rem;
         }
         .cart-item-quantity button {
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             border: 1px solid #ddd;
             background: white;
             border-radius: 5px;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
         }
         .cart-item-quantity button:hover:not(:disabled) {
             background: var(--secondary-color);
@@ -121,10 +119,12 @@
             min-width: 30px;
             text-align: center;
             font-weight: 600;
+            font-size: 1.1rem;
         }
         .cart-item-total {
             font-weight: 700;
             color: var(--primary-color);
+            font-size: 1.1rem;
         }
         .cart-item-remove button {
             background: none;
@@ -132,10 +132,12 @@
             color: #e74c3c;
             cursor: pointer;
             font-size: 1.2rem;
-            transition: var(--transition);
+            transition: all 0.3s ease;
+            padding: 4px;
         }
         .cart-item-remove button:hover {
             transform: scale(1.1);
+            color: #c0392b;
         }
         .cart-summary {
             background: white;
@@ -283,6 +285,10 @@
             font-size: 3rem;
             color: var(--secondary-color);
         }
+        .quantity-updating {
+            opacity: 0.5;
+            pointer-events: none;
+        }
         @keyframes slideUp {
             from { transform: translateY(50px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -291,7 +297,6 @@
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
-        /* Navbar styles */
         .navbar {
             background: white;
             padding: 1rem 0;
@@ -576,7 +581,7 @@
             let currentUser = null;
             let cartItems = [];
             let cartId = localStorage.getItem('cartId') || generateCartId();
-            let reservationCheckInterval = null;
+            let isUpdating = false;
             
             function generateCartId() {
                 const id = 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -602,13 +607,10 @@
                 try {
                     showLoading(true);
                     
-                    // First check if we have a cart in localStorage
                     let localCart = JSON.parse(localStorage.getItem('cart')) || [];
                     
-                    // If user is logged in, try to load from database
                     const user = getCurrentUser();
                     if (user) {
-                        // Get cart from database
                         const { data: dbCart, error } = await _supabase
                             .from('carts')
                             .select('items')
@@ -616,16 +618,12 @@
                             .maybeSingle();
                         
                         if (!error && dbCart) {
-                            // Merge with local cart
                             const dbItems = dbCart.items || [];
-                            // If local cart has items and db cart doesn't, use local
-                            // If both have items, merge them (preferring db)
                             if (localCart.length > 0 && dbItems.length === 0) {
                                 cartItems = localCart;
                                 await syncCartToDB(cartItems);
                             } else if (dbItems.length > 0) {
                                 cartItems = dbItems;
-                                // Save to localStorage as backup
                                 localStorage.setItem('cart', JSON.stringify(cartItems));
                             } else {
                                 cartItems = localCart;
@@ -637,15 +635,10 @@
                         cartItems = localCart;
                     }
                     
-                    // Display cart
                     displayCart(cartItems);
-                    
-                    // Start reservation refresh timer
-                    startReservationRefresh();
                     
                 } catch (error) {
                     console.error('Error loading cart:', error);
-                    // Fallback to localStorage
                     cartItems = JSON.parse(localStorage.getItem('cart')) || [];
                     displayCart(cartItems);
                 } finally {
@@ -681,38 +674,46 @@
                 }
             }
             
-            // Start reservation refresh timer
-            function startReservationRefresh() {
-                if (reservationCheckInterval) {
-                    clearInterval(reservationCheckInterval);
-                }
-                
-                // Check and refresh reservations every 30 seconds
-                reservationCheckInterval = setInterval(async () => {
-                    if (cartItems.length > 0) {
-                        await refreshReservations();
+            // Reserve stock for an item
+            async function reserveStock(item) {
+                try {
+                    const { data, error } = await _supabase
+                        .rpc('reserve_stock', {
+                            p_cart_id: cartId,
+                            p_product_id: item.product_id,
+                            p_variant_id: item.variant_id || null,
+                            p_quantity: item.quantity
+                        });
+                    
+                    if (error) {
+                        console.error('Error reserving stock:', error);
+                        return false;
                     }
-                }, 30000);
+                    return data;
+                } catch (error) {
+                    console.error('Error reserving stock:', error);
+                    return false;
+                }
             }
             
-            // Refresh reservations for all items in cart
-            async function refreshReservations() {
+            // Release reservation for an item
+            async function releaseReservation(item) {
                 try {
-                    for (const item of cartItems) {
-                        const result = await _supabase
-                            .rpc('reserve_stock', {
-                                p_cart_id: cartId,
-                                p_product_id: item.product_id,
-                                p_variant_id: item.variant_id || null,
-                                p_quantity: item.quantity
-                            });
-                        
-                        if (result.error) {
-                            console.warn('Failed to refresh reservation:', item.name);
-                        }
+                    const { error } = await _supabase
+                        .rpc('release_stock', {
+                            p_cart_id: cartId,
+                            p_product_id: item.product_id,
+                            p_variant_id: item.variant_id || null
+                        });
+                    
+                    if (error) {
+                        console.error('Error releasing reservation:', error);
+                        return false;
                     }
+                    return true;
                 } catch (error) {
-                    console.error('Error refreshing reservations:', error);
+                    console.error('Error releasing reservation:', error);
+                    return false;
                 }
             }
             
@@ -752,20 +753,24 @@
                                 <h4>${escapeHtml(item.name)}</h4>
                                 <p class="item-brand">${escapeHtml(item.product_name || 'Accessory')}</p>
                                 <p class="item-price">$${item.price.toFixed(2)}</p>
-                                <div class="reservation-status active">
+                                <div class="reservation-status">
                                     <i class="fas fa-clock"></i> Reserved for 30 min
                                 </div>
                             </div>
                             <div class="cart-item-quantity">
-                                <button onclick="updateQuantity(${index}, -1)">-</button>
-                                <span>${item.quantity}</span>
-                                <button onclick="updateQuantity(${index}, 1)">+</button>
+                                <button onclick="updateQuantity(${index}, -1)" class="qty-btn" id="qty-minus-${index}">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span id="qty-display-${index}">${item.quantity}</span>
+                                <button onclick="updateQuantity(${index}, 1)" class="qty-btn" id="qty-plus-${index}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
                             </div>
                             <div class="cart-item-total">
                                 $${itemTotal.toFixed(2)}
                             </div>
                             <div class="cart-item-remove">
-                                <button onclick="removeItem(${index})">
+                                <button onclick="removeItem(${index})" title="Remove item">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -797,71 +802,86 @@
                 `)}`;
             }
             
-            // Update quantity
+            // Update quantity - MAIN FUNCTION
             window.updateQuantity = async function(index, change) {
+                if (isUpdating) return;
+                isUpdating = true;
+                
+                // Disable buttons while updating
+                const minusBtn = document.getElementById(`qty-minus-${index}`);
+                const plusBtn = document.getElementById(`qty-plus-${index}`);
+                if (minusBtn) minusBtn.disabled = true;
+                if (plusBtn) plusBtn.disabled = true;
+                
                 const items = [...cartItems];
                 
                 if (items[index]) {
                     const newQuantity = items[index].quantity + change;
                     
                     if (newQuantity <= 0) {
-                        // Remove item and release reservation
-                        await releaseReservation(items[index]);
+                        // Remove item
+                        const item = items[index];
+                        await releaseReservation(item);
                         items.splice(index, 1);
+                        cartItems = items;
+                        await syncCartToDB(items);
+                        displayCart(items);
+                        showToast('Item removed from cart');
                     } else {
-                        // Update quantity and refresh reservation
+                        // Update quantity
                         items[index].quantity = newQuantity;
-                        await reserveItem(items[index]);
+                        cartItems = items;
+                        
+                        // Refresh reservation with new quantity
+                        const reserved = await reserveStock(items[index]);
+                        if (reserved !== false) {
+                            await syncCartToDB(items);
+                            // Update display without full re-render
+                            document.getElementById(`qty-display-${index}`).textContent = newQuantity;
+                            // Update total
+                            const itemTotal = items[index].price * newQuantity;
+                            const totalEl = document.querySelector(`.cart-item[data-index="${index}"] .cart-item-total`);
+                            if (totalEl) totalEl.textContent = `$${itemTotal.toFixed(2)}`;
+                            // Update subtotal
+                            updateTotals(items);
+                            updateCartCount();
+                            showToast(`Quantity updated to ${newQuantity}`);
+                        } else {
+                            // If reservation failed, revert
+                            items[index].quantity = items[index].quantity - change;
+                            cartItems = items;
+                            showToast('Not enough stock available', true);
+                            document.getElementById(`qty-display-${index}`).textContent = items[index].quantity;
+                        }
                     }
-                    
-                    cartItems = items;
-                    await syncCartToDB(items);
-                    displayCart(items);
                 }
+                
+                // Re-enable buttons
+                if (minusBtn) minusBtn.disabled = false;
+                if (plusBtn) plusBtn.disabled = false;
+                isUpdating = false;
             };
             
-            // Reserve a single item
-            async function reserveItem(item) {
-                try {
-                    const { error } = await _supabase
-                        .rpc('reserve_stock', {
-                            p_cart_id: cartId,
-                            p_product_id: item.product_id,
-                            p_variant_id: item.variant_id || null,
-                            p_quantity: item.quantity
-                        });
-                    
-                    if (error) {
-                        console.error('Error reserving item:', error);
-                        return false;
-                    }
-                    return true;
-                } catch (error) {
-                    console.error('Error reserving item:', error);
-                    return false;
-                }
-            }
-            
-            // Release reservation for an item
-            async function releaseReservation(item) {
-                try {
-                    const { error } = await _supabase
-                        .rpc('release_stock', {
-                            p_cart_id: cartId,
-                            p_product_id: item.product_id,
-                            p_variant_id: item.variant_id || null
-                        });
-                    
-                    if (error) {
-                        console.error('Error releasing reservation:', error);
-                    }
-                } catch (error) {
-                    console.error('Error releasing reservation:', error);
-                }
+            // Update totals without full re-render
+            function updateTotals(items) {
+                let subtotal = 0;
+                items.forEach(item => {
+                    subtotal += item.price * item.quantity;
+                });
+                const shipping = subtotal > 50 ? 0 : 10;
+                const tax = subtotal * 0.1;
+                const total = subtotal + shipping + tax;
+                
+                document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+                document.getElementById('shipping').textContent = shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`;
+                document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+                document.getElementById('total').textContent = `$${total.toFixed(2)}`;
             }
             
             // Remove item
             window.removeItem = async function(index) {
+                if (isUpdating) return;
+                
                 const items = [...cartItems];
                 const item = items[index];
                 
@@ -878,7 +898,6 @@
             // Clear cart
             window.clearCart = async function() {
                 if (confirm('Are you sure you want to clear your entire cart?')) {
-                    // Release all reservations
                     for (const item of cartItems) {
                         await releaseReservation(item);
                     }
@@ -944,13 +963,11 @@
                 showLoading(true);
                 
                 try {
-                    // Calculate totals
                     const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                     const shipping = subtotal > 50 ? 0 : 10;
                     const tax = subtotal * 0.1;
                     const total = subtotal + shipping + tax;
                     
-                    // Prepare order items
                     const orderItems = cartItems.map(item => ({
                         product_id: item.product_id,
                         variant_id: item.variant_id || null,
@@ -962,7 +979,7 @@
                         image: item.image || null
                     }));
                     
-                    // Process checkout with stock deduction
+                    // Process checkout
                     const { error: checkoutError } = await _supabase
                         .rpc('process_checkout', {
                             p_cart_id: cartId,
@@ -1001,10 +1018,8 @@
                     await syncCartToDB([]);
                     displayCart([]);
                     
-                    // Close modal
                     closeCheckoutModal();
                     
-                    // Show confirmation
                     document.getElementById('order-id-display').textContent = order.id;
                     document.getElementById('order-confirmation-modal').classList.add('active');
                     
@@ -1122,19 +1137,24 @@
                 localStorage.removeItem('user');
                 localStorage.removeItem('cart');
                 localStorage.removeItem('cartId');
-                if (reservationCheckInterval) {
-                    clearInterval(reservationCheckInterval);
-                }
                 showToast('Logged out successfully!');
                 setTimeout(() => window.location.reload(), 1000);
             };
+            
+            // Auto-refresh reservations every 30 seconds
+            setInterval(async () => {
+                if (cartItems.length > 0) {
+                    for (const item of cartItems) {
+                        await reserveStock(item);
+                    }
+                }
+            }, 30000);
             
             // Initialize
             document.addEventListener('DOMContentLoaded', async function() {
                 updateAuthUI();
                 await loadCart();
                 
-                // Modal close
                 document.getElementById('checkout-modal-close').onclick = closeCheckoutModal;
                 window.onclick = function(event) {
                     const checkoutModal = document.getElementById('checkout-modal');
@@ -1145,7 +1165,6 @@
                     }
                 };
                 
-                // Mobile menu
                 document.querySelector('.menu-toggle').addEventListener('click', function() {
                     document.querySelector('.nav-menu').classList.toggle('active');
                 });

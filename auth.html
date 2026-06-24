@@ -19,31 +19,32 @@
         const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // Login function
-        async function loginWithEmail(email, password) {
-            try {
-                const { data, error } = await _supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-                
-                if (error) throw error;
-                
-                // Store user data with the actual UUID
-                const userData = {
-                    id: data.user.id,  // This is the actual UUID from Supabase
-                    email: data.user.email,
-                    name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User'
-                };
-                
-                localStorage.setItem('user', JSON.stringify(userData));
-                localStorage.setItem('supabase_session', JSON.stringify(data.session));
-                
-                return { success: true, user: userData };
-            } catch (error) {
-                console.error('Login error:', error);
-                return { success: false, error: error.message };
-            }
-        }
+// In your auth.html login function
+async function loginWithEmail(email, password) {
+    try {
+        const { data, error } = await _supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+        
+        if (error) throw error;
+        
+        // Store both user data AND the session
+        const userData = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User'
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('supabase_session', JSON.stringify(data.session));
+        
+        return { success: true, user: userData };
+    } catch (error) {
+        console.error('Login error:', error);
+        return { success: false, error: error.message };
+    }
+}
         
         // Register function
         async function registerWithEmail(email, password, name) {

@@ -332,7 +332,23 @@
                 localStorage.setItem('cart', JSON.stringify(cart));
             }
             
-            // Complete image mapping for all products
+            // Generate a colored placeholder image
+            function generatePlaceholder(productName, variantName = null) {
+                const text = variantName ? `${productName} - ${variantName}` : productName;
+                const colors = ['3498db', '2ecc71', 'e74c3c', 'f39c12', '9b59b6', 'e67e22', '1abc9c', '34495e', 'd35400', '7f8c8d'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                return `data:image/svg+xml,${encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="300" height="200">
+                        <rect width="300" height="200" fill="#${color}"/>
+                        <rect width="280" height="180" x="10" y="10" fill="rgba(255,255,255,0.1)" rx="5"/>
+                        <text x="150" y="100" font-family="Arial" font-size="18" fill="white" text-anchor="middle">${text}</text>
+                        <text x="150" y="125" font-family="Arial" font-size="12" fill="rgba(255,255,255,0.7)" text-anchor="middle">🚗 Car Accessory</text>
+                    </svg>
+                `)}`;
+            }
+            
+            // Complete image mapping with fallback
             function getProductImageUrl(productName, variantName = null) {
                 const imageMap = {
                     'Head Rest Pillow': {
@@ -393,19 +409,25 @@
                 const config = imageMap[productName];
                 
                 if (!config) {
-                    return `https://via.placeholder.com/300x200?text=${encodeURIComponent(productName)}`;
+                    return generatePlaceholder(productName, variantName);
                 }
+                
+                let imageUrl = '';
                 
                 if (config.type === 'single') {
-                    return config.fileName;
-                }
-                
-                if (config.type === 'variant' && variantName) {
+                    imageUrl = config.fileName;
+                } else if (config.type === 'variant' && variantName) {
                     const variantKey = variantName.toLowerCase().replace(/\s+/g, '');
-                    return `${config.baseName}_${variantKey}${config.extension}`;
+                    imageUrl = `${config.baseName}_${variantKey}${config.extension}`;
                 }
                 
-                return `https://via.placeholder.com/300x200?text=${encodeURIComponent(productName)}`;
+                if (!imageUrl) {
+                    return generatePlaceholder(productName, variantName);
+                }
+                
+                // Check if image exists by trying to load it
+                // Return the image URL with a cache-busting parameter
+                return imageUrl + '?v=' + Date.now();
             }
 
             // Get product stock
@@ -576,7 +598,7 @@
                                 <img src="${previewImage}" 
                                      alt="${product.name}"
                                      loading="lazy"
-                                     onerror="this.src='https://via.placeholder.com/300x200?text=${encodeURIComponent(product.name)}'">
+                                     onerror="this.src='${generatePlaceholder(product.name)}'">
                             </div>
                             <div class="product-info">
                                 ${variantBadge}
@@ -649,15 +671,11 @@
                     const imageUrl = getProductImageUrl(product.name, null);
                     const modalImage = document.getElementById('modal-product-image');
                     if (modalImage) {
-                        if (imageUrl && !imageUrl.includes('placeholder')) {
-                            modalImage.src = imageUrl;
-                            modalImage.style.display = 'block';
-                            modalImage.onerror = function() {
-                                this.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.name)}`;
-                            };
-                        } else {
-                            modalImage.style.display = 'none';
-                        }
+                        modalImage.src = imageUrl;
+                        modalImage.style.display = 'block';
+                        modalImage.onerror = function() {
+                            this.src = generatePlaceholder(product.name);
+                        };
                     }
                 }
                 
@@ -689,15 +707,11 @@
                 const imageUrl = getProductImageUrl(currentModalProduct.name, variant.name);
                 const modalImage = document.getElementById('modal-product-image');
                 if (modalImage) {
-                    if (imageUrl && !imageUrl.includes('placeholder')) {
-                        modalImage.src = imageUrl;
-                        modalImage.style.display = 'block';
-                        modalImage.onerror = function() {
-                            this.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(currentModalProduct.name)}`;
-                        };
-                    } else {
-                        modalImage.style.display = 'none';
-                    }
+                    modalImage.src = imageUrl;
+                    modalImage.style.display = 'block';
+                    modalImage.onerror = function() {
+                        this.src = generatePlaceholder(currentModalProduct.name, variant.name);
+                    };
                 }
             }
             
@@ -814,8 +828,20 @@
                 if (cartCount) cartCount.textContent = totalItems;
             }
             
+            function getCurrentUser() {
+                try {
+                    const user = JSON.parse(localStorage.getItem('user'));
+                    if (user && user.id) {
+                        return user;
+                    }
+                    return null;
+                } catch (e) {
+                    return null;
+                }
+            }
+            
             function updateAuthUI() {
-                const user = JSON.parse(localStorage.getItem('user'));
+                const user = getCurrentUser();
                 const authIcon = document.getElementById('auth-icon');
                 
                 if (authIcon) {
@@ -824,10 +850,10 @@
                             <div class="user-menu" style="position: relative; cursor: pointer;">
                                 <i class="fas fa-user-circle"></i>
                                 <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
-                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100;">
+                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 0.5rem 0;">
                                     <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
                                     <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
-                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none;">Logout</a>
+                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none; transition: 0.3s ease;">Logout</a>
                                 </div>
                             </div>
                         `;
@@ -846,6 +872,7 @@
             
             window.logout = function() {
                 localStorage.removeItem('user');
+                localStorage.removeItem('cartId');
                 showNotification('Logged out successfully!');
                 setTimeout(() => window.location.reload(), 1000);
             };
@@ -860,6 +887,7 @@
                     color: white; padding: 1rem 1.5rem; border-radius: 10px; display: flex;
                     align-items: center; gap: 0.5rem; z-index: 10000; animation: slideInRight 0.3s ease;
                     box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-family: 'Inter', sans-serif;
+                    max-width: 400px;
                 `;
                 setTimeout(() => notification.remove(), 3000);
             }

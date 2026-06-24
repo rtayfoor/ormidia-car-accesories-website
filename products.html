@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Product Card Styles */
         .product-card {
             background: white;
             border-radius: 12px;
@@ -69,13 +68,6 @@
             font-weight: 700;
             color: #E30613;
             margin: 0.5rem 0;
-        }
-        .product-price .original-price {
-            font-size: 0.85rem;
-            color: #94a3b8;
-            text-decoration: line-through;
-            margin-left: 0.5rem;
-            font-weight: 400;
         }
         .variant-info {
             font-size: 0.75rem;
@@ -177,7 +169,6 @@
             color: #94a3b8;
             padding: 0.5rem;
         }
-        /* Modal Styles */
         .modal {
             position: fixed;
             top: 0; left: 0;
@@ -277,6 +268,40 @@
             color: #E30613;
             font-weight: 600;
         }
+        .variant-option .variant-badge {
+            display: inline-block;
+            font-size: 0.6rem;
+            padding: 1px 6px;
+            border-radius: 10px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            margin-top: 2px;
+        }
+        .loading-spinner {
+            text-align: center;
+            padding: 4rem;
+            grid-column: 1/-1;
+        }
+        .loading-spinner i {
+            font-size: 3rem;
+            color: #E30613;
+            margin-bottom: 1rem;
+        }
+        .no-results {
+            text-align: center;
+            padding: 4rem;
+            grid-column: 1/-1;
+        }
+        .no-results i {
+            font-size: 3rem;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+        }
+        .products-count {
+            margin-bottom: 1rem;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
         @media (max-width: 768px) {
             .filter-bar {
                 flex-direction: column;
@@ -288,6 +313,175 @@
             .variant-options {
                 grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             }
+        }
+        /* Navbar styles */
+        .navbar {
+            background: white;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo-img {
+            height: 40px;
+            width: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .logo-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #E30613;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        .nav-link {
+            color: #1e293b;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #E30613;
+        }
+        .nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .cart-icon {
+            position: relative;
+            color: #1e293b;
+            font-size: 1.2rem;
+        }
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #E30613;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+            min-width: 18px;
+            text-align: center;
+        }
+        .user-icon a {
+            color: #1e293b;
+            font-size: 1.2rem;
+        }
+        .menu-toggle {
+            display: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .nav-menu.active {
+                display: flex;
+            }
+        }
+        .page-header {
+            padding: 8rem 0 2rem;
+            background: linear-gradient(135deg, #fef5f5 0%, #fff 100%);
+            text-align: center;
+        }
+        .page-header h1 {
+            font-size: 2.5rem;
+            color: #1e293b;
+        }
+        .page-header p {
+            color: #64748b;
+            margin-top: 0.5rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        .products-page {
+            padding: 2rem 0 4rem;
+        }
+        .footer {
+            background: #1e293b;
+            color: white;
+            padding: 3rem 0 1rem;
+            margin-top: 2rem;
+        }
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        .footer-section h3, .footer-section h4 {
+            margin-bottom: 1rem;
+        }
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+        .footer-section a {
+            color: #94a3b8;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .footer-section a:hover {
+            color: white;
+        }
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .social-links a {
+            color: #94a3b8;
+            font-size: 1.2rem;
+            transition: color 0.3s ease;
+        }
+        .social-links a:hover {
+            color: white;
+        }
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            margin-top: 2rem;
+            border-top: 1px solid #334155;
+            color: #94a3b8;
+            font-size: 0.85rem;
         }
     </style>
 </head>
@@ -573,7 +767,7 @@
                                 <div class="product-brand">${product.category_name || 'Accessory'}</div>
                                 <h3 class="product-title">${escapeHtml(product.name)}</h3>
                                 <div class="product-price">${priceDisplay}</div>
-                                ${variantCount > 0 ? `<div class="variant-info">${variantCount} variants available</div>` : ''}
+                                <div class="variant-info">${variantCount} option${variantCount !== 1 ? 's' : ''} available</div>
                                 <button class="add-to-cart ${totalStock === 0 ? 'out-of-stock' : ''}" 
                                         onclick="openProductModal(${product.id})"
                                         ${totalStock === 0 ? 'disabled' : ''}>
@@ -612,23 +806,48 @@
                         stockText = 'Low Stock (' + totalStock + ' left)';
                     }
                     
-                    const price = parseFloat(product.base_price || 0);
+                    const basePrice = parseFloat(product.base_price || 0);
                     
                     let variantsHtml = '';
                     if (variants && variants.length > 0) {
-                        variantsHtml = `
-                            <div class="variant-options">
-                                ${variants.map(v => `
-                                    <div class="variant-option ${v.stock_quantity > 0 ? '' : 'out-of-stock'}" 
-                                         data-variant-id="${v.id}"
-                                         onclick="selectVariant(${v.id})">
-                                        <div class="variant-name">${escapeHtml(v.variant_name)}</div>
-                                        <div class="variant-price">$${parseFloat(v.price || price).toFixed(2)}</div>
-                                        <div class="variant-stock">${v.stock_quantity > 0 ? v.stock_quantity + ' in stock' : 'Out of Stock'}</div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        `;
+                        // Check if all variants are the same (single option)
+                        const hasMultipleVariants = variants.length > 1 || 
+                            variants.some(v => v.variant_name !== product.name && v.variant_name !== product.name + ' (Default)');
+                        
+                        if (hasMultipleVariants) {
+                            variantsHtml = `
+                                <div style="margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Select Option:</div>
+                                <div class="variant-options">
+                                    ${variants.map(v => {
+                                        const isInStock = v.stock_quantity > 0;
+                                        const isDefault = v.variant_name === product.name || v.variant_name === product.name + ' (Default)';
+                                        return `
+                                            <div class="variant-option ${isInStock ? '' : 'out-of-stock'}" 
+                                                 data-variant-id="${v.id}"
+                                                 onclick="selectVariant(${v.id})">
+                                                <div class="variant-name">${escapeHtml(v.variant_name)}</div>
+                                                <div class="variant-price">$${parseFloat(v.price || basePrice).toFixed(2)}</div>
+                                                <div class="variant-stock">${isInStock ? v.stock_quantity + ' in stock' : 'Out of Stock'}</div>
+                                                ${isDefault ? '<div class="variant-badge">Default</div>' : ''}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            `;
+                        } else {
+                            // Single variant - show as text
+                            const singleVariant = variants[0];
+                            variantsHtml = `
+                                <div style="padding: 0.5rem 0;">
+                                    <span style="font-weight:600;">Option:</span> ${escapeHtml(singleVariant.variant_name)}
+                                    <span style="display:block;font-size:0.85rem;color:#64748b;">
+                                        ${singleVariant.stock_quantity > 0 ? singleVariant.stock_quantity + ' in stock' : 'Out of Stock'}
+                                    </span>
+                                </div>
+                            `;
+                            // Auto-select the only variant
+                            selectedVariant = singleVariant.id;
+                        }
                     }
                     
                     modalBody.innerHTML = `
@@ -639,14 +858,11 @@
                         </div>
                         <h2>${escapeHtml(product.name)}</h2>
                         <p style="color: #64748b;">${escapeHtml(product.description || 'Premium quality car accessory')}</p>
-                        <div class="modal-price">$${price.toFixed(2)}</div>
+                        <div class="modal-price">$${basePrice.toFixed(2)}</div>
                         <div class="modal-stock ${stockClass}">${stockText}</div>
                         ${product.category ? `<div style="font-size:0.85rem;color:#94a3b8;">Category: ${escapeHtml(product.category)}</div>` : ''}
                         
-                        <div style="margin: 1rem 0;">
-                            <label style="font-weight:600;display:block;margin-bottom:0.5rem;">Select Option:</label>
-                            ${variantsHtml}
-                        </div>
+                        ${variantsHtml}
                         
                         <div style="display:flex;align-items:center;gap:1rem;margin:1rem 0;">
                             <label style="font-weight:600;">Quantity:</label>
@@ -659,6 +875,7 @@
                         </button>
                     `;
                     
+                    // If there are multiple variants, show the modal
                     document.getElementById('product-modal').classList.add('active');
                     
                 } catch (error) {
@@ -696,21 +913,29 @@
                 
                 // If there are variants, validate selection
                 if (variants.length > 0) {
-                    if (!variantId) {
+                    // If only one variant and it's the default, auto-select it
+                    if (variants.length === 1) {
+                        variantId = variants[0].id;
+                        variantData = variants[0];
+                    } else if (!variantId) {
                         showToast('Please select an option', true);
                         return;
+                    } else {
+                        variantData = variants.find(v => v.id === variantId);
                     }
-                    variantData = variants.find(v => v.id === variantId);
-                    if (!variantData) {
-                        showToast('Variant not found', true);
-                        return;
+                    
+                    if (!variantData && variantId) {
+                        variantData = variants.find(v => v.id === variantId);
                     }
-                    if (variantData.stock_quantity < quantity) {
-                        showToast(`Only ${variantData.stock_quantity} items available`, true);
-                        return;
+                    
+                    if (variantData) {
+                        if (variantData.stock_quantity < quantity) {
+                            showToast(`Only ${variantData.stock_quantity} items available`, true);
+                            return;
+                        }
+                        price = parseFloat(variantData.price || product.base_price || 0);
+                        variantName = variantData.variant_name;
                     }
-                    price = parseFloat(variantData.price || product.base_price || 0);
-                    variantName = variantData.variant_name;
                 } else {
                     // Check product stock
                     if (currentModalProduct.total_stock < quantity) {

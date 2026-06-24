@@ -410,6 +410,23 @@
             color: #94a3b8;
             margin-top: 4px;
         }
+        .rls-warning {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .rls-warning.show {
+            display: block;
+        }
+        .rls-warning code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
         @media (max-width: 768px) {
             .sidebar { width: 250px; }
             .app-container { flex-direction: column; }
@@ -483,6 +500,18 @@
         <div id="insertSuccess" class="insert-success">
             <i class="fas fa-check-circle" style="color:#22c55e;"></i>
             <span id="insertSuccessMessage">Row inserted successfully!</span>
+        </div>
+        
+        <div id="rlsWarning" class="rls-warning">
+            <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i>
+            <strong>RLS Policy Blocking Insert</strong>
+            <p style="margin-top: 4px; font-size: 0.85rem;">
+                Row Level Security is preventing inserts. Run this in your Supabase SQL editor:
+            </p>
+            <code style="display: block; background: #1e293b; color: #e2e8f0; padding: 8px; border-radius: 4px; margin-top: 4px; font-size: 0.75rem; white-space: pre-wrap;">
+                alter table public.<span id="rlsTableName">products</span> disable row level security;
+                grant all on public.<span id="rlsTableName2">products</span> to anon, authenticated;
+            </code>
         </div>
         
         <form id="insertForm" onsubmit="return false;">
@@ -1027,16 +1056,20 @@
             loadTableData(currentTable, currentPage);
         }
 
-        // ============ INSERT ROW FUNCTIONALITY ============
+        // ============ INSERT ROW FUNCTIONALITY WITH RLS ERROR HANDLING ============
         function openInsertRowModal() {
             const container = document.getElementById('insertRowFields');
             const tableNameDisplay = document.getElementById('insertTableName');
             tableNameDisplay.textContent = currentTable;
             
-            // Hide success message
+            // Hide messages
             document.getElementById('insertSuccess').classList.remove('show');
+            document.getElementById('rlsWarning').classList.remove('show');
             
-            // Get column definitions with better type hints
+            // Update RLS warning with current table name
+            document.getElementById('rlsTableName').textContent = currentTable;
+            document.getElementById('rlsTableName2').textContent = currentTable;
+            
             const columnDefs = getColumnDefinitions(currentTable);
             
             container.innerHTML = currentColumns.map(col => {
@@ -1046,9 +1079,7 @@
                 const hint = def.hint || '';
                 const type = col.type;
                 const isRequired = !col.nullable && !isPrimaryKey;
-                const inputType = getInputType(type, col.name);
                 
-                // Special handling for specific fields
                 let inputHtml = '';
                 if (col.name === 'items' && type === 'object') {
                     inputHtml = `<textarea id="ins_${col.name}" placeholder='${placeholder}' ${isPrimaryKey ? 'disabled' : ''}></textarea>`;
@@ -1086,7 +1117,6 @@
         }
 
         function getColumnDefinitions(tableName) {
-            // Custom definitions for better UX
             const definitions = {
                 'products': {
                     'name': { placeholder: 'e.g., Premium Steering Wheel Cover', hint: 'Product name (required)' },
@@ -1127,19 +1157,7 @@
             return definitions[tableName] || {};
         }
 
-        function getInputType(type, columnName) {
-            if (type === 'number' || type.includes('int') || type.includes('numeric') || type.includes('decimal') || type.includes('float')) {
-                return 'number';
-            }
-            if (type === 'boolean' || type === 'bool') {
-                return 'select';
-            }
-            if (columnName === 'description' || columnName === 'notes' || columnName === 'delivery_address' || columnName === 'items') {
-                return 'textarea';
-            }
-            return 'text';
-        }
-
+        // ============ UPDATED CONFIRM INSERT WITH RLS ERROR HANDLING ============
         async function confirmInsert() {
             const rowData = {};
             let hasError = false;
@@ -1201,16 +1219,30 @@
                 
                 if (error) {
                     console.error('Insert error:', error);
+                    
+                    // Check for RLS error
+                    if (error.message && error.message.includes('row-level security policy')) {
+                        // Show RLS warning in modal
+                        const rlsWarning = document.getElementById('rlsWarning');
+                        rlsWarning.classList.add('show');
+                        
+                        // Update table names in the warning
+                        document.getElementById('rlsTableName').textContent = currentTable;
+                        document.getElementById('rlsTableName2').textContent = currentTable;
+                        
+                        throw new Error('RLS policy is blocking the insert. Please run the SQL commands shown above in your Supabase SQL editor to fix this.');
+                    }
+                    
                     throw new Error(error.message);
                 }
                 
                 // Show success message
                 const successDiv = document.getElementById('insertSuccess');
                 const successMsg = document.getElementById('insertSuccessMessage');
-                successMsg.textContent = `Row inserted successfully! ${data && data.length > 0 ? `New ID: ${data[0][currentPrimaryKey]}` : ''}`;
+                successMsg.textContent = `✅ Row inserted successfully! ${data && data.length > 0 ? `New ID: ${data[0][currentPrimaryKey]}` : ''}`;
                 successDiv.classList.add('show');
                 
-                showToast('Row inserted successfully!');
+                showToast('Row inserted successfully! ✅');
                 
                 // Close modal after delay
                 setTimeout(() => {
@@ -1286,7 +1318,7 @@
             toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${msg}`;
             toast.style.display = 'flex';
             clearTimeout(toast._timeout);
-            toast._timeout = setTimeout(() => toast.style.display = 'none', 3000);
+            toast._timeout = setTimeout(() => toast.style.display = 'none', 5000);
         }
 
         // ============ ESCAPE HTML ============

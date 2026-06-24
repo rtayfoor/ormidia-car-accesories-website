@@ -902,6 +902,7 @@
                     }));
                     
                     console.log('Placing order with user ID:', user.id);
+                    console.log('Order items:', orderItems);
                     
                     // Call the checkout_with_order function
                     const { data, error } = await _supabase
@@ -912,7 +913,7 @@
                             p_customer_email: email,
                             p_delivery_address: address,
                             p_notes: notes || null,
-                            p_user_id: String(user.id), // Pass user ID as string
+                            p_user_id: String(user.id),
                             p_items: orderItems
                         });
                     

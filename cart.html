@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <nav class="navbar">
@@ -41,6 +42,12 @@
             <div class="cart-header">
                 <h1>Shopping Cart</h1>
                 <p>Review and manage your items</p>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loading-spinner" style="display: none; text-align: center; padding: 2rem;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--secondary-color);"></i>
+                <p>Processing...</p>
             </div>
 
             <div class="cart-container">
@@ -113,8 +120,23 @@
                             <option value="cash">Cash on Delivery</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">Place Order</button>
+                    <button type="submit" class="btn btn-primary btn-block" id="place-order-btn">Place Order</button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Confirmation Modal -->
+    <div id="order-confirmation-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-body" style="text-align: center; padding: 2rem;">
+                <i class="fas fa-check-circle" style="font-size: 4rem; color: #27ae60; margin-bottom: 1rem;"></i>
+                <h2 style="color: #27ae60;">Order Placed!</h2>
+                <p>Your order has been successfully placed.</p>
+                <p style="font-size: 0.9rem; color: #666;">Order ID: <span id="order-id-display"></span></p>
+                <button onclick="window.location.href='products.html'" class="btn btn-primary" style="margin-top: 1rem;">
+                    Continue Shopping
+                </button>
             </div>
         </div>
     </div>
@@ -166,302 +188,517 @@
     </footer>
 
     <script>
-        // Load and display cart items
-        function loadCart() {
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            const cartItemsList = document.getElementById('cart-items-list');
-            const emptyCart = document.getElementById('empty-cart');
-            const cartSummary = document.getElementById('cart-summary');
+        (function() {
+            // Supabase Configuration
+            const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
             
-            if (cart.length === 0) {
-                cartItemsList.innerHTML = '';
-                emptyCart.style.display = 'block';
-                cartSummary.style.display = 'none';
-                updateCartCount();
-                return;
+            const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            
+            // Cart ID from localStorage
+            let cartId = localStorage.getItem('cartId') || generateCartId();
+            
+            function generateCartId() {
+                const id = 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('cartId', id);
+                return id;
             }
             
-            emptyCart.style.display = 'none';
-            cartSummary.style.display = 'block';
+            // Get cart from localStorage
+            function getCart() {
+                return JSON.parse(localStorage.getItem('cart')) || [];
+            }
             
-            let subtotal = 0;
+            // Save cart to localStorage
+            function saveCart(cart) {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
             
-            cartItemsList.innerHTML = cart.map((item, index) => {
-                const itemTotal = item.price * item.quantity;
-                subtotal += itemTotal;
+            // Show loading spinner
+            function showLoading(show) {
+                const spinner = document.getElementById('loading-spinner');
+                if (spinner) {
+                    spinner.style.display = show ? 'block' : 'none';
+                }
+            }
+            
+            // Load and display cart items
+            async function loadCart() {
+                const cart = getCart();
+                const cartItemsList = document.getElementById('cart-items-list');
+                const emptyCart = document.getElementById('empty-cart');
+                const cartSummary = document.getElementById('cart-summary');
                 
-                return `
-                    <div class="cart-item" data-index="${index}">
-                        <div class="cart-item-image">
-                            ${item.image ? 
-                                `<img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/80x80?text=Product'">` :
-                                `<i class="fas fa-box" style="font-size: 2rem; color: #ccc;"></i>`
-                            }
-                        </div>
-                        <div class="cart-item-details">
-                            <h4>${escapeHtml(item.name)}</h4>
-                            <p class="item-brand">${escapeHtml(item.product_name || 'Accessory')}</p>
-                            <p class="item-price">$${item.price.toFixed(2)}</p>
-                        </div>
-                        <div class="cart-item-quantity">
-                            <button onclick="updateQuantity(${index}, -1)">-</button>
-                            <span>${item.quantity}</span>
-                            <button onclick="updateQuantity(${index}, 1)">+</button>
-                        </div>
-                        <div class="cart-item-total">
-                            $${itemTotal.toFixed(2)}
-                        </div>
-                        <div class="cart-item-remove">
-                            <button onclick="removeItem(${index})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            
-            // Update summary
-            const shipping = subtotal > 50 ? 0 : 10;
-            const tax = subtotal * 0.1;
-            const total = subtotal + shipping + tax;
-            
-            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-            document.getElementById('shipping').textContent = shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`;
-            document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
-            document.getElementById('total').textContent = `$${total.toFixed(2)}`;
-            
-            updateCartCount();
-        }
-        
-        // Update quantity
-        window.updateQuantity = function(index, change) {
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            
-            if (cart[index]) {
-                cart[index].quantity += change;
-                
-                if (cart[index].quantity <= 0) {
-                    cart.splice(index, 1);
+                if (cart.length === 0) {
+                    cartItemsList.innerHTML = '';
+                    emptyCart.style.display = 'block';
+                    cartSummary.style.display = 'none';
+                    updateCartCount();
+                    return;
                 }
                 
-                localStorage.setItem('cart', JSON.stringify(cart));
-                loadCart();
-            }
-        };
-        
-        // Remove item
-        window.removeItem = function(index) {
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            cart.splice(index, 1);
-            localStorage.setItem('cart', JSON.stringify(cart));
-            loadCart();
-            showNotification('Item removed from cart');
-        };
-        
-        // Clear entire cart
-        window.clearCart = function() {
-            if (confirm('Are you sure you want to clear your entire cart?')) {
-                localStorage.removeItem('cart');
-                loadCart();
-                showNotification('Cart cleared');
-            }
-        };
-        
-        // Proceed to checkout
-        window.proceedToCheckout = function() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            
-            if (cart.length === 0) {
-                showNotification('Your cart is empty', true);
-                return;
-            }
-            
-            // Check if user is logged in
-            if (!user || !user.id) {
-                showNotification('Please login to continue', true);
-                setTimeout(() => {
-                    window.location.href = 'auth.html';
-                }, 1500);
-                return;
-            }
-            
-            // Pre-fill form with user data
-            document.getElementById('full-name').value = user.name || '';
-            document.getElementById('email').value = user.email || '';
-            
-            // Show modal
-            document.getElementById('checkout-modal').style.display = 'flex';
-        };
-        
-        // Handle checkout form submission
-        document.getElementById('checkout-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const fullName = document.getElementById('full-name').value;
-            const email = document.getElementById('email').value;
-            const phone = document.getElementById('phone').value;
-            const address = document.getElementById('address').value;
-            const paymentMethod = document.getElementById('payment-method').value;
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            const user = JSON.parse(localStorage.getItem('user'));
-            
-            if (!paymentMethod) {
-                showNotification('Please select a payment method', true);
-                return;
-            }
-            
-            // Calculate totals
-            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const shipping = subtotal > 50 ? 0 : 10;
-            const tax = subtotal * 0.1;
-            const total = subtotal + shipping + tax;
-            
-            // Create order object
-            const order = {
-                orderId: 'ORD-' + Date.now(),
-                userId: user.id,
-                customerName: fullName,
-                email: email,
-                phone: phone,
-                address: address,
-                paymentMethod: paymentMethod,
-                items: cart,
-                subtotal: subtotal,
-                shipping: shipping,
-                tax: tax,
-                total: total,
-                status: 'pending',
-                date: new Date().toISOString()
-            };
-            
-            // Save order to localStorage (in production, save to Supabase)
-            const orders = JSON.parse(localStorage.getItem('orders')) || [];
-            orders.push(order);
-            localStorage.setItem('orders', JSON.stringify(orders));
-            
-            // Clear cart
-            localStorage.removeItem('cart');
-            
-            // Close modal
-            closeModal();
-            
-            // Show success message
-            showNotification(`Order placed successfully! Order ID: ${order.orderId}`);
-            
-            // Redirect to order confirmation
-            setTimeout(() => {
-                window.location.href = `order-confirmation.html?orderId=${order.orderId}`;
-            }, 2000);
-        });
-        
-        // Close modal
-        function closeModal() {
-            document.getElementById('checkout-modal').style.display = 'none';
-            document.getElementById('checkout-form').reset();
-        }
-        
-        // Update cart count in navbar
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('cart')) || [];
-            const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-            const cartCount = document.querySelector('.cart-count');
-            if (cartCount) cartCount.textContent = totalItems;
-        }
-        
-        // Update auth UI
-        function updateAuthUI() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            const authIcon = document.getElementById('auth-icon');
-            
-            if (authIcon) {
-                if (user && user.name) {
-                    authIcon.innerHTML = `
-                        <div class="user-menu" style="position: relative; cursor: pointer;">
-                            <i class="fas fa-user-circle"></i>
-                            <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
-                            <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100;">
-                                <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
-                                <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
-                                <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none;">Logout</a>
+                emptyCart.style.display = 'none';
+                cartSummary.style.display = 'block';
+                
+                let subtotal = 0;
+                
+                // Check stock availability for each item
+                const stockCheckPromises = cart.map(async (item) => {
+                    try {
+                        let availableStock = 0;
+                        if (item.variant_id) {
+                            const { data, error } = await _supabase
+                                .rpc('get_available_stock', {
+                                    p_variant_id: item.variant_id,
+                                    p_cart_id: cartId
+                                });
+                            if (!error) availableStock = data || 0;
+                        } else {
+                            const { data, error } = await _supabase
+                                .rpc('get_product_available_stock', {
+                                    p_product_id: item.product_id,
+                                    p_cart_id: cartId
+                                });
+                            if (!error) availableStock = data || 0;
+                        }
+                        return { ...item, availableStock };
+                    } catch (error) {
+                        console.error('Error checking stock:', error);
+                        return { ...item, availableStock: 0 };
+                    }
+                });
+                
+                const itemsWithStock = await Promise.all(stockCheckPromises);
+                
+                cartItemsList.innerHTML = itemsWithStock.map((item, index) => {
+                    const itemTotal = item.price * item.quantity;
+                    subtotal += itemTotal;
+                    
+                    const isOutOfStock = item.availableStock < item.quantity;
+                    
+                    return `
+                        <div class="cart-item" data-index="${index}" style="${isOutOfStock ? 'border-left: 4px solid #e74c3c;' : ''}">
+                            <div class="cart-item-image">
+                                ${item.image ? 
+                                    `<img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/80x80?text=Product'">` :
+                                    `<i class="fas fa-box" style="font-size: 2rem; color: #ccc;"></i>`
+                                }
+                            </div>
+                            <div class="cart-item-details">
+                                <h4>${escapeHtml(item.name)}</h4>
+                                <p class="item-brand">${escapeHtml(item.product_name || 'Accessory')}</p>
+                                <p class="item-price">$${item.price.toFixed(2)}</p>
+                                ${isOutOfStock ? 
+                                    `<p style="color: #e74c3c; font-size: 0.8rem; margin-top: 0.25rem;">
+                                        <i class="fas fa-exclamation-triangle"></i> 
+                                        Only ${item.availableStock} available in stock
+                                    </p>` : 
+                                    ''
+                                }
+                            </div>
+                            <div class="cart-item-quantity">
+                                <button onclick="updateQuantity(${index}, -1)" ${isOutOfStock ? 'disabled' : ''}>-</button>
+                                <span>${item.quantity}</span>
+                                <button onclick="updateQuantity(${index}, 1)" ${isOutOfStock ? 'disabled' : ''}>+</button>
+                            </div>
+                            <div class="cart-item-total">
+                                $${itemTotal.toFixed(2)}
+                            </div>
+                            <div class="cart-item-remove">
+                                <button onclick="removeItem(${index})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
                     `;
-                    
-                    const userMenu = authIcon.querySelector('.user-menu');
-                    const dropdown = authIcon.querySelector('.user-dropdown');
-                    if (userMenu && dropdown) {
-                        userMenu.addEventListener('mouseenter', () => dropdown.style.display = 'block');
-                        userMenu.addEventListener('mouseleave', () => dropdown.style.display = 'none');
-                    }
-                } else {
-                    authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
+                }).join('');
+                
+                // Update summary
+                const shipping = subtotal > 50 ? 0 : 10;
+                const tax = subtotal * 0.1;
+                const total = subtotal + shipping + tax;
+                
+                document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+                document.getElementById('shipping').textContent = shipping === 0 ? 'Free' : `$${shipping.toFixed(2)}`;
+                document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+                document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+                
+                // Check if any item is out of stock
+                const hasOutOfStock = itemsWithStock.some(item => item.availableStock < item.quantity);
+                const checkoutBtn = document.querySelector('.cart-summary .btn-primary');
+                if (checkoutBtn) {
+                    checkoutBtn.disabled = hasOutOfStock;
+                    checkoutBtn.title = hasOutOfStock ? 'Some items are out of stock' : '';
+                    checkoutBtn.style.opacity = hasOutOfStock ? '0.5' : '1';
+                    checkoutBtn.style.cursor = hasOutOfStock ? 'not-allowed' : 'pointer';
                 }
+                
+                updateCartCount();
             }
-        }
-        
-        window.logout = function() {
-            localStorage.removeItem('user');
-            showNotification('Logged out successfully!');
-            setTimeout(() => window.location.reload(), 1000);
-        };
-        
-        function showNotification(message, isError = false) {
-            const notification = document.createElement('div');
-            notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i><span>${message}</span>`;
-            document.body.appendChild(notification);
             
-            notification.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: ${isError ? '#e74c3c' : '#27ae60'};
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                z-index: 10000;
-                animation: slideInRight 0.3s ease;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                font-family: 'Inter', sans-serif;
-            `;
-            
-            setTimeout(() => notification.remove(), 3000);
-        }
-        
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-        
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCart();
-            updateAuthUI();
-            
-            // Modal close
-            document.querySelector('.modal-close').onclick = closeModal;
-            window.onclick = function(event) {
-                const modal = document.getElementById('checkout-modal');
-                if (event.target === modal) closeModal();
+            // Update quantity
+            window.updateQuantity = async function(index, change) {
+                const cart = getCart();
+                
+                if (cart[index]) {
+                    const newQuantity = cart[index].quantity + change;
+                    
+                    if (newQuantity <= 0) {
+                        // Remove item and release stock
+                        await removeItem(index);
+                        return;
+                    }
+                    
+                    // Check if enough stock available
+                    let availableStock = 0;
+                    if (cart[index].variant_id) {
+                        const { data, error } = await _supabase
+                            .rpc('get_available_stock', {
+                                p_variant_id: cart[index].variant_id,
+                                p_cart_id: cartId
+                            });
+                        if (!error) availableStock = data || 0;
+                    } else {
+                        const { data, error } = await _supabase
+                            .rpc('get_product_available_stock', {
+                                p_product_id: cart[index].product_id,
+                                p_cart_id: cartId
+                            });
+                        if (!error) availableStock = data || 0;
+                    }
+                    
+                    if (newQuantity > availableStock) {
+                        showNotification(`Only ${availableStock} items available in stock`, true);
+                        return;
+                    }
+                    
+                    // Update reservation
+                    const { error } = await _supabase
+                        .rpc('reserve_stock', {
+                            p_cart_id: cartId,
+                            p_product_id: cart[index].product_id,
+                            p_variant_id: cart[index].variant_id || null,
+                            p_quantity: change > 0 ? 1 : -1
+                        });
+                    
+                    if (error) {
+                        console.error('Error updating reservation:', error);
+                        showNotification('Failed to update stock reservation', true);
+                        return;
+                    }
+                    
+                    cart[index].quantity = newQuantity;
+                    saveCart(cart);
+                    await loadCart();
+                }
             };
             
-            // Mobile menu toggle
-            const menuToggle = document.querySelector('.menu-toggle');
-            const navMenu = document.querySelector('.nav-menu');
-            if (menuToggle) {
-                menuToggle.addEventListener('click', () => {
-                    navMenu.classList.toggle('active');
+            // Remove item
+            window.removeItem = async function(index) {
+                const cart = getCart();
+                const item = cart[index];
+                
+                if (item) {
+                    // Release stock reservation
+                    try {
+                        await _supabase
+                            .rpc('release_stock', {
+                                p_cart_id: cartId,
+                                p_product_id: item.product_id,
+                                p_variant_id: item.variant_id || null
+                            });
+                    } catch (error) {
+                        console.error('Error releasing stock:', error);
+                    }
+                    
+                    cart.splice(index, 1);
+                    saveCart(cart);
+                    await loadCart();
+                    showNotification('Item removed from cart');
+                }
+            };
+            
+            // Clear entire cart
+            window.clearCart = async function() {
+                if (confirm('Are you sure you want to clear your entire cart?')) {
+                    // Release all stock reservations
+                    try {
+                        await _supabase
+                            .rpc('release_stock', {
+                                p_cart_id: cartId,
+                                p_product_id: null,
+                                p_variant_id: null
+                            });
+                    } catch (error) {
+                        console.error('Error releasing stock:', error);
+                    }
+                    
+                    localStorage.removeItem('cart');
+                    await loadCart();
+                    showNotification('Cart cleared');
+                }
+            };
+            
+            // Proceed to checkout
+            window.proceedToCheckout = function() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const cart = getCart();
+                
+                if (cart.length === 0) {
+                    showNotification('Your cart is empty', true);
+                    return;
+                }
+                
+                // Check if user is logged in
+                if (!user || !user.id) {
+                    showNotification('Please login to continue', true);
+                    setTimeout(() => {
+                        window.location.href = 'auth.html';
+                    }, 1500);
+                    return;
+                }
+                
+                // Pre-fill form with user data
+                document.getElementById('full-name').value = user.name || '';
+                document.getElementById('email').value = user.email || '';
+                
+                // Show modal
+                document.getElementById('checkout-modal').style.display = 'flex';
+            };
+            
+            // Handle checkout form submission
+            document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const fullName = document.getElementById('full-name').value;
+                const email = document.getElementById('email').value;
+                const phone = document.getElementById('phone').value;
+                const address = document.getElementById('address').value;
+                const paymentMethod = document.getElementById('payment-method').value;
+                const cart = getCart();
+                const user = JSON.parse(localStorage.getItem('user'));
+                
+                if (!paymentMethod) {
+                    showNotification('Please select a payment method', true);
+                    return;
+                }
+                
+                // Disable submit button
+                const submitBtn = document.getElementById('place-order-btn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
+                
+                showLoading(true);
+                
+                try {
+                    // Prepare items for checkout
+                    const items = cart.map(item => ({
+                        product_id: item.product_id,
+                        variant_id: item.variant_id || null,
+                        quantity: item.quantity
+                    }));
+                    
+                    // Process checkout with Supabase
+                    const { data, error } = await _supabase
+                        .rpc('process_checkout', {
+                            p_cart_id: cartId,
+                            p_items: items
+                        });
+                    
+                    if (error) {
+                        throw new Error(error.message || 'Failed to process order');
+                    }
+                    
+                    // Calculate totals
+                    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    const shipping = subtotal > 50 ? 0 : 10;
+                    const tax = subtotal * 0.1;
+                    const total = subtotal + shipping + tax;
+                    
+                    // Create order object
+                    const order = {
+                        orderId: 'ORD-' + Date.now(),
+                        userId: user.id,
+                        customerName: fullName,
+                        email: email,
+                        phone: phone,
+                        address: address,
+                        paymentMethod: paymentMethod,
+                        items: cart,
+                        subtotal: subtotal,
+                        shipping: shipping,
+                        tax: tax,
+                        total: total,
+                        status: 'confirmed',
+                        date: new Date().toISOString(),
+                        reservationId: cartId
+                    };
+                    
+                    // Save order to localStorage (in production, save to Supabase orders table)
+                    const orders = JSON.parse(localStorage.getItem('orders')) || [];
+                    orders.push(order);
+                    localStorage.setItem('orders', JSON.stringify(orders));
+                    
+                    // Clear cart
+                    localStorage.removeItem('cart');
+                    
+                    // Close modal
+                    closeModal();
+                    
+                    // Show order confirmation
+                    document.getElementById('order-id-display').textContent = order.orderId;
+                    document.getElementById('order-confirmation-modal').style.display = 'flex';
+                    
+                    showNotification(`Order placed successfully! Order ID: ${order.orderId}`);
+                    
+                    // Update cart count
+                    updateCartCount();
+                    
+                    // Refresh cart display
+                    await loadCart();
+                    
+                } catch (error) {
+                    console.error('Checkout error:', error);
+                    showNotification(error.message || 'Failed to process checkout. Please try again.', true);
+                    
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Place Order';
+                    
+                } finally {
+                    showLoading(false);
+                }
+            });
+            
+            // Close modal
+            function closeModal() {
+                document.getElementById('checkout-modal').style.display = 'none';
+                document.getElementById('checkout-form').reset();
+                
+                const submitBtn = document.getElementById('place-order-btn');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Place Order';
+            }
+            
+            // Update cart count in navbar
+            function updateCartCount() {
+                const cart = getCart();
+                const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+                const cartCount = document.querySelector('.cart-count');
+                if (cartCount) cartCount.textContent = totalItems;
+            }
+            
+            // Update auth UI
+            function updateAuthUI() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const authIcon = document.getElementById('auth-icon');
+                
+                if (authIcon) {
+                    if (user && user.name) {
+                        authIcon.innerHTML = `
+                            <div class="user-menu" style="position: relative; cursor: pointer;">
+                                <i class="fas fa-user-circle"></i>
+                                <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
+                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100;">
+                                    <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
+                                    <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
+                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none;">Logout</a>
+                                </div>
+                            </div>
+                        `;
+                        
+                        const userMenu = authIcon.querySelector('.user-menu');
+                        const dropdown = authIcon.querySelector('.user-dropdown');
+                        if (userMenu && dropdown) {
+                            userMenu.addEventListener('mouseenter', () => dropdown.style.display = 'block');
+                            userMenu.addEventListener('mouseleave', () => dropdown.style.display = 'none');
+                        }
+                    } else {
+                        authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
+                    }
+                }
+            }
+            
+            window.logout = function() {
+                localStorage.removeItem('user');
+                showNotification('Logged out successfully!');
+                setTimeout(() => window.location.reload(), 1000);
+            };
+            
+            function showNotification(message, isError = false) {
+                const notification = document.createElement('div');
+                notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i><span>${message}</span>`;
+                document.body.appendChild(notification);
+                
+                notification.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: ${isError ? '#e74c3c' : '#27ae60'};
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    z-index: 10000;
+                    animation: slideInRight 0.3s ease;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                    font-family: 'Inter', sans-serif;
+                `;
+                
+                setTimeout(() => notification.remove(), 3000);
+            }
+            
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/[&<>]/g, function(m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    return m;
                 });
             }
-        });
+            
+            // Initialize
+            document.addEventListener('DOMContentLoaded', () => {
+                loadCart();
+                updateAuthUI();
+                
+                // Modal close
+                const closeBtn = document.querySelector('.modal-close');
+                if (closeBtn) {
+                    closeBtn.onclick = closeModal;
+                }
+                
+                window.onclick = function(event) {
+                    const checkoutModal = document.getElementById('checkout-modal');
+                    const confirmationModal = document.getElementById('order-confirmation-modal');
+                    if (event.target === checkoutModal) closeModal();
+                    if (event.target === confirmationModal) {
+                        confirmationModal.style.display = 'none';
+                    }
+                };
+                
+                // Mobile menu toggle
+                const menuToggle = document.querySelector('.menu-toggle');
+                const navMenu = document.querySelector('.nav-menu');
+                if (menuToggle) {
+                    menuToggle.addEventListener('click', () => {
+                        navMenu.classList.toggle('active');
+                    });
+                }
+                
+                // Cleanup expired reservations periodically
+                setInterval(async () => {
+                    try {
+                        await _supabase.rpc('cleanup_expired_reservations');
+                    } catch (error) {
+                        console.error('Error cleaning up reservations:', error);
+                    }
+                }, 5 * 60 * 1000);
+            });
+        })();
     </script>
     
     <style>
@@ -499,6 +736,12 @@
             border-radius: 10px;
             box-shadow: var(--shadow);
             margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .cart-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
         
         .cart-item-image {
@@ -551,10 +794,15 @@
             transition: var(--transition);
         }
         
-        .cart-item-quantity button:hover {
+        .cart-item-quantity button:hover:not(:disabled) {
             background: var(--secondary-color);
             color: white;
             border-color: var(--secondary-color);
+        }
+        
+        .cart-item-quantity button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         .cart-item-quantity span {
@@ -617,6 +865,11 @@
         .btn-block {
             width: 100%;
             margin-top: 1rem;
+        }
+        
+        .btn-block:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         .btn-secondary {
@@ -694,6 +947,35 @@
             padding: 1.5rem;
         }
         
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            transition: var(--transition);
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+        
         textarea {
             width: 100%;
             padding: 0.75rem;
@@ -701,6 +983,18 @@
             border-radius: 8px;
             font-family: 'Inter', sans-serif;
             resize: vertical;
+            transition: var(--transition);
+        }
+        
+        #loading-spinner {
+            text-align: center;
+            padding: 2rem;
+            grid-column: 1 / -1;
+        }
+        
+        #loading-spinner i {
+            font-size: 3rem;
+            color: var(--secondary-color);
         }
         
         @keyframes slideUp {
@@ -763,6 +1057,10 @@
             
             .cart-item {
                 position: relative;
+            }
+            
+            .cart-summary {
+                position: static;
             }
         }
     </style>

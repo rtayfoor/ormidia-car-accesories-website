@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* Previous styles kept, adding new order management styles */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -91,6 +92,18 @@
             align-items: center;
             gap: 8px;
         }
+        .db-badge {
+            background: #E30613;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 6px;
+        }
+        .db-item.active .db-badge {
+            background: white;
+            color: #E30613;
+        }
         .main-content {
             flex: 1;
             display: flex;
@@ -134,13 +147,15 @@
         .btn-primary:hover { background: #b80510; transform: translateY(-1px); }
         .btn-outline { background: white; border: 1px solid #cbd5e1; }
         .btn-outline:hover { border-color: #E30613; color: #E30613; }
-        .btn-danger { background: #fee2e2; color: #b91c1c; }
-        .btn-danger:hover { background: #fecaca; }
         .btn-success { background: #dcfce7; color: #166534; }
         .btn-success:hover { background: #bbf7d0; }
+        .btn-danger { background: #fee2e2; color: #b91c1c; }
+        .btn-danger:hover { background: #fecaca; }
         .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
-        .btn-stock { background: #dbeafe; color: #1d4ed8; }
-        .btn-stock:hover { background: #bfdbfe; }
+        .btn-completed { background: #22c55e; color: white; }
+        .btn-completed:hover { background: #16a34a; }
+        .btn-pending { background: #f59e0b; color: white; }
+        .btn-pending:hover { background: #d97706; }
         .tables-list {
             background: white;
             padding: 0.75rem 1.5rem;
@@ -197,26 +212,31 @@
             vertical-align: middle;
         }
         .data-table tr:hover { background: #fef9f5; }
-        .data-table .null-value { color: #94a3b8; font-style: italic; }
-        .action-icons i {
-            margin: 0 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 4px;
-            border-radius: 4px;
-            transition: 0.2s;
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
-        .edit-row { color: #3b82f6; }
-        .edit-row:hover { background: #eff6ff; }
-        .delete-row { color: #E30613; }
-        .delete-row:hover { background: #fee2e2; }
-        .save-row { color: #22c55e; }
-        .save-row:hover { background: #dcfce7; }
-        .cancel-edit { color: #94a3b8; }
-        .cancel-edit:hover { background: #f1f5f9; }
-        .stock-low { color: #f59e0b; }
-        .stock-out { color: #E30613; font-weight: bold; }
-        .stock-ok { color: #22c55e; }
+        .status-badge.pending { background: #fef3c7; color: #92400e; }
+        .status-badge.completed { background: #dcfce7; color: #166534; }
+        .status-badge.cancelled { background: #fee2e2; color: #991b1b; }
+        .order-details {
+            background: #f8fafc;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        .order-details .item-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .order-details .item-row:last-child {
+            border-bottom: none;
+        }
         .modal {
             position: fixed;
             top: 0; left: 0;
@@ -235,7 +255,7 @@
         .modal-content {
             background: white;
             width: 90%;
-            max-width: 700px;
+            max-width: 800px;
             border-radius: 16px;
             padding: 1.5rem;
             max-height: 90vh;
@@ -246,69 +266,22 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        .modal-content h3 { 
-            margin-bottom: 0.5rem; 
-            color: #1e293b;
+        .modal-content h3 { margin-bottom: 0.5rem; color: #1e293b; display: flex; align-items: center; gap: 8px; }
+        .modal-content .order-detail-row {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
         }
-        .modal-content p.subtitle {
-            color: #94a3b8;
-            font-size: 0.85rem;
-            margin-bottom: 1.5rem;
-        }
-        .modal-content label {
-            display: block;
-            font-size: 0.8rem;
+        .modal-content .order-detail-row .label {
             font-weight: 600;
-            margin-top: 12px;
+            min-width: 150px;
             color: #475569;
         }
-        .modal-content label .required {
-            color: #E30613;
-            margin-left: 4px;
+        .modal-content .order-detail-row .value {
+            flex: 1;
+            color: #1e293b;
         }
-        .modal-content label .field-type {
-            font-weight: 400;
-            color: #94a3b8;
-            font-size: 0.7rem;
-        }
-        .modal-content input, .modal-content textarea, .modal-content select {
-            width: 100%;
-            padding: 10px;
-            margin: 4px 0 0;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 0.9rem;
-            transition: 0.2s;
-        }
-        .modal-content input:focus, .modal-content textarea:focus, .modal-content select:focus {
-            outline: none;
-            border-color: #E30613;
-            box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.1);
-        }
-        .modal-content textarea {
-            min-height: 60px;
-            resize: vertical;
-        }
-        .modal-content .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-        .modal-content .form-row .full-width {
-            grid-column: 1 / -1;
-        }
-        .flex-buttons { 
-            display: flex; 
-            justify-content: flex-end; 
-            gap: 12px; 
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px solid #e2e8f0;
-        }
+        .flex-buttons { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
         .toast {
             position: fixed;
             bottom: 20px;
@@ -349,114 +322,79 @@
             gap: 0.5rem;
             flex-wrap: wrap;
         }
-        .pagination {
+        .order-filter-bar {
             display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 20px;
-        }
-        .page-btn {
-            padding: 5px 12px;
-            border: 1px solid #cbd5e1;
-            background: white;
-            cursor: pointer;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            transition: 0.2s;
-        }
-        .page-btn:hover { background: #f1f5f9; }
-        .page-btn.active { background: #E30613; color: white; border-color: #E30613; }
-        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .editable {
-            background: #fef9f5;
-            border-left: 3px solid #E30613;
-        }
-        .editable-input {
-            width: 100%;
-            padding: 4px 8px;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: inherit;
-            background: white;
-        }
-        .editable-input:focus {
-            outline: none;
-            border-color: #E30613;
-            box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.1);
-        }
-        .editable-input:disabled {
-            background: #f1f5f9;
-            cursor: not-allowed;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.65rem;
-            font-weight: 600;
-        }
-        .status-badge.success { background: #dcfce7; color: #166534; }
-        .status-badge.error { background: #fee2e2; color: #991b1b; }
-        .status-badge.warning { background: #fef3c7; color: #92400e; }
-        .insert-success {
-            background: #dcfce7;
-            border: 2px solid #22c55e;
-            padding: 1rem;
-            border-radius: 8px;
+            gap: 1rem;
             margin-bottom: 1rem;
-            display: none;
+            flex-wrap: wrap;
+            align-items: center;
         }
-        .insert-success.show {
-            display: block;
+        .order-filter-bar select, .order-filter-bar input {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: inherit;
+            background: white;
         }
-        .field-hint {
-            font-size: 0.7rem;
-            color: #94a3b8;
-            margin-top: 4px;
+        .order-filter-bar .search-box {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.25rem 0.5rem;
+            flex: 1;
+            min-width: 200px;
         }
-        .sync-status {
+        .order-filter-bar .search-box input {
+            border: none;
+            padding: 0.5rem;
+            flex: 1;
+            font-family: inherit;
+        }
+        .order-filter-bar .search-box input:focus { outline: none; }
+        .order-filter-bar .search-box i { color: #94a3b8; padding: 0.5rem; }
+        .order-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .order-stat-card {
+            background: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+            min-width: 100px;
+        }
+        .order-stat-card .number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .order-stat-card .label {
             font-size: 0.75rem;
             color: #94a3b8;
-            padding: 4px 12px;
-            background: #f1f5f9;
-            border-radius: 20px;
-            display: inline-block;
         }
-        .sync-status i {
-            color: #22c55e;
-            font-size: 0.5rem;
-            margin-right: 4px;
+        .order-stat-card.pending .number { color: #f59e0b; }
+        .order-stat-card.completed .number { color: #22c55e; }
+        .order-stat-card.total .number { color: #E30613; }
+        .view-order-btn {
+            color: #3b82f6;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: 0.2s;
         }
-        .refresh-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 6px;
-        }
-        .refresh-indicator.online { background: #22c55e; }
-        .refresh-indicator.loading { background: #f59e0b; animation: pulse 1s infinite; }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        .stock-difference {
-            font-size: 0.7rem;
-            padding: 2px 8px;
-            border-radius: 10px;
-            margin-left: 6px;
-        }
-        .stock-difference.higher { background: #dcfce7; color: #166534; }
-        .stock-difference.lower { background: #fee2e2; color: #991b1b; }
+        .view-order-btn:hover { background: #eff6ff; }
         @media (max-width: 768px) {
             .sidebar { width: 250px; }
             .app-container { flex-direction: column; }
             .sidebar { width: 100%; max-height: 200px; border-right: none; border-bottom: 1px solid #e2e8f0; }
             .data-viewer { padding: 1rem; }
-            .modal-content .form-row {
-                grid-template-columns: 1fr;
-            }
+            .order-filter-bar { flex-direction: column; }
+            .order-stat-card { min-width: 80px; padding: 0.5rem 1rem; }
         }
     </style>
 </head>
@@ -492,7 +430,6 @@
                     <span id="rowCount"><i class="fas fa-rows"></i> 0 rows</span>
                     <span id="colCount"><i class="fas fa-columns"></i> 0 columns</span>
                     <span id="tableNameDisplay"></span>
-                    <span class="sync-status"><i class="fas fa-circle"></i> Live data</span>
                 </div>
             </div>
             <div class="quick-actions">
@@ -500,7 +437,6 @@
                     <i class="fas fa-save"></i> Save All Changes
                 </button>
                 <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
-                <button class="btn btn-stock btn-sm" id="manageStockBtn"><i class="fas fa-boxes"></i> Manage Stock</button>
                 <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
             </div>
         </div>
@@ -515,20 +451,31 @@
     </div>
 </div>
 
+<!-- View Order Modal -->
+<div id="viewOrderModal" class="modal">
+    <div class="modal-content">
+        <h3><i class="fas fa-receipt" style="color:#E30613;"></i> Order Details</h3>
+        <div id="orderDetailsContent"></div>
+        <div class="flex-buttons">
+            <button class="btn btn-outline" id="closeOrderModal">Close</button>
+            <button class="btn btn-completed" id="markCompletedBtn" style="display:none;">
+                <i class="fas fa-check"></i> Mark as Completed
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Insert Row Modal -->
 <div id="insertRowModal" class="modal">
     <div class="modal-content">
         <h3><i class="fas fa-plus-circle" style="color:#E30613;"></i> Insert New Row</h3>
         <p class="subtitle">Add a new record to <strong id="insertTableName">table</strong></p>
-        
-        <div id="insertSuccess" class="insert-success">
+        <div id="insertSuccess" style="display:none;background:#dcfce7;padding:1rem;border-radius:8px;margin-bottom:1rem;">
             <i class="fas fa-check-circle" style="color:#22c55e;"></i>
             <span id="insertSuccessMessage">Row inserted successfully!</span>
         </div>
-        
         <form id="insertForm" onsubmit="return false;">
             <div id="insertRowFields"></div>
-            
             <div class="flex-buttons">
                 <button type="button" class="btn btn-outline" id="cancelInsertModal">Cancel</button>
                 <button type="submit" class="btn btn-primary" id="confirmInsertRow">
@@ -536,28 +483,6 @@
                 </button>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- Manage Stock Modal -->
-<div id="stockModal" class="modal">
-    <div class="modal-content">
-        <h3><i class="fas fa-boxes" style="color:#1d4ed8;"></i> Manage Stock</h3>
-        <p class="subtitle">Update stock quantities for <strong>product_variants</strong></p>
-        
-        <div id="stockSuccess" class="insert-success">
-            <i class="fas fa-check-circle" style="color:#22c55e;"></i>
-            <span id="stockSuccessMessage">Stock updated successfully!</span>
-        </div>
-        
-        <div id="stockItems"></div>
-        
-        <div class="flex-buttons">
-            <button type="button" class="btn btn-outline" id="cancelStockModal">Close</button>
-            <button type="button" class="btn btn-success" id="saveStockBtn">
-                <i class="fas fa-save"></i> Save All Stock Changes
-            </button>
-        </div>
     </div>
 </div>
 
@@ -590,9 +515,12 @@
         let tables = [];
         let editedRows = {};
         let originalRows = {};
-        let stockChanges = {};
+        let currentOrderId = null;
 
         const KNOWN_TABLES = ['products', 'product_variants', 'orders', 'users', 'cart_reservations'];
+
+        // Special table names for order management
+        const ORDER_TABLE = 'orders';
 
         async function loadTables() {
             try {
@@ -636,7 +564,11 @@
             
             container.innerHTML = tableList.map(table => {
                 const tableName = typeof table === 'string' ? table : String(table);
-                return `<div class="table-chip" data-table="${tableName}">📄 ${tableName}</div>`;
+                let badge = '';
+                if (tableName === 'orders') {
+                    badge = `<span class="db-badge">📦 Orders</span>`;
+                }
+                return `<div class="table-chip" data-table="${tableName}">📄 ${tableName} ${badge}</div>`;
             }).join('');
             
             document.querySelectorAll('.table-chip').forEach(el => {
@@ -688,6 +620,12 @@
             document.getElementById('saveChangesBtn').style.display = 'none';
             
             try {
+                // If this is the orders table, use the special order view
+                if (currentTable === 'orders') {
+                    await loadOrdersData(page);
+                    return;
+                }
+
                 const { data: sampleData, error: sampleError } = await supabase
                     .from(currentTable)
                     .select('*')
@@ -738,11 +676,7 @@
                     document.getElementById('tableInfo').style.display = 'flex';
                     document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${currentTable} <small>${fallbackCount || 0} rows</small>`;
                     
-                    if (currentTable === 'product_variants') {
-                        await renderTableWithStock(currentColumns, currentData, currentTable, fallbackCount);
-                    } else {
-                        renderTable(currentColumns, currentData, currentTable, fallbackCount);
-                    }
+                    renderTable(currentColumns, currentData, currentTable, fallbackCount);
                 } else {
                     currentData = data || [];
                     totalPages = Math.ceil((count || 0) / pageSize);
@@ -753,11 +687,7 @@
                     document.getElementById('tableInfo').style.display = 'flex';
                     document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${currentTable} <small>${count || 0} rows</small>`;
                     
-                    if (currentTable === 'product_variants') {
-                        await renderTableWithStock(currentColumns, currentData, currentTable, count);
-                    } else {
-                        renderTable(currentColumns, currentData, currentTable, count);
-                    }
+                    renderTable(currentColumns, currentData, currentTable, count);
                 }
                 
                 document.querySelectorAll('.table-chip').forEach(el => {
@@ -771,6 +701,335 @@
             }
         }
 
+        // ============ ORDERS MANAGEMENT ============
+        async function loadOrdersData(page = 1) {
+            try {
+                const from = (page - 1) * pageSize;
+                const to = from + pageSize - 1;
+                
+                // Get orders with user details
+                const { data: orders, error: ordersError, count } = await supabase
+                    .from('orders')
+                    .select(`
+                        *,
+                        users:user_id (
+                            name,
+                            email
+                        )
+                    `, { count: 'exact' })
+                    .order('created_at', { ascending: false })
+                    .range(from, to);
+                
+                if (ordersError) throw ordersError;
+                
+                currentData = orders || [];
+                totalPages = Math.ceil((count || 0) / pageSize);
+                
+                document.getElementById('rowCount').textContent = `${count || 0} rows`;
+                document.getElementById('colCount').textContent = `7 columns`;
+                document.getElementById('tableNameDisplay').textContent = `📄 Orders`;
+                document.getElementById('tableInfo').style.display = 'flex';
+                document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-receipt"></i> Orders <small>${count || 0} orders</small>`;
+                
+                renderOrdersTable(orders, count);
+                
+                document.querySelectorAll('.table-chip').forEach(el => {
+                    el.classList.remove('active');
+                    if (el.dataset.table === 'orders') el.classList.add('active');
+                });
+            } catch (err) {
+                console.error('Error loading orders:', err);
+                document.getElementById('dataViewer').innerHTML = `<div class="loading" style="color:#E30613;">Error loading orders: ${err.message}</div>`;
+                showToast(err.message, true);
+            }
+        }
+
+        function renderOrdersTable(orders, totalOrders) {
+            if (!orders || orders.length === 0) {
+                document.getElementById('dataViewer').innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-receipt" style="font-size:3rem;"></i>
+                        <h3>No orders yet</h3>
+                        <p>Orders will appear here when customers make purchases.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Count orders by status
+            const pendingCount = orders.filter(o => o.status === 'pending').length;
+            const completedCount = orders.filter(o => o.status === 'completed').length;
+            const totalCount = orders.length;
+
+            let html = `
+                <div class="order-stats">
+                    <div class="order-stat-card total">
+                        <div class="number">${totalCount}</div>
+                        <div class="label">Total Orders</div>
+                    </div>
+                    <div class="order-stat-card pending">
+                        <div class="number">${pendingCount}</div>
+                        <div class="label">Pending</div>
+                    </div>
+                    <div class="order-stat-card completed">
+                        <div class="number">${completedCount}</div>
+                        <div class="label">Completed</div>
+                    </div>
+                </div>
+                <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th style="text-align:center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            orders.forEach(order => {
+                const items = order.items || [];
+                const itemCount = items.length;
+                const statusClass = order.status === 'completed' ? 'completed' : 'pending';
+                const statusLabel = order.status === 'completed' ? '✅ Completed' : '⏳ Pending';
+                
+                // Format date
+                const date = order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : 'N/A';
+                
+                // Get customer name
+                const customerName = order.users?.name || order.customer_name || 'Guest';
+                const customerEmail = order.users?.email || order.customer_email || 'N/A';
+                
+                html += `
+                    <tr>
+                        <td><strong>#${order.id}</strong></td>
+                        <td>
+                            <div><strong>${escapeHtml(customerName)}</strong></div>
+                            <div style="font-size:0.75rem;color:#94a3b8;">${escapeHtml(customerEmail)}</div>
+                            ${order.customer_phone ? `<div style="font-size:0.75rem;color:#94a3b8;">📱 ${escapeHtml(order.customer_phone)}</div>` : ''}
+                        </td>
+                        <td>
+                            <div class="order-details">
+                                ${items.slice(0, 3).map(item => `
+                                    <div class="item-row">
+                                        <span>${escapeHtml(item.product_name || 'Product')}</span>
+                                        <span>×${item.quantity || 1}</span>
+                                    </div>
+                                `).join('')}
+                                ${items.length > 3 ? `<div class="item-row" style="color:#94a3b8;">+ ${items.length - 3} more items</div>` : ''}
+                            </div>
+                        </td>
+                        <td><strong>$${parseFloat(order.total || 0).toFixed(2)}</strong></td>
+                        <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                        <td style="font-size:0.8rem;color:#64748b;">${date}</td>
+                        <td style="text-align:center;">
+                            <i class="fas fa-eye view-order-btn" onclick="viewOrder(${order.id})" title="View Order"></i>
+                            ${order.status === 'pending' ? `<i class="fas fa-check-circle" style="color:#22c55e;cursor:pointer;margin-left:8px;" onclick="markOrderCompleted(${order.id})" title="Mark as Completed"></i>` : ''}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table></div>`;
+
+            if (totalPages > 1) {
+                html += `<div class="pagination">`;
+                html += `<button class="page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+                for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+                html += `<button class="page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+                html += `</div>`;
+            }
+
+            document.getElementById('dataViewer').innerHTML = html;
+
+            document.querySelectorAll('.page-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (!this.disabled && currentTable) {
+                        loadOrdersData(parseInt(this.dataset.page));
+                    }
+                });
+            });
+        }
+
+        // View order details
+        window.viewOrder = async function(orderId) {
+            try {
+                const { data: order, error } = await supabase
+                    .from('orders')
+                    .select(`
+                        *,
+                        users:user_id (
+                            name,
+                            email
+                        )
+                    `)
+                    .eq('id', orderId)
+                    .single();
+                
+                if (error) throw error;
+                
+                currentOrderId = orderId;
+                const items = order.items || [];
+                const date = order.created_at ? new Date(order.created_at).toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) : 'N/A';
+                
+                const customerName = order.users?.name || order.customer_name || 'Guest';
+                const customerEmail = order.users?.email || order.customer_email || 'N/A';
+                
+                let html = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div>
+                            <div class="order-detail-row">
+                                <span class="label">Order ID:</span>
+                                <span class="value"><strong>#${order.id}</strong></span>
+                            </div>
+                            <div class="order-detail-row">
+                                <span class="label">Status:</span>
+                                <span class="value"><span class="status-badge ${order.status === 'completed' ? 'completed' : 'pending'}">${order.status === 'completed' ? '✅ Completed' : '⏳ Pending'}</span></span>
+                            </div>
+                            <div class="order-detail-row">
+                                <span class="label">Date:</span>
+                                <span class="value">${date}</span>
+                            </div>
+                            <div class="order-detail-row">
+                                <span class="label">Total Amount:</span>
+                                <span class="value" style="font-size:1.2rem;font-weight:700;color:#E30613;">$${parseFloat(order.total || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="order-detail-row">
+                                <span class="label">Customer:</span>
+                                <span class="value"><strong>${escapeHtml(customerName)}</strong></span>
+                            </div>
+                            <div class="order-detail-row">
+                                <span class="label">Email:</span>
+                                <span class="value">${escapeHtml(customerEmail)}</span>
+                            </div>
+                            <div class="order-detail-row">
+                                <span class="label">Phone:</span>
+                                <span class="value">${escapeHtml(order.customer_phone || 'N/A')}</span>
+                            </div>
+                            <div class="order-detail-row">
+                                <span class="label">Delivery Address:</span>
+                                <span class="value">${escapeHtml(order.delivery_address || 'N/A')}</span>
+                            </div>
+                            ${order.notes ? `
+                            <div class="order-detail-row">
+                                <span class="label">Notes:</span>
+                                <span class="value">${escapeHtml(order.notes)}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin:1rem 0 0.5rem;"><i class="fas fa-box"></i> Order Items</h4>
+                    <table style="width:100%;border-collapse:collapse;background:#f8fafc;border-radius:8px;overflow:hidden;">
+                        <thead>
+                            <tr style="background:#e2e8f0;">
+                                <th style="padding:8px 12px;text-align:left;">Product</th>
+                                <th style="padding:8px 12px;text-align:center;">Quantity</th>
+                                <th style="padding:8px 12px;text-align:right;">Price</th>
+                                <th style="padding:8px 12px;text-align:right;">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr style="border-bottom:1px solid #e2e8f0;">
+                                    <td style="padding:8px 12px;">${escapeHtml(item.product_name || 'Product')}${item.variant_name ? ` <span style="font-size:0.8rem;color:#94a3b8;">(${escapeHtml(item.variant_name)})</span>` : ''}</td>
+                                    <td style="padding:8px 12px;text-align:center;">×${item.quantity || 1}</td>
+                                    <td style="padding:8px 12px;text-align:right;">$${parseFloat(item.price || 0).toFixed(2)}</td>
+                                    <td style="padding:8px 12px;text-align:right;">$${parseFloat((item.price || 0) * (item.quantity || 1)).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#f1f5f9;font-weight:700;">
+                                <td colspan="3" style="padding:8px 12px;text-align:right;">Total:</td>
+                                <td style="padding:8px 12px;text-align:right;color:#E30613;">$${parseFloat(order.total || 0).toFixed(2)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                `;
+                
+                document.getElementById('orderDetailsContent').innerHTML = html;
+                
+                // Show/hide mark as completed button
+                const markBtn = document.getElementById('markCompletedBtn');
+                if (order.status === 'pending') {
+                    markBtn.style.display = 'inline-flex';
+                    markBtn.onclick = () => markOrderCompleted(order.id);
+                } else {
+                    markBtn.style.display = 'none';
+                }
+                
+                document.getElementById('viewOrderModal').classList.add('active');
+                
+            } catch (err) {
+                console.error('Error loading order:', err);
+                showToast('Failed to load order details', true);
+            }
+        };
+
+        // Mark order as completed
+        window.markOrderCompleted = async function(orderId) {
+            if (!confirm('Mark this order as completed?')) return;
+            
+            try {
+                const { error } = await supabase
+                    .from('orders')
+                    .update({ status: 'completed' })
+                    .eq('id', orderId);
+                
+                if (error) throw error;
+                
+                showToast('✅ Order marked as completed!');
+                document.getElementById('viewOrderModal').classList.remove('active');
+                loadOrdersData(currentPage);
+            } catch (err) {
+                console.error('Error updating order:', err);
+                showToast('Failed to update order status', true);
+            }
+        };
+
+        // Close order modal
+        document.getElementById('closeOrderModal')?.addEventListener('click', () => {
+            document.getElementById('viewOrderModal').classList.remove('active');
+        });
+
+        // Close order modal on outside click
+        window.onclick = function(event) {
+            const orderModal = document.getElementById('viewOrderModal');
+            if (event.target === orderModal) {
+                orderModal.classList.remove('active');
+            }
+            const insertModal = document.getElementById('insertRowModal');
+            if (event.target === insertModal) {
+                insertModal.classList.remove('active');
+            }
+            const viewModal = document.getElementById('viewRowModal');
+            if (event.target === viewModal) {
+                viewModal.classList.remove('active');
+            }
+        };
+
+        // ============ DEFAULT COLUMNS ============
         function getDefaultColumns(tableName) {
             const defaultColumns = {
                 'products': [
@@ -828,6 +1087,7 @@
             ];
         }
 
+        // ============ RENDER TABLE ============
         function renderTable(columns, rows, tableName, totalRows) {
             if (!columns || !columns.length) {
                 document.getElementById('dataViewer').innerHTML = '<div class="loading">No columns found</div>';
@@ -839,7 +1099,7 @@
                     <div>
                         <strong><i class="fas fa-table"></i> ${tableName}</strong>
                         <span style="font-size:0.8rem;color:#94a3b8;margin-left:8px;">${totalRows || 0} total rows</span>
-                        ${Object.keys(editedRows).length > 0 ? `<span class="status-badge warning"><i class="fas fa-edit"></i> ${Object.keys(editedRows).length} unsaved changes</span>` : ''}
+                        ${Object.keys(editedRows).length > 0 ? `<span class="status-badge" style="background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:12px;font-size:0.65rem;"><i class="fas fa-edit"></i> ${Object.keys(editedRows).length} unsaved changes</span>` : ''}
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
@@ -1024,256 +1284,6 @@
             document.getElementById('saveChangesBtn').addEventListener('click', saveAllChanges);
         }
 
-        // ============ RENDER TABLE WITH STOCK ============
-        async function renderTableWithStock(columns, rows, tableName, totalRows) {
-            if (!columns || !columns.length) {
-                document.getElementById('dataViewer').innerHTML = '<div class="loading">No columns found</div>';
-                return;
-            }
-            
-            let html = `
-                <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                    <div>
-                        <strong><i class="fas fa-table"></i> ${tableName}</strong>
-                        <span style="font-size:0.8rem;color:#94a3b8;margin-left:8px;">${totalRows || 0} total rows</span>
-                        ${Object.keys(editedRows).length > 0 ? `<span class="status-badge warning"><i class="fas fa-edit"></i> ${Object.keys(editedRows).length} unsaved changes</span>` : ''}
-                        <span class="sync-status"><i class="fas fa-circle" style="color:#22c55e;font-size:0.5rem;"></i> Live stock data</span>
-                    </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                        <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
-                        <button class="btn btn-stock btn-sm" id="refreshStockBtn"><i class="fas fa-sync-alt"></i> Refresh Stock</button>
-                        <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
-                    </div>
-                </div>
-                <div style="overflow-x:auto;">
-                <table class="data-table">
-                    <thead><tr>
-                        ${columns.map(col => `<th>${col.name}<br><small style="font-weight:400;color:#94a3b8;">${col.type}</small></th>`).join('')}
-                        <th style="width:100px;text-align:center;">Total Stock</th>
-                        <th style="width:100px;text-align:center;">Reserved</th>
-                        <th style="width:100px;text-align:center;">Available</th>
-                        <th style="width:140px;text-align:center;">Actions</th>
-                    </tr></thead>
-                    <tbody>`;
-            
-            if (!rows || rows.length === 0) {
-                html += `<tr><td colspan="${columns.length + 4}" style="text-align:center;padding:2rem;color:#94a3b8;">No data. Click "Insert Row" to add</td></tr>`;
-            } else {
-                for (const row of rows) {
-                    const rowId = row[currentPrimaryKey];
-                    const isEditing = editedRows[rowId] !== undefined;
-                    const rowData = isEditing ? editedRows[rowId] : row;
-                    
-                    // Get stock status from Supabase
-                    let totalStock = row.stock_quantity || 0;
-                    let reservedStock = 0;
-                    let availableStock = totalStock;
-                    
-                    try {
-                        // Get available stock
-                        const { data: availData, error: availError } = await supabase
-                            .rpc('get_available_stock', {
-                                p_variant_id: row.id,
-                                p_cart_id: null
-                            });
-                        
-                        if (!availError && availData !== null) {
-                            availableStock = availData || 0;
-                        }
-                        
-                        // Get reserved quantity
-                        const { data: reservedData, error: reservedError } = await supabase
-                            .from('cart_reservations')
-                            .select('sum(quantity)')
-                            .eq('variant_id', row.id)
-                            .eq('is_active', true)
-                            .gt('expires_at', new Date().toISOString());
-                        
-                        if (!reservedError && reservedData && reservedData[0]) {
-                            reservedStock = parseInt(reservedData[0].sum) || 0;
-                        }
-                    } catch (e) {
-                        // If RPC fails, use the stock_quantity from the row
-                        availableStock = row.stock_quantity || 0;
-                    }
-                    
-                    const stockClass = availableStock === 0 ? 'stock-out' : (availableStock < 5 ? 'stock-low' : 'stock-ok');
-                    
-                    html += `<tr ${isEditing ? 'class="editable"' : ''}>`;
-                    
-                    columns.forEach(col => {
-                        const value = rowData[col.name] !== null && rowData[col.name] !== undefined ? String(rowData[col.name]) : '';
-                        const isPrimaryKey = col.name === currentPrimaryKey;
-                        
-                        if (isEditing) {
-                            html += `<td>
-                                <input type="text" 
-                                       class="editable-input" 
-                                       data-col="${col.name}" 
-                                       data-rowid="${rowId}"
-                                       value="${escapeHtml(value)}"
-                                       ${isPrimaryKey ? 'disabled' : ''}
-                                       placeholder="NULL">
-                            </td>`;
-                        } else {
-                            let display = value || '<span class="null-value">NULL</span>';
-                            if (String(display).length > 150) display = display.substring(0, 150) + '...';
-                            html += `<td style="max-width:250px;overflow-x:auto;word-break:break-word;">${display}</td>`;
-                        }
-                    });
-                    
-                    // Total Stock
-                    html += `<td style="text-align:center;">${totalStock}</td>`;
-                    
-                    // Reserved Stock
-                    html += `<td style="text-align:center;color:#f59e0b;">${reservedStock > 0 ? reservedStock : '0'}</td>`;
-                    
-                    // Available Stock
-                    html += `<td style="text-align:center;font-weight:600;" class="${stockClass}">
-                        ${availableStock}
-                    </td>`;
-                    
-                    // Actions
-                    html += `<td style="text-align:center;white-space:nowrap;" class="action-icons">`;
-                    
-                    if (isEditing) {
-                        html += `
-                            <i class="fas fa-save save-row" data-rowid="${rowId}" title="Save changes"></i>
-                            <i class="fas fa-times cancel-edit" data-rowid="${rowId}" title="Cancel"></i>
-                        `;
-                    } else {
-                        html += `
-                            <i class="fas fa-eye view-row" data-rowid="${rowId}" title="View"></i>
-                            <i class="fas fa-edit edit-row" data-rowid="${rowId}" title="Edit"></i>
-                            <i class="fas fa-trash-alt delete-row" data-rowid="${rowId}" title="Delete"></i>
-                        `;
-                    }
-                    
-                    html += `</td></tr>`;
-                }
-            }
-            html += `</tbody></table></div>`;
-            
-            if (totalPages > 1) {
-                html += `<div class="pagination">`;
-                html += `<button class="page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
-                for (let i = 1; i <= Math.min(totalPages, 10); i++) {
-                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
-                }
-                html += `<button class="page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
-                html += `</div>`;
-            }
-            
-            document.getElementById('dataViewer').innerHTML = html;
-            
-            // Event listeners
-            document.getElementById('insertRowBtn')?.addEventListener('click', () => openInsertRowModal());
-            document.getElementById('refreshDataBtn')?.addEventListener('click', () => {
-                if (Object.keys(editedRows).length > 0) {
-                    if (!confirm('You have unsaved changes. Refresh anyway?')) {
-                        return;
-                    }
-                    editedRows = {};
-                    originalRows = {};
-                    document.getElementById('saveChangesBtn').style.display = 'none';
-                }
-                if (currentTable) loadTableData(currentTable, currentPage);
-            });
-            
-            document.getElementById('refreshStockBtn')?.addEventListener('click', () => {
-                if (currentTable) loadTableData(currentTable, currentPage);
-                showToast('Stock data refreshed from database');
-            });
-            
-            // Same event listeners as renderTable
-            document.querySelectorAll('.editable-input').forEach(input => {
-                input.addEventListener('change', function() {
-                    const rowId = this.dataset.rowid;
-                    const colName = this.dataset.col;
-                    const value = this.value || null;
-                    
-                    if (!editedRows[rowId]) {
-                        const originalRow = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
-                        if (originalRow) {
-                            originalRows[rowId] = { ...originalRow };
-                        }
-                        editedRows[rowId] = { ...originalRows[rowId] };
-                    }
-                    
-                    editedRows[rowId][colName] = value;
-                    document.getElementById('saveChangesBtn').style.display = 'block';
-                });
-            });
-            
-            document.querySelectorAll('.save-row').forEach(btn => {
-                btn.addEventListener('click', async function() {
-                    const rowId = this.dataset.rowid;
-                    await saveRow(rowId);
-                });
-            });
-            
-            document.querySelectorAll('.cancel-edit').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const rowId = this.dataset.rowid;
-                    delete editedRows[rowId];
-                    delete originalRows[rowId];
-                    
-                    if (Object.keys(editedRows).length === 0) {
-                        document.getElementById('saveChangesBtn').style.display = 'none';
-                    }
-                    
-                    loadTableData(currentTable, currentPage);
-                });
-            });
-            
-            document.querySelectorAll('.view-row').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const rowId = btn.dataset.rowid;
-                    const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
-                    if (row) openViewRowModal(row);
-                });
-            });
-            
-            document.querySelectorAll('.edit-row').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const rowId = this.dataset.rowid;
-                    const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
-                    if (row) {
-                        editedRows[rowId] = { ...row };
-                        originalRows[rowId] = { ...row };
-                        loadTableData(currentTable, currentPage);
-                        document.getElementById('saveChangesBtn').style.display = 'block';
-                    }
-                });
-            });
-            
-            document.querySelectorAll('.delete-row').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const rowId = this.dataset.rowid;
-                    const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
-                    if (row) deleteRow(row);
-                });
-            });
-            
-            document.querySelectorAll('.page-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    if (!this.disabled && currentTable) {
-                        if (Object.keys(editedRows).length > 0) {
-                            if (!confirm('You have unsaved changes. Navigate anyway?')) {
-                                return;
-                            }
-                            editedRows = {};
-                            originalRows = {};
-                            document.getElementById('saveChangesBtn').style.display = 'none';
-                        }
-                        loadTableData(currentTable, parseInt(this.dataset.page));
-                    }
-                });
-            });
-            
-            document.getElementById('saveChangesBtn').addEventListener('click', saveAllChanges);
-        }
-
         // ============ SAVE ROW ============
         async function saveRow(rowId) {
             if (!editedRows[rowId]) {
@@ -1349,224 +1359,13 @@
             loadTableData(currentTable, currentPage);
         }
 
-        // ============ STOCK MANAGEMENT ============
-        async function openStockModal() {
-            document.getElementById('stockTableName').textContent = 'product_variants';
-            document.getElementById('stockSuccess').classList.remove('show');
-            stockChanges = {};
-            
-            try {
-                const { data, error } = await supabase
-                    .from('product_variants')
-                    .select(`
-                        id,
-                        variant_name,
-                        variant_type,
-                        product_id,
-                        price,
-                        sku,
-                        stock_quantity,
-                        products (
-                            name
-                        )
-                    `)
-                    .order('product_id')
-                    .order('id');
-                
-                if (error) throw error;
-                
-                const container = document.getElementById('stockItems');
-                
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="loading">No variants found</div>';
-                    document.getElementById('stockModal').classList.add('active');
-                    return;
-                }
-                
-                // Group by product
-                const grouped = {};
-                data.forEach(variant => {
-                    const productName = variant.products?.name || 'Unknown Product';
-                    if (!grouped[productName]) {
-                        grouped[productName] = [];
-                    }
-                    grouped[productName].push(variant);
-                });
-                
-                let html = '';
-                for (const [productName, variants] of Object.entries(grouped)) {
-                    html += `
-                        <div style="margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem;">
-                            <h4 style="color: #E30613; margin-bottom: 0.75rem;">
-                                <i class="fas fa-box"></i> ${productName}
-                                <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 400;">
-                                    (${variants.length} variants)
-                                </span>
-                            </h4>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                    `;
-                    
-                    variants.forEach(variant => {
-                        const stock = variant.stock_quantity || 0;
-                        let stockStatus = '';
-                        if (stock === 0) stockStatus = '❌ Out of Stock';
-                        else if (stock < 5) stockStatus = '⚠️ Low Stock';
-                        else stockStatus = '✅ In Stock';
-                        
-                        html += `
-                            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <div>
-                                        <strong>${escapeHtml(variant.variant_name)}</strong>
-                                        <span style="font-size: 0.75rem; color: #94a3b8; display: block;">
-                                            ${escapeHtml(variant.variant_type || 'Variant')}
-                                            ${variant.sku ? ` • SKU: ${escapeHtml(variant.sku)}` : ''}
-                                        </span>
-                                    </div>
-                                    <span style="font-size: 0.75rem;">${stockStatus}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
-                                    <label style="font-size: 0.75rem; font-weight: 600; min-width: 50px;">Stock:</label>
-                                    <input type="number" 
-                                           id="stock_${variant.id}" 
-                                           value="${stock}" 
-                                           min="0"
-                                           style="width: 80px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem;"
-                                           data-variant-id="${variant.id}"
-                                           data-original-stock="${stock}">
-                                    <button class="btn btn-sm btn-primary" onclick="updateSingleStock(${variant.id})" style="padding: 2px 12px; font-size: 0.7rem;">
-                                        Update
-                                    </button>
-                                </div>
-                                <div id="stock_${variant.id}_status" style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;"></div>
-                            </div>
-                        `;
-                    });
-                    
-                    html += `</div></div>`;
-                }
-                
-                container.innerHTML = html;
-                
-                document.querySelectorAll('#stockItems input[type="number"]').forEach(input => {
-                    input.addEventListener('change', function() {
-                        const variantId = this.dataset.variantId;
-                        const originalStock = parseInt(this.dataset.originalStock);
-                        const newStock = parseInt(this.value) || 0;
-                        const statusEl = document.getElementById(`stock_${variantId}_status`);
-                        
-                        if (newStock !== originalStock) {
-                            stockChanges[variantId] = newStock;
-                            statusEl.innerHTML = `<span style="color: #f59e0b;">⚠️ Changed from ${originalStock} to ${newStock}</span>`;
-                        } else {
-                            delete stockChanges[variantId];
-                            statusEl.innerHTML = '';
-                        }
-                    });
-                });
-                
-                document.getElementById('stockModal').classList.add('active');
-                
-            } catch (err) {
-                console.error('Error loading stock:', err);
-                showToast(err.message, true);
-            }
-        }
-
-        window.updateSingleStock = async function(variantId) {
-            const input = document.getElementById(`stock_${variantId}`);
-            if (!input) return;
-            
-            const newStock = parseInt(input.value) || 0;
-            
-            try {
-                const { error } = await supabase
-                    .from('product_variants')
-                    .update({ stock_quantity: newStock })
-                    .eq('id', variantId);
-                
-                if (error) throw error;
-                
-                input.dataset.originalStock = newStock;
-                const statusEl = document.getElementById(`stock_${variantId}_status`);
-                statusEl.innerHTML = `<span style="color: #22c55e;">✅ Updated to ${newStock}</span>`;
-                setTimeout(() => {
-                    statusEl.innerHTML = '';
-                }, 3000);
-                
-                delete stockChanges[variantId];
-                showToast(`Stock updated for variant ${variantId}`);
-            } catch (err) {
-                showToast(err.message, true);
-                const original = parseInt(input.dataset.originalStock) || 0;
-                input.value = original;
-            }
-        };
-
-        document.getElementById('saveStockBtn')?.addEventListener('click', async function() {
-            const changes = Object.keys(stockChanges);
-            if (changes.length === 0) {
-                showToast('No stock changes to save');
-                return;
-            }
-            
-            if (!confirm(`Save stock changes for ${changes.length} variant(s)?`)) {
-                return;
-            }
-            
-            let successCount = 0;
-            let errorCount = 0;
-            
-            for (const variantId of changes) {
-                const newStock = stockChanges[variantId];
-                try {
-                    const { error } = await supabase
-                        .from('product_variants')
-                        .update({ stock_quantity: newStock })
-                        .eq('id', parseInt(variantId));
-                    
-                    if (error) {
-                        console.error('Error updating stock:', error);
-                        errorCount++;
-                    } else {
-                        successCount++;
-                    }
-                } catch (err) {
-                    console.error('Error updating stock:', err);
-                    errorCount++;
-                }
-            }
-            
-            stockChanges = {};
-            
-            const successDiv = document.getElementById('stockSuccess');
-            const successMsg = document.getElementById('stockSuccessMessage');
-            successMsg.textContent = `✅ ${successCount} variants updated${errorCount > 0 ? `, ${errorCount} failed` : ''}`;
-            successDiv.classList.add('show');
-            
-            showToast(`Saved stock for ${successCount} variants`);
-            
-            setTimeout(() => {
-                successDiv.classList.remove('show');
-                openStockModal();
-                loadTableData('product_variants', currentPage);
-            }, 2000);
-        });
-
-        document.getElementById('cancelStockModal')?.addEventListener('click', () => {
-            document.getElementById('stockModal').classList.remove('active');
-            stockChanges = {};
-        });
-
-        document.getElementById('manageStockBtn')?.addEventListener('click', openStockModal);
-
         // ============ INSERT ROW ============
         function openInsertRowModal() {
             const container = document.getElementById('insertRowFields');
             const tableNameDisplay = document.getElementById('insertTableName');
             tableNameDisplay.textContent = currentTable;
             
-            document.getElementById('insertSuccess').classList.remove('show');
+            document.getElementById('insertSuccess').style.display = 'none';
             
             const columnDefs = getColumnDefinitions(currentTable);
             
@@ -1636,7 +1435,7 @@
                     'delivery_address': { placeholder: '123 Main St, City, Country', hint: 'Full delivery address' },
                     'notes': { placeholder: 'Any special instructions...', hint: 'Optional order notes' },
                     'total': { placeholder: 'e.g., 59.98', hint: 'Total order amount' },
-                    'status': { placeholder: 'pending', hint: 'Order status: pending, confirmed, shipped, delivered' },
+                    'status': { placeholder: 'pending', hint: 'Order status: pending, completed, cancelled' },
                     'user_id': { placeholder: 'e.g., 1', hint: 'ID of the user who placed the order' }
                 },
                 'users': {
@@ -1719,7 +1518,7 @@
                 const successDiv = document.getElementById('insertSuccess');
                 const successMsg = document.getElementById('insertSuccessMessage');
                 successMsg.textContent = `✅ Row inserted successfully! ${data && data.length > 0 ? `New ID: ${data[0][currentPrimaryKey]}` : ''}`;
-                successDiv.classList.add('show');
+                successDiv.style.display = 'block';
                 
                 showToast('Row inserted successfully! ✅');
                 
@@ -1812,13 +1611,6 @@
 
         // ============ INIT ============
         loadTables();
-
-        // Auto-refresh stock every 30 seconds
-        setInterval(() => {
-            if (currentTable === 'product_variants') {
-                loadTableData(currentTable, currentPage);
-            }
-        }, 30000);
 
     })();
 </script>

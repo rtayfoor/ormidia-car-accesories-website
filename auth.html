@@ -164,6 +164,7 @@
         .btn-outline:hover { border-color: #E30613; color: #E30613; }
         .btn-danger { background: #fee2e2; color: #b91c1c; }
         .btn-danger:hover { background: #fecaca; }
+        .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
         .btn-block { width: 100%; padding: 0.9rem; font-size: 1.1rem; margin-top: 0.5rem; }
 
         .auth-switch {
@@ -244,7 +245,7 @@
         /* Already logged in message */
         .already-logged-in {
             text-align: center;
-            padding: 1rem;
+            padding: 1.5rem;
             background: #dcfce7;
             border-radius: 8px;
             margin-bottom: 1.5rem;
@@ -254,6 +255,20 @@
         .already-logged-in i {
             color: #22c55e;
             margin-right: 0.5rem;
+            font-size: 1.5rem;
+        }
+
+        .already-logged-in .user-name {
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .already-logged-in .btn-group {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
         /* Toast notification */
@@ -349,13 +364,15 @@
 
                     <!-- Already Logged In Message -->
                     <div id="alreadyLoggedIn" class="already-logged-in" style="display: none;">
-                        <i class="fas fa-check-circle"></i>
-                        <span>You are already logged in as <strong id="loggedInUserName"></strong></span>
-                        <div style="margin-top: 0.5rem;">
+                        <div>
+                            <i class="fas fa-check-circle"></i>
+                            <span>You are already logged in as <span class="user-name" id="loggedInUserName"></span></span>
+                        </div>
+                        <div class="btn-group">
                             <button class="btn btn-danger btn-sm" onclick="handleLogout()">
                                 <i class="fas fa-sign-out-alt"></i> Logout
                             </button>
-                            <button class="btn btn-primary btn-sm" onclick="goToDashboard()" style="margin-left: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" onclick="goToDashboard()">
                                 <i class="fas fa-arrow-right"></i> Go to Dashboard
                             </button>
                         </div>
@@ -514,7 +531,7 @@
             const alreadyLoggedIn = document.getElementById('alreadyLoggedIn');
             const loggedInUserName = document.getElementById('loggedInUserName');
             
-            // Check if user is already logged in
+            // Check if user is already logged in - NO REDIRECT!
             function checkAuthStatus() {
                 const user = JSON.parse(localStorage.getItem('user'));
                 if (user && user.id) {
@@ -809,7 +826,6 @@
                             
                             // Hide dropdown when mouse leaves both
                             userMenu.addEventListener('mouseleave', function(e) {
-                                // Check if mouse is over the dropdown
                                 setTimeout(() => {
                                     if (!dropdown.matches(':hover')) {
                                         dropdown.style.display = 'none';
@@ -818,7 +834,6 @@
                             });
                             
                             dropdown.addEventListener('mouseleave', function(e) {
-                                // Check if mouse is over the user menu
                                 setTimeout(() => {
                                     if (!userMenu.matches(':hover')) {
                                         dropdown.style.display = 'none';
@@ -834,7 +849,7 @@
             
             // Initialize
             document.addEventListener('DOMContentLoaded', function() {
-                // Check auth status first
+                // Check auth status - NO REDIRECT!
                 const isLoggedIn = checkAuthStatus();
                 
                 // Update UI

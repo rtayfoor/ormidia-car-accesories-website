@@ -753,9 +753,7 @@
                                 <h4>${escapeHtml(item.name)}</h4>
                                 <p class="item-brand">${escapeHtml(item.product_name || 'Accessory')}</p>
                                 <p class="item-price">$${item.price.toFixed(2)}</p>
-                                <div class="reservation-status">
-                                    <i class="fas fa-clock"></i> Reserved for 30 min
-                                </div>
+                               
                             </div>
                             <div class="cart-item-quantity">
                                 <button onclick="updateQuantity(${index}, -1)" class="qty-btn" id="qty-minus-${index}">

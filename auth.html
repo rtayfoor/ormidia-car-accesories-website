@@ -233,4 +233,157 @@
                         <div class="form-group">
                             <label>Confirm Password</label>
                             <div class="password-input-wrapper">
-                                <input type="password
+                                <input type="password" id="register-confirm-password" placeholder="Confirm your password" required>
+                                <button type="button" class="password-toggle" onclick="togglePassword('register-confirm-password')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Create Account</button>
+                        <p class="auth-switch">
+                            Already have an account? <a href="#" onclick="switchToLogin()">Sign In</a>
+                        </p>
+                    </form>
+                </div>
+
+                <div class="auth-info">
+                    <div class="auth-info-content">
+                        <h2>Welcome to Ormidia</h2>
+                        <p>Sign in to access your account and enjoy these benefits:</p>
+                        <ul>
+                            <li><i class="fas fa-check-circle"></i> Track your orders</li>
+                            <li><i class="fas fa-check-circle"></i> Save your favorite products</li>
+                            <li><i class="fas fa-check-circle"></i> Faster checkout</li>
+                            <li><i class="fas fa-check-circle"></i> Exclusive offers and discounts</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Global Footer -->
+    <div id="footer-placeholder"></div>
+
+    <script>
+        // Auth page specific JavaScript
+        const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
+        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Check if already logged in
+        function checkAuthStatus() {
+            const user = getCurrentUser();
+            if (user && user.id) {
+                document.getElementById('alreadyLoggedIn').style.display = 'block';
+                document.getElementById('loggedInUserName').textContent = user.name || 'User';
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('register-form').style.display = 'none';
+                document.getElementById('auth-title').textContent = 'Already Logged In';
+                document.getElementById('auth-subtitle').textContent = 'You are currently signed in to your account';
+                return true;
+            }
+            return false;
+        }
+
+        window.goToDashboard = function() {
+            window.location.href = 'products.html';
+        };
+
+        window.togglePassword = function(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = input.parentElement.querySelector('.password-toggle i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggle.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                toggle.className = 'fas fa-eye';
+            }
+        };
+
+        window.switchToRegister = function() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'block';
+            document.getElementById('auth-title').textContent = 'Create Account';
+            document.getElementById('auth-subtitle').textContent = 'Join Ormidia and start shopping';
+        };
+
+        window.switchToLogin = function() {
+            document.getElementById('register-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('auth-title').textContent = 'Welcome Back';
+            document.getElementById('auth-subtitle').textContent = 'Sign in to your account to continue';
+        };
+
+        // Login handler
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const { data: users, error } = await _supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .maybeSingle();
+
+                if (error || !users) throw new Error('Invalid email or password');
+                if (users.password !== password) throw new Error('Invalid email or password');
+
+                const userData = { id: users.id, email: users.email, name: users.name };
+                localStorage.setItem('user', JSON.stringify(userData));
+                
+                showToast('Login successful! Redirecting...');
+                setTimeout(() => window.location.href = 'products.html', 1000);
+            } catch (error) {
+                showToast(error.message || 'Login failed', true);
+            }
+        });
+
+        // Register handler
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', true);
+                return;
+            }
+
+            try {
+                const { data: existing, error: checkError } = await _supabase
+                    .from('users')
+                    .select('email')
+                    .eq('email', email)
+                    .maybeSingle();
+
+                if (existing) throw new Error('Email already registered');
+
+                const { data: newUser, error: insertError } = await _supabase
+                    .from('users')
+                    .insert([{ name, email, password }])
+                    .select()
+                    .single();
+
+                if (insertError) throw insertError;
+
+                const userData = { id: newUser.id, email: newUser.email, name: newUser.name };
+                localStorage.setItem('user', JSON.stringify(userData));
+                
+                showToast('Account created! Redirecting...');
+                setTimeout(() => window.location.href = 'products.html', 1000);
+            } catch (error) {
+                showToast(error.message || 'Registration failed', true);
+            }
+        });
+
+        // Check auth on load
+        checkAuthStatus();
+    </script>
+</body>
+</html>

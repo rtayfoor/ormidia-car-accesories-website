@@ -112,6 +112,10 @@
                         <textarea id="address" rows="3" required></textarea>
                     </div>
                     <div class="form-group">
+                        <label for="notes">Order Notes (Optional)</label>
+                        <textarea id="notes" rows="2" placeholder="Any special instructions..."></textarea>
+                    </div>
+                    <div class="form-group">
                         <label for="payment-method">Payment Method</label>
                         <select id="payment-method" required>
                             <option value="">Select payment method</option>
@@ -134,6 +138,7 @@
                 <h2 style="color: #27ae60;">Order Placed!</h2>
                 <p>Your order has been successfully placed.</p>
                 <p style="font-size: 0.9rem; color: #666;">Order ID: <span id="order-id-display"></span></p>
+                <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">We'll send you a confirmation email shortly.</p>
                 <button onclick="window.location.href='products.html'" class="btn btn-primary" style="margin-top: 1rem;">
                     Continue Shopping
                 </button>
@@ -843,6 +848,7 @@
                 const email = document.getElementById('email').value;
                 const phone = document.getElementById('phone').value;
                 const address = document.getElementById('address').value;
+                const notes = document.getElementById('notes').value;
                 const paymentMethod = document.getElementById('payment-method').value;
                 const cart = getCart();
                 const user = JSON.parse(localStorage.getItem('user'));
@@ -860,53 +866,63 @@
                 showLoading(true);
                 
                 try {
-                    // Prepare items for checkout
-                    const items = cart.map(item => ({
-                        product_id: item.product_id,
-                        variant_id: item.variant_id || null,
-                        quantity: item.quantity
-                    }));
-                    
-                    // Process checkout with Supabase
-                    const { data, error } = await _supabase
-                        .rpc('process_checkout', {
-                            p_cart_id: cartId,
-                            p_items: items
-                        });
-                    
-                    if (error) {
-                        throw new Error(error.message || 'Failed to process order');
-                    }
-                    
                     // Calculate totals
                     const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                     const shipping = subtotal > 50 ? 0 : 10;
                     const tax = subtotal * 0.1;
                     const total = subtotal + shipping + tax;
                     
-                    // Create order object
-                    const order = {
-                        orderId: 'ORD-' + Date.now(),
-                        userId: user.id,
-                        customerName: fullName,
-                        email: email,
-                        phone: phone,
-                        address: address,
-                        paymentMethod: paymentMethod,
-                        items: cart,
-                        subtotal: subtotal,
-                        shipping: shipping,
-                        tax: tax,
-                        total: total,
-                        status: 'confirmed',
-                        date: new Date().toISOString(),
-                        reservationId: cartId
-                    };
+                    // Prepare items for checkout (for stock processing)
+                    const stockItems = cart.map(item => ({
+                        product_id: item.product_id,
+                        variant_id: item.variant_id || null,
+                        quantity: item.quantity
+                    }));
                     
-                    // Save order to localStorage (in production, save to Supabase orders table)
-                    const orders = JSON.parse(localStorage.getItem('orders')) || [];
-                    orders.push(order);
-                    localStorage.setItem('orders', JSON.stringify(orders));
+                    // Process stock checkout with Supabase
+                    const { data: stockData, error: stockError } = await _supabase
+                        .rpc('process_checkout', {
+                            p_cart_id: cartId,
+                            p_items: stockItems
+                        });
+                    
+                    if (stockError) {
+                        throw new Error(stockError.message || 'Failed to process stock');
+                    }
+                    
+                    // Prepare order items for database
+                    const orderItems = cart.map(item => ({
+                        product_id: item.product_id,
+                        variant_id: item.variant_id || null,
+                        product_name: item.product_name,
+                        variant_name: item.variant_name || null,
+                        variant_type: item.variant_type || null,
+                        price: item.price,
+                        quantity: item.quantity,
+                        image: item.image || null
+                    }));
+                    
+                    // Save order to Supabase orders table
+                    const { data: orderData, error: orderError } = await _supabase
+                        .from('orders')
+                        .insert([{
+                            customer_name: fullName,
+                            customer_phone: phone,
+                            customer_email: email,
+                            delivery_address: address,
+                            notes: notes || null,
+                            items: orderItems,
+                            total: total,
+                            status: 'pending',
+                            user_id: user.id
+                        }])
+                        .select();
+                    
+                    if (orderError) {
+                        throw new Error(orderError.message || 'Failed to save order');
+                    }
+                    
+                    const savedOrder = orderData[0];
                     
                     // Clear cart
                     localStorage.removeItem('cart');
@@ -915,10 +931,10 @@
                     closeCheckoutModal();
                     
                     // Show order confirmation
-                    document.getElementById('order-id-display').textContent = order.orderId;
+                    document.getElementById('order-id-display').textContent = savedOrder.id;
                     document.getElementById('order-confirmation-modal').style.display = 'flex';
                     
-                    showNotification(`Order placed successfully! Order ID: ${order.orderId}`);
+                    showNotification(`Order placed successfully! Order ID: ${savedOrder.id}`);
                     
                     // Update cart count
                     updateCartCount();

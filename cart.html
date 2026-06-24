@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ... keep existing styles ... */
+        /* Keep existing styles */
         .cart-section {
             padding: 8rem 2rem 5rem;
             min-height: 70vh;
@@ -41,6 +41,7 @@
             box-shadow: var(--shadow);
             margin-bottom: 1rem;
             transition: all 0.3s ease;
+            position: relative;
         }
         .cart-item:hover {
             transform: translateY(-2px);
@@ -74,6 +75,24 @@
             font-weight: 600;
             color: var(--secondary-color);
             margin: 0;
+        }
+        .reservation-status {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+        .reservation-status.active {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .reservation-status.expired {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .reservation-status .timer {
+            font-weight: 600;
         }
         .cart-item-quantity {
             display: flex;
@@ -187,7 +206,11 @@
             align-items: center;
             justify-content: center;
             z-index: 1001;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
         }
+        .modal.active { visibility: visible; opacity: 1; }
         .modal-content {
             background: white;
             border-radius: 15px;
@@ -260,11 +283,6 @@
             font-size: 3rem;
             color: var(--secondary-color);
         }
-        .stock-warning {
-            color: #e74c3c;
-            font-size: 0.8rem;
-            margin-top: 0.25rem;
-        }
         @keyframes slideUp {
             from { transform: translateY(50px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -273,6 +291,7 @@
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+        /* Navbar styles */
         .navbar {
             background: white;
             padding: 1rem 0;
@@ -488,7 +507,7 @@
     </section>
 
     <!-- Checkout Modal -->
-    <div id="checkout-modal" class="modal" style="display: none;">
+    <div id="checkout-modal" class="modal">
         <div class="modal-content">
             <span class="modal-close" id="checkout-modal-close">&times;</span>
             <div class="modal-header">
@@ -532,7 +551,7 @@
     </div>
 
     <!-- Order Confirmation Modal -->
-    <div id="order-confirmation-modal" class="modal" style="display: none;">
+    <div id="order-confirmation-modal" class="modal">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-body" style="text-align: center; padding: 2rem;">
                 <i class="fas fa-check-circle" style="font-size: 4rem; color: #27ae60; margin-bottom: 1rem;"></i>
@@ -556,9 +575,15 @@
             
             let currentUser = null;
             let cartItems = [];
-            let cartId = null;
+            let cartId = localStorage.getItem('cartId') || generateCartId();
+            let reservationCheckInterval = null;
             
-            // Get current user from localStorage
+            function generateCartId() {
+                const id = 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('cartId', id);
+                return id;
+            }
+            
             function getCurrentUser() {
                 try {
                     const user = JSON.parse(localStorage.getItem('user'));
@@ -572,74 +597,122 @@
                 }
             }
             
-            // Load cart from database
-            async function loadCartFromDB() {
-                const user = getCurrentUser();
-                if (!user) {
-                    // If not logged in, try to load from localStorage as fallback
-                    const localCart = JSON.parse(localStorage.getItem('cart')) || [];
-                    cartItems = localCart;
-                    displayCart(cartItems);
-                    return;
-                }
-                
+            // Load cart from database or localStorage
+            async function loadCart() {
                 try {
                     showLoading(true);
                     
-                    // Get or create cart for this user
-                    const { data: cart, error } = await _supabase
-                        .rpc('get_or_create_cart', { p_user_id: user.id });
+                    // First check if we have a cart in localStorage
+                    let localCart = JSON.parse(localStorage.getItem('cart')) || [];
                     
-                    if (error) throw error;
-                    
-                    if (cart) {
-                        cartItems = cart.items || [];
-                        cartId = cart.id;
-                        displayCart(cartItems);
+                    // If user is logged in, try to load from database
+                    const user = getCurrentUser();
+                    if (user) {
+                        // Get cart from database
+                        const { data: dbCart, error } = await _supabase
+                            .from('carts')
+                            .select('items')
+                            .eq('user_id', user.id)
+                            .maybeSingle();
+                        
+                        if (!error && dbCart) {
+                            // Merge with local cart
+                            const dbItems = dbCart.items || [];
+                            // If local cart has items and db cart doesn't, use local
+                            // If both have items, merge them (preferring db)
+                            if (localCart.length > 0 && dbItems.length === 0) {
+                                cartItems = localCart;
+                                await syncCartToDB(cartItems);
+                            } else if (dbItems.length > 0) {
+                                cartItems = dbItems;
+                                // Save to localStorage as backup
+                                localStorage.setItem('cart', JSON.stringify(cartItems));
+                            } else {
+                                cartItems = localCart;
+                            }
+                        } else {
+                            cartItems = localCart;
+                        }
                     } else {
-                        cartItems = [];
-                        displayCart(cartItems);
+                        cartItems = localCart;
                     }
+                    
+                    // Display cart
+                    displayCart(cartItems);
+                    
+                    // Start reservation refresh timer
+                    startReservationRefresh();
+                    
                 } catch (error) {
                     console.error('Error loading cart:', error);
-                    showToast('Failed to load cart', true);
                     // Fallback to localStorage
-                    const localCart = JSON.parse(localStorage.getItem('cart')) || [];
-                    cartItems = localCart;
+                    cartItems = JSON.parse(localStorage.getItem('cart')) || [];
                     displayCart(cartItems);
                 } finally {
                     showLoading(false);
                 }
             }
             
-            // Save cart to database
-            async function saveCartToDB(items) {
+            // Sync cart to database
+            async function syncCartToDB(items) {
                 const user = getCurrentUser();
                 if (!user) {
-                    // If not logged in, save to localStorage
                     localStorage.setItem('cart', JSON.stringify(items));
                     return;
                 }
                 
                 try {
-                    const { data, error } = await _supabase
-                        .rpc('sync_cart', {
-                            p_user_id: user.id,
-                            p_items: items
+                    const { error } = await _supabase
+                        .from('carts')
+                        .upsert({
+                            user_id: user.id,
+                            items: items,
+                            updated_at: new Date().toISOString()
+                        }, {
+                            onConflict: 'user_id'
                         });
                     
                     if (error) throw error;
                     
-                    cartId = data.id;
-                    cartItems = data.items || [];
-                    
-                    // Also save to localStorage as backup
-                    localStorage.setItem('cart', JSON.stringify(cartItems));
-                    
-                } catch (error) {
-                    console.error('Error saving cart:', error);
-                    // Fallback to localStorage
                     localStorage.setItem('cart', JSON.stringify(items));
+                } catch (error) {
+                    console.error('Error syncing cart:', error);
+                    localStorage.setItem('cart', JSON.stringify(items));
+                }
+            }
+            
+            // Start reservation refresh timer
+            function startReservationRefresh() {
+                if (reservationCheckInterval) {
+                    clearInterval(reservationCheckInterval);
+                }
+                
+                // Check and refresh reservations every 30 seconds
+                reservationCheckInterval = setInterval(async () => {
+                    if (cartItems.length > 0) {
+                        await refreshReservations();
+                    }
+                }, 30000);
+            }
+            
+            // Refresh reservations for all items in cart
+            async function refreshReservations() {
+                try {
+                    for (const item of cartItems) {
+                        const result = await _supabase
+                            .rpc('reserve_stock', {
+                                p_cart_id: cartId,
+                                p_product_id: item.product_id,
+                                p_variant_id: item.variant_id || null,
+                                p_quantity: item.quantity
+                            });
+                        
+                        if (result.error) {
+                            console.warn('Failed to refresh reservation:', item.name);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error refreshing reservations:', error);
                 }
             }
             
@@ -666,7 +739,6 @@
                     const itemTotal = item.price * item.quantity;
                     subtotal += itemTotal;
                     
-                    // Generate image placeholder if needed
                     const imageUrl = item.image || generatePlaceholder(item.product_name || item.name);
                     
                     return `
@@ -680,6 +752,9 @@
                                 <h4>${escapeHtml(item.name)}</h4>
                                 <p class="item-brand">${escapeHtml(item.product_name || 'Accessory')}</p>
                                 <p class="item-price">$${item.price.toFixed(2)}</p>
+                                <div class="reservation-status active">
+                                    <i class="fas fa-clock"></i> Reserved for 30 min
+                                </div>
                             </div>
                             <div class="cart-item-quantity">
                                 <button onclick="updateQuantity(${index}, -1)">-</button>
@@ -711,7 +786,6 @@
                 updateCartCount();
             }
             
-            // Generate placeholder image
             function generatePlaceholder(productName) {
                 const colors = ['e74c3c', '3498db', '2ecc71', 'f39c12', '9b59b6', 'e67e22', '1abc9c', '34495e'];
                 const color = colors[productName.length % colors.length];
@@ -731,32 +805,85 @@
                     const newQuantity = items[index].quantity + change;
                     
                     if (newQuantity <= 0) {
+                        // Remove item and release reservation
+                        await releaseReservation(items[index]);
                         items.splice(index, 1);
                     } else {
+                        // Update quantity and refresh reservation
                         items[index].quantity = newQuantity;
+                        await reserveItem(items[index]);
                     }
                     
                     cartItems = items;
-                    await saveCartToDB(items);
+                    await syncCartToDB(items);
                     displayCart(items);
                 }
             };
             
+            // Reserve a single item
+            async function reserveItem(item) {
+                try {
+                    const { error } = await _supabase
+                        .rpc('reserve_stock', {
+                            p_cart_id: cartId,
+                            p_product_id: item.product_id,
+                            p_variant_id: item.variant_id || null,
+                            p_quantity: item.quantity
+                        });
+                    
+                    if (error) {
+                        console.error('Error reserving item:', error);
+                        return false;
+                    }
+                    return true;
+                } catch (error) {
+                    console.error('Error reserving item:', error);
+                    return false;
+                }
+            }
+            
+            // Release reservation for an item
+            async function releaseReservation(item) {
+                try {
+                    const { error } = await _supabase
+                        .rpc('release_stock', {
+                            p_cart_id: cartId,
+                            p_product_id: item.product_id,
+                            p_variant_id: item.variant_id || null
+                        });
+                    
+                    if (error) {
+                        console.error('Error releasing reservation:', error);
+                    }
+                } catch (error) {
+                    console.error('Error releasing reservation:', error);
+                }
+            }
+            
             // Remove item
             window.removeItem = async function(index) {
                 const items = [...cartItems];
-                items.splice(index, 1);
-                cartItems = items;
-                await saveCartToDB(items);
-                displayCart(items);
-                showToast('Item removed from cart');
+                const item = items[index];
+                
+                if (item) {
+                    await releaseReservation(item);
+                    items.splice(index, 1);
+                    cartItems = items;
+                    await syncCartToDB(items);
+                    displayCart(items);
+                    showToast('Item removed from cart');
+                }
             };
             
             // Clear cart
             window.clearCart = async function() {
                 if (confirm('Are you sure you want to clear your entire cart?')) {
+                    // Release all reservations
+                    for (const item of cartItems) {
+                        await releaseReservation(item);
+                    }
                     cartItems = [];
-                    await saveCartToDB([]);
+                    await syncCartToDB([]);
                     displayCart([]);
                     showToast('Cart cleared');
                 }
@@ -781,7 +908,7 @@
                 
                 document.getElementById('full-name').value = user.name || '';
                 document.getElementById('email').value = user.email || '';
-                document.getElementById('checkout-modal').style.display = 'flex';
+                document.getElementById('checkout-modal').classList.add('active');
             };
             
             // Checkout form submission
@@ -835,6 +962,21 @@
                         image: item.image || null
                     }));
                     
+                    // Process checkout with stock deduction
+                    const { error: checkoutError } = await _supabase
+                        .rpc('process_checkout', {
+                            p_cart_id: cartId,
+                            p_items: orderItems.map(item => ({
+                                product_id: item.product_id,
+                                variant_id: item.variant_id,
+                                quantity: item.quantity
+                            }))
+                        });
+                    
+                    if (checkoutError) {
+                        throw new Error(checkoutError.message || 'Failed to process stock');
+                    }
+                    
                     // Create order
                     const { data: order, error: orderError } = await _supabase
                         .from('orders')
@@ -856,7 +998,7 @@
                     
                     // Clear cart
                     cartItems = [];
-                    await saveCartToDB([]);
+                    await syncCartToDB([]);
                     displayCart([]);
                     
                     // Close modal
@@ -864,7 +1006,7 @@
                     
                     // Show confirmation
                     document.getElementById('order-id-display').textContent = order.id;
-                    document.getElementById('order-confirmation-modal').style.display = 'flex';
+                    document.getElementById('order-confirmation-modal').classList.add('active');
                     
                     showToast(`Order placed successfully! Order ID: ${order.id}`);
                     updateCartCount();
@@ -880,7 +1022,7 @@
             });
             
             function closeCheckoutModal() {
-                document.getElementById('checkout-modal').style.display = 'none';
+                document.getElementById('checkout-modal').classList.remove('active');
                 document.getElementById('checkout-form').reset();
                 
                 const submitBtn = document.getElementById('place-order-btn');
@@ -979,6 +1121,10 @@
             window.logout = function() {
                 localStorage.removeItem('user');
                 localStorage.removeItem('cart');
+                localStorage.removeItem('cartId');
+                if (reservationCheckInterval) {
+                    clearInterval(reservationCheckInterval);
+                }
                 showToast('Logged out successfully!');
                 setTimeout(() => window.location.reload(), 1000);
             };
@@ -986,7 +1132,7 @@
             // Initialize
             document.addEventListener('DOMContentLoaded', async function() {
                 updateAuthUI();
-                await loadCartFromDB();
+                await loadCart();
                 
                 // Modal close
                 document.getElementById('checkout-modal-close').onclick = closeCheckoutModal;
@@ -995,7 +1141,7 @@
                     const confirmationModal = document.getElementById('order-confirmation-modal');
                     if (event.target === checkoutModal) closeCheckoutModal();
                     if (event.target === confirmationModal) {
-                        confirmationModal.style.display = 'none';
+                        confirmationModal.classList.remove('active');
                     }
                 };
                 

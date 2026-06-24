@@ -596,54 +596,13 @@
                 }
             }
             
-            // Check authentication and restore session
-            async function checkAuth() {
-                try {
-                    // Try to get the session from localStorage
-                    const sessionStr = localStorage.getItem('supabase_session');
-                    if (sessionStr) {
-                        try {
-                            const session = JSON.parse(sessionStr);
-                            if (session && session.access_token) {
-                                // Set the session on the supabase client
-                                await _supabase.auth.setSession(session);
-                            }
-                        } catch (e) {
-                            console.warn('Invalid session data:', e);
-                        }
-                    }
-                    
-                    // Check if we have a valid session
-                    const { data: { session }, error } = await _supabase.auth.getSession();
-                    
-                    if (error || !session) {
-                        // Try to get user from localStorage
-                        const user = JSON.parse(localStorage.getItem('user'));
-                        if (user && user.id) {
-                            // If we have user data but no session, redirect to login
-                            console.warn('User data found but no valid session. Please login again.');
-                            localStorage.removeItem('user');
-                            localStorage.removeItem('supabase_session');
-                            return null;
-                        }
-                        return null;
-                    }
-                    
-                    // Update user data with session info
-                    const userData = {
-                        id: session.user.id,
-                        email: session.user.email,
-                        name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User'
-                    };
-                    localStorage.setItem('user', JSON.stringify(userData));
-                    localStorage.setItem('supabase_session', JSON.stringify(session));
-                    
-                    return userData;
-                    
-                } catch (error) {
-                    console.error('Auth check error:', error);
-                    return null;
+            // Check if user is logged in (using custom users table)
+            function getCurrentUser() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (user && user.id) {
+                    return user;
                 }
+                return null;
             }
             
             // Load and display cart items
@@ -864,7 +823,7 @@
             
             // Proceed to checkout
             window.proceedToCheckout = function() {
-                const user = JSON.parse(localStorage.getItem('user'));
+                const user = getCurrentUser();
                 const cart = getCart();
                 
                 if (cart.length === 0) {
@@ -900,6 +859,7 @@
                 const notes = document.getElementById('notes').value.trim();
                 const paymentMethod = document.getElementById('payment-method').value;
                 const cart = getCart();
+                const user = getCurrentUser();
                 
                 if (!fullName || !email || !phone || !address) {
                     showNotification('Please fill in all required fields', true);
@@ -911,6 +871,11 @@
                     return;
                 }
                 
+                if (!user || !user.id) {
+                    showNotification('You must be logged in to place an order', true);
+                    return;
+                }
+                
                 // Disable submit button
                 const submitBtn = document.getElementById('place-order-btn');
                 submitBtn.disabled = true;
@@ -919,35 +884,6 @@
                 showLoading(true);
                 
                 try {
-                    // Get the current session
-                    const { data: { session }, error: sessionError } = await _supabase.auth.getSession();
-                    
-                    if (sessionError || !session) {
-                        // Try to restore session from localStorage
-                        const sessionStr = localStorage.getItem('supabase_session');
-                        if (sessionStr) {
-                            try {
-                                const savedSession = JSON.parse(sessionStr);
-                                await _supabase.auth.setSession(savedSession);
-                            } catch (e) {
-                                console.warn('Could not restore session:', e);
-                            }
-                        }
-                        
-                        // Check again
-                        const { data: { session: newSession } } = await _supabase.auth.getSession();
-                        if (!newSession) {
-                            throw new Error('You must be logged in to place an order. Please login again.');
-                        }
-                    }
-                    
-                    // Get the authenticated user
-                    const { data: { user }, error: userError } = await _supabase.auth.getUser();
-                    
-                    if (userError || !user) {
-                        throw new Error('Could not authenticate user. Please login again.');
-                    }
-                    
                     // Prepare order items for the database
                     const orderItems = cart.map(item => ({
                         product_id: item.product_id,
@@ -960,7 +896,7 @@
                         image: item.image || null
                     }));
                     
-                    // Call the checkout_with_order function
+                    // Call the checkout_with_order function with the user ID
                     const { data, error } = await _supabase
                         .rpc('checkout_with_order', {
                             p_cart_id: cartId,
@@ -969,15 +905,12 @@
                             p_customer_email: email,
                             p_delivery_address: address,
                             p_notes: notes || null,
-                            p_user_id: user.id,
+                            p_user_id: String(user.id), // Pass user ID as string
                             p_items: orderItems
                         });
                     
                     if (error) {
                         console.error('Checkout error:', error);
-                        if (error.message && error.message.includes('row-level security policy')) {
-                            throw new Error('Permission denied. Please make sure you are logged in properly.');
-                        }
                         throw new Error(error.message || 'Failed to process order');
                     }
                     
@@ -1037,7 +970,7 @@
             
             // Update auth UI
             function updateAuthUI() {
-                const user = JSON.parse(localStorage.getItem('user'));
+                const user = getCurrentUser();
                 const authIcon = document.getElementById('auth-icon');
                 
                 if (authIcon) {
@@ -1046,10 +979,10 @@
                             <div class="user-menu" style="position: relative; cursor: pointer;">
                                 <i class="fas fa-user-circle"></i>
                                 <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
-                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100;">
+                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 0.5rem 0;">
                                     <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
                                     <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
-                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none;">Logout</a>
+                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none; transition: 0.3s ease;">Logout</a>
                                 </div>
                             </div>
                         `;
@@ -1066,12 +999,13 @@
                 }
             }
             
+            // Logout function
             window.logout = function() {
                 localStorage.removeItem('user');
-                localStorage.removeItem('supabase_session');
-                _supabase.auth.signOut();
                 showNotification('Logged out successfully!');
-                setTimeout(() => window.location.reload(), 1000);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             };
             
             function showNotification(message, isError = false) {
@@ -1111,12 +1045,9 @@
             
             // Initialize
             document.addEventListener('DOMContentLoaded', async function() {
-                // Check authentication and restore session
-                const user = await checkAuth();
-                updateAuthUI();
-                
                 // Load cart
                 await loadCart();
+                updateAuthUI();
                 
                 // Modal close buttons
                 const closeBtn = document.getElementById('checkout-modal-close');

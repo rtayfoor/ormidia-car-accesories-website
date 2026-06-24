@@ -8,6 +8,307 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .auth-section {
+            padding: 8rem 2rem 5rem;
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .auth-card {
+            padding: 3rem;
+        }
+
+        .auth-header {
+            margin-bottom: 2rem;
+        }
+
+        .auth-header h1 {
+            font-size: 2rem;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-header p {
+            color: #64748b;
+        }
+
+        .auth-form {
+            display: block;
+        }
+
+        .auth-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-form label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #1e293b;
+        }
+
+        .auth-form input[type="email"],
+        .auth-form input[type="password"],
+        .auth-form input[type="text"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .auth-form input:focus {
+            outline: none;
+            border-color: #E30613;
+            box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.1);
+        }
+
+        .password-input-wrapper {
+            position: relative;
+        }
+
+        .password-input-wrapper input {
+            padding-right: 3rem;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: #E30613;
+        }
+
+        .password-hint {
+            display: block;
+            margin-top: 0.25rem;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 1rem 0 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #E30613;
+        }
+
+        .forgot-password {
+            color: #E30613;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary { background: #E30613; color: white; }
+        .btn-primary:hover { background: #b80510; transform: translateY(-1px); }
+        .btn-outline { background: white; border: 1px solid #cbd5e1; }
+        .btn-outline:hover { border-color: #E30613; color: #E30613; }
+        .btn-danger { background: #fee2e2; color: #b91c1c; }
+        .btn-danger:hover { background: #fecaca; }
+        .btn-block { width: 100%; padding: 0.9rem; font-size: 1.1rem; margin-top: 0.5rem; }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #64748b;
+        }
+
+        .auth-switch a {
+            color: #E30613;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .auth-info {
+            background: linear-gradient(135deg, #E30613, #c0392b);
+            color: white;
+            padding: 3rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .auth-info-content h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-info-content p {
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
+        }
+
+        .auth-info-content ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 2rem;
+        }
+
+        .auth-info-content ul li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            opacity: 0.95;
+        }
+
+        .auth-info-content ul li i {
+            font-size: 1.2rem;
+        }
+
+        .auth-info-image {
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .auth-info-image img {
+            max-width: 150px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem;
+        }
+
+        #auth-loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        #auth-loading i {
+            font-size: 2.5rem;
+            color: #E30613;
+        }
+
+        /* Already logged in message */
+        .already-logged-in {
+            text-align: center;
+            padding: 1rem;
+            background: #dcfce7;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid #22c55e;
+        }
+
+        .already-logged-in i {
+            color: #22c55e;
+            margin-right: 0.5rem;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 2100;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideInRight 0.3s ease;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast i { font-size: 1.1rem; }
+
+        @media (max-width: 768px) {
+            .auth-section {
+                padding: 6rem 1rem 3rem;
+            }
+
+            .auth-container {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+
+            .auth-card {
+                padding: 2rem;
+            }
+
+            .auth-info {
+                padding: 2rem;
+                order: -1;
+            }
+
+            .auth-info-content h2 {
+                font-size: 1.5rem;
+            }
+
+            .form-options {
+                flex-direction: column;
+                gap: 0.5rem;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -44,6 +345,20 @@
                     <div class="auth-header">
                         <h1 id="auth-title">Welcome Back</h1>
                         <p id="auth-subtitle">Sign in to your account to continue</p>
+                    </div>
+
+                    <!-- Already Logged In Message -->
+                    <div id="alreadyLoggedIn" class="already-logged-in" style="display: none;">
+                        <i class="fas fa-check-circle"></i>
+                        <span>You are already logged in as <strong id="loggedInUserName"></strong></span>
+                        <div style="margin-top: 0.5rem;">
+                            <button class="btn btn-danger btn-sm" onclick="handleLogout()">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="goToDashboard()" style="margin-left: 0.5rem;">
+                                <i class="fas fa-arrow-right"></i> Go to Dashboard
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Login Form -->
@@ -110,7 +425,7 @@
 
                     <!-- Loading State -->
                     <div id="auth-loading" style="display: none; text-align: center; padding: 2rem;">
-                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--secondary-color);"></i>
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: #E30613;"></i>
                         <p style="margin-top: 1rem;">Processing...</p>
                     </div>
                 </div>
@@ -180,254 +495,6 @@
         </div>
     </footer>
 
-    <style>
-        .auth-section {
-            padding: 8rem 2rem 5rem;
-            min-height: 80vh;
-            display: flex;
-            align-items: center;
-        }
-
-        .auth-container {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .auth-card {
-            padding: 3rem;
-        }
-
-        .auth-header {
-            margin-bottom: 2rem;
-        }
-
-        .auth-header h1 {
-            font-size: 2rem;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .auth-header p {
-            color: var(--text-light);
-        }
-
-        .auth-form {
-            display: block;
-        }
-
-        .auth-form .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .auth-form label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: var(--primary-color);
-        }
-
-        .auth-form input[type="email"],
-        .auth-form input[type="password"],
-        .auth-form input[type="text"] {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-
-        .auth-form input:focus {
-            outline: none;
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-        }
-
-        .password-input-wrapper {
-            position: relative;
-        }
-
-        .password-input-wrapper input {
-            padding-right: 3rem;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #999;
-            cursor: pointer;
-            font-size: 1.1rem;
-            transition: var(--transition);
-        }
-
-        .password-toggle:hover {
-            color: var(--secondary-color);
-        }
-
-        .password-hint {
-            display: block;
-            margin-top: 0.25rem;
-            font-size: 0.8rem;
-            color: var(--text-light);
-        }
-
-        .form-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 1rem 0 1.5rem;
-            font-size: 0.9rem;
-        }
-
-        .remember-me {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-light);
-            cursor: pointer;
-        }
-
-        .remember-me input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: var(--secondary-color);
-        }
-
-        .forgot-password {
-            color: var(--secondary-color);
-            text-decoration: none;
-            transition: var(--transition);
-        }
-
-        .forgot-password:hover {
-            text-decoration: underline;
-        }
-
-        .btn-block {
-            width: 100%;
-            padding: 0.9rem;
-            font-size: 1.1rem;
-            margin-top: 0.5rem;
-        }
-
-        .auth-switch {
-            text-align: center;
-            margin-top: 1.5rem;
-            color: var(--text-light);
-        }
-
-        .auth-switch a {
-            color: var(--secondary-color);
-            text-decoration: none;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-
-        .auth-switch a:hover {
-            text-decoration: underline;
-        }
-
-        .auth-info {
-            background: linear-gradient(135deg, var(--secondary-color), #c0392b);
-            color: white;
-            padding: 3rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .auth-info-content h2 {
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .auth-info-content p {
-            opacity: 0.9;
-            margin-bottom: 1.5rem;
-        }
-
-        .auth-info-content ul {
-            list-style: none;
-            padding: 0;
-            margin-bottom: 2rem;
-        }
-
-        .auth-info-content ul li {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.5rem 0;
-            opacity: 0.95;
-        }
-
-        .auth-info-content ul li i {
-            font-size: 1.2rem;
-        }
-
-        .auth-info-image {
-            text-align: center;
-            margin-top: 1rem;
-        }
-
-        .auth-info-image img {
-            max-width: 150px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            padding: 0.5rem;
-        }
-
-        #auth-loading {
-            padding: 2rem;
-        }
-
-        #auth-loading i {
-            font-size: 2.5rem;
-            color: var(--secondary-color);
-        }
-
-        @media (max-width: 768px) {
-            .auth-section {
-                padding: 6rem 1rem 3rem;
-            }
-
-            .auth-container {
-                grid-template-columns: 1fr;
-                gap: 0;
-            }
-
-            .auth-card {
-                padding: 2rem;
-            }
-
-            .auth-info {
-                padding: 2rem;
-                order: -1;
-            }
-
-            .auth-info-content h2 {
-                font-size: 1.5rem;
-            }
-
-            .form-options {
-                flex-direction: column;
-                gap: 0.5rem;
-                align-items: flex-start;
-            }
-        }
-    </style>
-
     <script>
         (function() {
             // Supabase Configuration
@@ -444,20 +511,29 @@
             const authLoading = document.getElementById('auth-loading');
             const authTitle = document.getElementById('auth-title');
             const authSubtitle = document.getElementById('auth-subtitle');
+            const alreadyLoggedIn = document.getElementById('alreadyLoggedIn');
+            const loggedInUserName = document.getElementById('loggedInUserName');
             
             // Check if user is already logged in
-            function checkAuth() {
+            function checkAuthStatus() {
                 const user = JSON.parse(localStorage.getItem('user'));
                 if (user && user.id) {
-                    // User is already logged in, redirect to products
-                    showNotification('Welcome back! Redirecting...');
-                    setTimeout(() => {
-                        window.location.href = 'products.html';
-                    }, 1000);
+                    // Show already logged in message
+                    alreadyLoggedIn.style.display = 'block';
+                    loggedInUserName.textContent = user.name || 'User';
+                    loginForm.style.display = 'none';
+                    registerForm.style.display = 'none';
+                    authTitle.textContent = 'Already Logged In';
+                    authSubtitle.textContent = 'You are currently signed in to your account';
                     return true;
                 }
                 return false;
             }
+            
+            // Go to dashboard
+            window.goToDashboard = function() {
+                window.location.href = 'products.html';
+            };
             
             // Toggle password visibility
             window.togglePassword = function(inputId) {
@@ -495,8 +571,13 @@
                     authLoading.style.display = 'block';
                     loginForm.style.display = 'none';
                     registerForm.style.display = 'none';
+                    alreadyLoggedIn.style.display = 'none';
                 } else {
                     authLoading.style.display = 'none';
+                    // Check if already logged in
+                    if (checkAuthStatus()) {
+                        return;
+                    }
                     // Show the appropriate form
                     if (registerForm.style.display === 'block') {
                         registerForm.style.display = 'block';
@@ -515,7 +596,7 @@
                 const rememberMe = document.getElementById('remember-me').checked;
                 
                 if (!email || !password) {
-                    showNotification('Please fill in all fields', true);
+                    showToast('Please fill in all fields', true);
                     return;
                 }
                 
@@ -525,8 +606,6 @@
                 showLoading(true);
                 
                 try {
-                    console.log('Attempting login with email:', email);
-                    
                     // Query the users table for this email
                     const { data: users, error } = await _supabase
                         .from('users')
@@ -540,21 +619,15 @@
                     }
                     
                     if (!users) {
-                        console.log('No user found with email:', email);
                         throw new Error('No account found with this email');
                     }
                     
-                    console.log('User found:', users.id, users.name);
-                    
                     // Check password (plain text comparison - NOT SECURE for production!)
                     if (users.password !== password) {
-                        console.log('Password mismatch');
                         throw new Error('Incorrect password');
                     }
                     
-                    console.log('Login successful!');
-                    
-                    // Store user data in localStorage (excluding password)
+                    // Store user data in localStorage
                     const userData = {
                         id: users.id,
                         email: users.email,
@@ -563,7 +636,7 @@
                     
                     localStorage.setItem('user', JSON.stringify(userData));
                     
-                    showNotification('Login successful! Redirecting...');
+                    showToast('Login successful! Redirecting...');
                     
                     setTimeout(() => {
                         window.location.href = 'products.html';
@@ -571,7 +644,7 @@
                     
                 } catch (error) {
                     console.error('Login error:', error);
-                    showNotification(error.message || 'Login failed. Please try again.', true);
+                    showToast(error.message || 'Login failed. Please try again.', true);
                     
                     // Re-enable button
                     loginBtn.disabled = false;
@@ -590,17 +663,17 @@
                 const confirmPassword = document.getElementById('register-confirm-password').value;
                 
                 if (!name || !email || !password || !confirmPassword) {
-                    showNotification('Please fill in all fields', true);
+                    showToast('Please fill in all fields', true);
                     return;
                 }
                 
                 if (password.length < 6) {
-                    showNotification('Password must be at least 6 characters', true);
+                    showToast('Password must be at least 6 characters', true);
                     return;
                 }
                 
                 if (password !== confirmPassword) {
-                    showNotification('Passwords do not match', true);
+                    showToast('Passwords do not match', true);
                     return;
                 }
                 
@@ -610,8 +683,6 @@
                 showLoading(true);
                 
                 try {
-                    console.log('Attempting registration for:', email);
-                    
                     // Check if user already exists
                     const { data: existingUser, error: checkError } = await _supabase
                         .from('users')
@@ -641,9 +712,7 @@
                         throw new Error(insertError.message || 'Failed to create account');
                     }
                     
-                    console.log('Registration successful! User ID:', newUser.id);
-                    
-                    // Store user data in localStorage (excluding password)
+                    // Store user data in localStorage
                     const userData = {
                         id: newUser.id,
                         email: newUser.email,
@@ -652,7 +721,7 @@
                     
                     localStorage.setItem('user', JSON.stringify(userData));
                     
-                    showNotification('Account created successfully! Redirecting...');
+                    showToast('Account created successfully! Redirecting...');
                     
                     setTimeout(() => {
                         window.location.href = 'products.html';
@@ -660,7 +729,7 @@
                     
                 } catch (error) {
                     console.error('Registration error:', error);
-                    showNotification(error.message || 'Registration failed. Please try again.', true);
+                    showToast(error.message || 'Registration failed. Please try again.', true);
                     
                     // Re-enable button
                     registerBtn.disabled = false;
@@ -669,47 +738,27 @@
                 }
             });
             
-            // Show notification
-            function showNotification(message, isError = false) {
+            // Handle logout
+            window.handleLogout = function() {
+                localStorage.removeItem('user');
+                showToast('Logged out successfully!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            };
+            
+            // Show toast notification
+            function showToast(message, isError = false) {
                 // Remove existing notifications
-                const existing = document.querySelector('.notification-toast');
+                const existing = document.querySelector('.toast');
                 if (existing) existing.remove();
                 
                 const notification = document.createElement('div');
-                notification.className = 'notification-toast';
-                notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i><span>${message}</span>`;
+                notification.className = 'toast';
+                notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i><span>${message}</span>`;
                 document.body.appendChild(notification);
                 
-                notification.style.cssText = `
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    background: ${isError ? '#e74c3c' : '#27ae60'};
-                    color: white;
-                    padding: 1rem 1.5rem;
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    z-index: 10000;
-                    animation: slideInRight 0.3s ease;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                    font-family: 'Inter', sans-serif;
-                    max-width: 400px;
-                `;
-                
-                // Add animation styles if not already added
-                if (!document.getElementById('notification-styles')) {
-                    const style = document.createElement('style');
-                    style.id = 'notification-styles';
-                    style.textContent = `
-                        @keyframes slideInRight {
-                            from { transform: translateX(100%); opacity: 0; }
-                            to { transform: translateX(0); opacity: 1; }
-                        }
-                    `;
-                    document.head.appendChild(style);
-                }
+                notification.style.background = isError ? '#dc2626' : '#1e293b';
                 
                 setTimeout(() => {
                     notification.style.opacity = '0';
@@ -734,13 +783,13 @@
                 if (authIcon) {
                     if (user && user.name) {
                         authIcon.innerHTML = `
-                            <div class="user-menu" style="position: relative; cursor: pointer;">
+                            <div class="user-menu" style="position: relative; cursor: pointer; display: inline-block;">
                                 <i class="fas fa-user-circle"></i>
                                 <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
-                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 0.5rem 0;">
+                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 0.5rem 0; margin-top: 0.5rem;">
                                     <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
                                     <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
-                                    <a href="#" onclick="handleLogout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none; transition: 0.3s ease;">Logout</a>
+                                    <a href="#" onclick="event.preventDefault(); handleLogout();" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none; transition: 0.3s ease;">Logout</a>
                                 </div>
                             </div>
                         `;
@@ -748,8 +797,34 @@
                         const userMenu = authIcon.querySelector('.user-menu');
                         const dropdown = authIcon.querySelector('.user-dropdown');
                         if (userMenu && dropdown) {
-                            userMenu.addEventListener('mouseenter', () => dropdown.style.display = 'block');
-                            userMenu.addEventListener('mouseleave', () => dropdown.style.display = 'none');
+                            // Show dropdown on hover
+                            userMenu.addEventListener('mouseenter', function(e) {
+                                dropdown.style.display = 'block';
+                            });
+                            
+                            // Keep dropdown visible when hovering over it
+                            dropdown.addEventListener('mouseenter', function(e) {
+                                dropdown.style.display = 'block';
+                            });
+                            
+                            // Hide dropdown when mouse leaves both
+                            userMenu.addEventListener('mouseleave', function(e) {
+                                // Check if mouse is over the dropdown
+                                setTimeout(() => {
+                                    if (!dropdown.matches(':hover')) {
+                                        dropdown.style.display = 'none';
+                                    }
+                                }, 100);
+                            });
+                            
+                            dropdown.addEventListener('mouseleave', function(e) {
+                                // Check if mouse is over the user menu
+                                setTimeout(() => {
+                                    if (!userMenu.matches(':hover')) {
+                                        dropdown.style.display = 'none';
+                                    }
+                                }, 100);
+                            });
                         }
                     } else {
                         authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
@@ -757,51 +832,17 @@
                 }
             }
             
-            // Handle logout
-            window.handleLogout = function() {
-                localStorage.removeItem('user');
-                showNotification('Logged out successfully!');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            };
-            
-            // Test database connection
-            async function testConnection() {
-                try {
-                    const { data, error } = await _supabase
-                        .from('users')
-                        .select('count')
-                        .limit(1);
-                    
-                    if (error) {
-                        console.error('Database connection error:', error);
-                        showNotification('Database connection error. Please try again later.', true);
-                        return false;
-                    }
-                    
-                    console.log('Database connection successful!');
-                    return true;
-                } catch (error) {
-                    console.error('Connection test error:', error);
-                    return false;
-                }
-            }
-            
             // Initialize
-            document.addEventListener('DOMContentLoaded', async function() {
-                // Test database connection
-                await testConnection();
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check auth status first
+                const isLoggedIn = checkAuthStatus();
                 
-                // Check if user is already logged in
-                const isLoggedIn = checkAuth();
+                // Update UI
+                updateCartCount();
+                updateAuthUI();
                 
+                // Show login form by default if not logged in
                 if (!isLoggedIn) {
-                    // Update UI
-                    updateCartCount();
-                    updateAuthUI();
-                    
-                    // Show login form by default
                     loginForm.style.display = 'block';
                     registerForm.style.display = 'none';
                 }

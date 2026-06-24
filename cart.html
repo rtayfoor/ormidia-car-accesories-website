@@ -8,193 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                <img src="logo.jpg" alt="Ormidia Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/40x40?text=Logo'">
-                <span class="logo-text">Ormidia</span>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="index.html" class="nav-link">Home</a></li>
-                <li><a href="products.html" class="nav-link">Products</a></li>
-                <li><a href="index.html#about" class="nav-link">About</a></li>
-                <li><a href="index.html#contact" class="nav-link">Contact</a></li>
-            </ul>
-            <div class="nav-icons">
-                <a href="cart.html" class="cart-icon">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count">0</span>
-                </a>
-                <div id="auth-icon" class="user-icon">
-                    <a href="auth.html"><i class="fas fa-user"></i></a>
-                </div>
-                <div class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <section class="cart-section">
-        <div class="container">
-            <div class="cart-header">
-                <h1>Shopping Cart</h1>
-                <p>Review and manage your items</p>
-            </div>
-
-            <div id="loading-spinner" style="display: none; text-align: center; padding: 2rem;">
-                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--secondary-color);"></i>
-                <p>Processing...</p>
-            </div>
-
-            <div class="cart-container">
-                <div class="cart-items" id="cart-items">
-                    <div class="empty-cart" id="empty-cart" style="display: none;">
-                        <i class="fas fa-shopping-cart"></i>
-                        <h3>Your cart is empty</h3>
-                        <p>Looks like you haven't added any items to your cart yet.</p>
-                        <a href="products.html" class="btn btn-primary">Continue Shopping</a>
-                    </div>
-                    <div id="cart-items-list"></div>
-                </div>
-
-                <div class="cart-summary" id="cart-summary" style="display: none;">
-                    <h3>Order Summary</h3>
-                    <div class="summary-row">
-                        <span>Subtotal:</span>
-                        <span id="subtotal">$0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Shipping:</span>
-                        <span id="shipping">$0.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Tax (10%):</span>
-                        <span id="tax">$0.00</span>
-                    </div>
-                    <div class="summary-row total">
-                        <span>Total:</span>
-                        <span id="total">$0.00</span>
-                    </div>
-                    <button class="btn btn-primary btn-block" id="checkout-btn" onclick="proceedToCheckout()">Proceed to Checkout</button>
-                    <button class="btn btn-secondary btn-block" onclick="clearCart()">Clear Cart</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Checkout Modal -->
-    <div id="checkout-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="modal-close" id="checkout-modal-close">&times;</span>
-            <div class="modal-header">
-                <h2>Checkout</h2>
-            </div>
-            <div class="modal-body">
-                <form id="checkout-form">
-                    <div class="form-group">
-                        <label for="full-name">Full Name <span style="color: red;">*</span></label>
-                        <input type="text" id="full-name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email Address <span style="color: red;">*</span></label>
-                        <input type="email" id="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Phone Number <span style="color: red;">*</span></label>
-                        <input type="tel" id="phone" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="address">Shipping Address <span style="color: red;">*</span></label>
-                        <textarea id="address" rows="3" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="notes">Order Notes (Optional)</label>
-                        <textarea id="notes" rows="2" placeholder="Any special instructions..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="payment-method">Payment Method <span style="color: red;">*</span></label>
-                        <select id="payment-method" required>
-                            <option value="">Select payment method</option>
-                            <option value="credit-card">Credit Card</option>
-                            <option value="paypal">PayPal</option>
-                            <option value="cash">Cash on Delivery</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-block" id="place-order-btn">Place Order</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Order Confirmation Modal -->
-    <div id="order-confirmation-modal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-body" style="text-align: center; padding: 2rem;">
-                <i class="fas fa-check-circle" style="font-size: 4rem; color: #27ae60; margin-bottom: 1rem;"></i>
-                <h2 style="color: #27ae60;">Order Placed!</h2>
-                <p>Your order has been successfully placed.</p>
-                <p style="font-size: 0.9rem; color: #666;">Order ID: <strong id="order-id-display"></strong></p>
-                <div id="order-items-preview" style="margin: 1rem 0; text-align: left; background: #f9f9f9; padding: 1rem; border-radius: 8px; max-height: 200px; overflow-y: auto;">
-                    <p style="font-size: 0.85rem; color: #666; text-align: center;">Loading order details...</p>
-                </div>
-                <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">We'll send you a confirmation email shortly.</p>
-                <button onclick="window.location.href='products.html'" class="btn btn-primary" style="margin-top: 1rem;">
-                    Continue Shopping
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>Ormidia</h3>
-                    <p>Premium car accessories for the modern driver.</p>
-                    <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-youtube"></i></a>
-                    </div>
-                </div>
-                <div class="footer-section">
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="products.html">Products</a></li>
-                        <li><a href="index.html#about">About Us</a></li>
-                        <li><a href="index.html#contact">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Customer Service</h4>
-                    <ul>
-                        <li><a href="#">FAQ</a></li>
-                        <li><a href="#">Shipping Policy</a></li>
-                        <li><a href="#">Returns & Exchanges</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Working Hours</h4>
-                    <ul>
-                        <li>Monday - Friday: 9am - 8pm</li>
-                        <li>Saturday: 10am - 6pm</li>
-                        <li>Sunday: Closed</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 Ormidia Car Accessories. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-
     <style>
+        /* ... keep existing styles ... */
         .cart-section {
             padding: 8rem 2rem 5rem;
             min-height: 70vh;
@@ -364,11 +179,10 @@
         }
         .modal {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -451,27 +265,6 @@
             font-size: 0.8rem;
             margin-top: 0.25rem;
         }
-        .order-item-preview {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.4rem 0;
-            border-bottom: 1px solid #eee;
-            font-size: 0.85rem;
-        }
-        .order-item-preview:last-child {
-            border-bottom: none;
-        }
-        .order-item-name {
-            flex: 2;
-        }
-        .order-item-qty {
-            flex: 1;
-            text-align: center;
-        }
-        .order-item-price {
-            flex: 1;
-            text-align: right;
-        }
         @keyframes slideUp {
             from { transform: translateY(50px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -480,9 +273,101 @@
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+        .navbar {
+            background: white;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .logo-img {
+            height: 40px;
+            width: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .logo-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #E30613;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        .nav-link {
+            color: #1e293b;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #E30613;
+        }
+        .nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .cart-icon {
+            position: relative;
+            color: #1e293b;
+            font-size: 1.2rem;
+        }
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #E30613;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+            min-width: 18px;
+            text-align: center;
+        }
+        .user-icon a {
+            color: #1e293b;
+            font-size: 1.2rem;
+        }
+        .menu-toggle {
+            display: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
         @media (max-width: 768px) {
-            .cart-section {
-                padding: 6rem 1rem 3rem;
+            .menu-toggle {
+                display: block;
+            }
+            .nav-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .nav-menu.active {
+                display: flex;
             }
             .cart-container {
                 grid-template-columns: 1fr;
@@ -520,8 +405,147 @@
             .cart-summary {
                 position: static;
             }
+            .cart-section {
+                padding: 6rem 1rem 3rem;
+            }
         }
     </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <img src="logo.jpg" alt="Ormidia Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/40x40?text=Logo'">
+                <span class="logo-text">Ormidia</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Home</a></li>
+                <li><a href="products.html" class="nav-link">Products</a></li>
+                <li><a href="index.html#about" class="nav-link">About</a></li>
+                <li><a href="index.html#contact" class="nav-link">Contact</a></li>
+            </ul>
+            <div class="nav-icons">
+                <a href="cart.html" class="cart-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count">0</span>
+                </a>
+                <div id="auth-icon" class="user-icon">
+                    <a href="auth.html"><i class="fas fa-user"></i></a>
+                </div>
+                <div class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="cart-section">
+        <div class="container">
+            <div class="cart-header">
+                <h1>Shopping Cart</h1>
+                <p>Review and manage your items</p>
+            </div>
+
+            <div id="loading-spinner" style="display: none; text-align: center; padding: 2rem;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--secondary-color);"></i>
+                <p>Loading your cart...</p>
+            </div>
+
+            <div class="cart-container">
+                <div class="cart-items" id="cart-items">
+                    <div class="empty-cart" id="empty-cart" style="display: none;">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h3>Your cart is empty</h3>
+                        <p>Looks like you haven't added any items to your cart yet.</p>
+                        <a href="products.html" class="btn btn-primary">Continue Shopping</a>
+                    </div>
+                    <div id="cart-items-list"></div>
+                </div>
+
+                <div class="cart-summary" id="cart-summary" style="display: none;">
+                    <h3>Order Summary</h3>
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Shipping:</span>
+                        <span id="shipping">$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tax (10%):</span>
+                        <span id="tax">$0.00</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total:</span>
+                        <span id="total">$0.00</span>
+                    </div>
+                    <button class="btn btn-primary btn-block" id="checkout-btn" onclick="proceedToCheckout()">Proceed to Checkout</button>
+                    <button class="btn btn-secondary btn-block" onclick="clearCart()">Clear Cart</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Checkout Modal -->
+    <div id="checkout-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close" id="checkout-modal-close">&times;</span>
+            <div class="modal-header">
+                <h2>Checkout</h2>
+            </div>
+            <div class="modal-body">
+                <form id="checkout-form">
+                    <div class="form-group">
+                        <label for="full-name">Full Name <span style="color: red;">*</span></label>
+                        <input type="text" id="full-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address <span style="color: red;">*</span></label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number <span style="color: red;">*</span></label>
+                        <input type="tel" id="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Shipping Address <span style="color: red;">*</span></label>
+                        <textarea id="address" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Order Notes (Optional)</label>
+                        <textarea id="notes" rows="2" placeholder="Any special instructions..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="payment-method">Payment Method <span style="color: red;">*</span></label>
+                        <select id="payment-method" required>
+                            <option value="">Select payment method</option>
+                            <option value="credit-card">Credit Card</option>
+                            <option value="paypal">PayPal</option>
+                            <option value="cash">Cash on Delivery</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block" id="place-order-btn">Place Order</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Confirmation Modal -->
+    <div id="order-confirmation-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-body" style="text-align: center; padding: 2rem;">
+                <i class="fas fa-check-circle" style="font-size: 4rem; color: #27ae60; margin-bottom: 1rem;"></i>
+                <h2 style="color: #27ae60;">Order Placed!</h2>
+                <p>Your order has been successfully placed.</p>
+                <p style="font-size: 0.9rem; color: #666;">Order ID: <strong id="order-id-display"></strong></p>
+                <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">We'll send you a confirmation email shortly.</p>
+                <button onclick="window.location.href='products.html'" class="btn btn-primary" style="margin-top: 1rem;">
+                    Continue Shopping
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         (function() {
@@ -530,34 +554,16 @@
             
             const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             
-            let cartId = localStorage.getItem('cartId') || generateCartId();
-            let currentOrderItems = [];
+            let currentUser = null;
+            let cartItems = [];
+            let cartId = null;
             
-            function generateCartId() {
-                const id = 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                localStorage.setItem('cartId', id);
-                return id;
-            }
-            
-            function getCart() {
-                return JSON.parse(localStorage.getItem('cart')) || [];
-            }
-            
-            function saveCart(cart) {
-                localStorage.setItem('cart', JSON.stringify(cart));
-            }
-            
-            function showLoading(show) {
-                const spinner = document.getElementById('loading-spinner');
-                if (spinner) {
-                    spinner.style.display = show ? 'block' : 'none';
-                }
-            }
-            
+            // Get current user from localStorage
             function getCurrentUser() {
                 try {
                     const user = JSON.parse(localStorage.getItem('user'));
                     if (user && user.id) {
+                        currentUser = user;
                         return user;
                     }
                     return null;
@@ -566,109 +572,84 @@
                 }
             }
             
-            function generatePlaceholder(productName, variantName = null, size = 80) {
-                const text = variantName ? `${productName}` : productName;
-                const shortText = text.length > 20 ? text.substring(0, 18) + '...' : text;
-                const colors = ['e74c3c', '3498db', '2ecc71', 'f39c12', '9b59b6', 'e67e22', '1abc9c', '34495e', 'd35400', '27ae60'];
-                const colorIndex = productName.length % colors.length;
-                const color = colors[colorIndex];
+            // Load cart from database
+            async function loadCartFromDB() {
+                const user = getCurrentUser();
+                if (!user) {
+                    // If not logged in, try to load from localStorage as fallback
+                    const localCart = JSON.parse(localStorage.getItem('cart')) || [];
+                    cartItems = localCart;
+                    displayCart(cartItems);
+                    return;
+                }
                 
-                return `data:image/svg+xml,${encodeURIComponent(`
-                    <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-                        <rect width="${size}" height="${size}" fill="#${color}"/>
-                        <rect width="${size-10}" height="${size-10}" x="5" y="5" fill="rgba(255,255,255,0.15)" rx="5"/>
-                        <text x="${size/2}" y="${size/2 - 5}" font-family="Arial" font-size="${size > 60 ? 14 : 10}" fill="white" text-anchor="middle" font-weight="bold">${shortText}</text>
-                        <text x="${size/2}" y="${size/2 + 20}" font-family="Arial" font-size="${size > 60 ? 20 : 14}" fill="rgba(255,255,255,0.5)" text-anchor="middle">🚗</text>
-                    </svg>
-                `)}`;
-            }
-            
-            function getProductImageUrl(productName, variantName = null) {
-                const imageMap = {
-                    'Head Rest Pillow': {
-                        type: 'variant',
-                        baseName: 'head-rest-pillow',
-                        extension: '.png'
-                    },
-                    'Simple Rest Pillow': {
-                        type: 'single',
-                        fileName: 'simple-rest-pillow.png'
-                    },
-                    'Anti-Slip Mat': {
-                        type: 'variant',
-                        baseName: 'anti-slip-mat',
-                        extension: '.png'
-                    },
-                    'Plating Number': {
-                        type: 'variant',
-                        baseName: 'plating-number',
-                        extension: '.png'
-                    },
-                    'Pillow Seat Belt': {
-                        type: 'single',
-                        fileName: 'pillow-seat-belt.png'
-                    },
-                    'Keyring': {
-                        type: 'variant',
-                        baseName: 'keyring',
-                        extension: '.png'
-                    },
-                    'Keyring Small Bag': {
-                        type: 'single',
-                        fileName: 'keyring-small-bag.png'
-                    },
-                    'Drink Holder': {
-                        type: 'single',
-                        fileName: 'drink-holder.png'
-                    },
-                    'Coasters': {
-                        type: 'variant',
-                        baseName: 'coasters',
-                        extension: '.png'
-                    },
-                    'Exhaust': {
-                        type: 'single',
-                        fileName: 'exhaust.png'
-                    },
-                    'Steering Cover Carbon 38cm': {
-                        type: 'single',
-                        fileName: 'steering-cover-carbon-38cm.png'
-                    },
-                    'Sparco 28cm': {
-                        type: 'single',
-                        fileName: 'sparco-28cm.png'
+                try {
+                    showLoading(true);
+                    
+                    // Get or create cart for this user
+                    const { data: cart, error } = await _supabase
+                        .rpc('get_or_create_cart', { p_user_id: user.id });
+                    
+                    if (error) throw error;
+                    
+                    if (cart) {
+                        cartItems = cart.items || [];
+                        cartId = cart.id;
+                        displayCart(cartItems);
+                    } else {
+                        cartItems = [];
+                        displayCart(cartItems);
                     }
-                };
-                
-                const config = imageMap[productName];
-                
-                if (!config) {
-                    return generatePlaceholder(productName, variantName);
+                } catch (error) {
+                    console.error('Error loading cart:', error);
+                    showToast('Failed to load cart', true);
+                    // Fallback to localStorage
+                    const localCart = JSON.parse(localStorage.getItem('cart')) || [];
+                    cartItems = localCart;
+                    displayCart(cartItems);
+                } finally {
+                    showLoading(false);
                 }
-                
-                let imageUrl = '';
-                
-                if (config.type === 'single') {
-                    imageUrl = config.fileName;
-                } else if (config.type === 'variant' && variantName) {
-                    const variantKey = variantName.toLowerCase().replace(/\s+/g, '');
-                    imageUrl = `${config.baseName}_${variantKey}${config.extension}`;
-                }
-                
-                if (!imageUrl) {
-                    return generatePlaceholder(productName, variantName);
-                }
-                
-                return imageUrl + '?v=' + Date.now();
             }
             
-            async function loadCart() {
-                const cart = getCart();
+            // Save cart to database
+            async function saveCartToDB(items) {
+                const user = getCurrentUser();
+                if (!user) {
+                    // If not logged in, save to localStorage
+                    localStorage.setItem('cart', JSON.stringify(items));
+                    return;
+                }
+                
+                try {
+                    const { data, error } = await _supabase
+                        .rpc('sync_cart', {
+                            p_user_id: user.id,
+                            p_items: items
+                        });
+                    
+                    if (error) throw error;
+                    
+                    cartId = data.id;
+                    cartItems = data.items || [];
+                    
+                    // Also save to localStorage as backup
+                    localStorage.setItem('cart', JSON.stringify(cartItems));
+                    
+                } catch (error) {
+                    console.error('Error saving cart:', error);
+                    // Fallback to localStorage
+                    localStorage.setItem('cart', JSON.stringify(items));
+                }
+            }
+            
+            // Display cart
+            function displayCart(items) {
                 const cartItemsList = document.getElementById('cart-items-list');
                 const emptyCart = document.getElementById('empty-cart');
                 const cartSummary = document.getElementById('cart-summary');
                 
-                if (cart.length === 0) {
+                if (!items || items.length === 0) {
                     cartItemsList.innerHTML = '';
                     emptyCart.style.display = 'block';
                     cartSummary.style.display = 'none';
@@ -681,73 +662,29 @@
                 
                 let subtotal = 0;
                 
-                const stockCheckPromises = cart.map(async (item) => {
-                    try {
-                        let availableStock = 0;
-                        if (item.variant_id) {
-                            const { data, error } = await _supabase
-                                .rpc('get_available_stock', {
-                                    p_variant_id: item.variant_id,
-                                    p_cart_id: cartId
-                                });
-                            if (!error) availableStock = data || 0;
-                        } else {
-                            const { data, error } = await _supabase
-                                .rpc('get_product_available_stock', {
-                                    p_product_id: item.product_id,
-                                    p_cart_id: cartId
-                                });
-                            if (!error) availableStock = data || 0;
-                        }
-                        return { ...item, availableStock };
-                    } catch (error) {
-                        console.error('Error checking stock:', error);
-                        return { ...item, availableStock: 0 };
-                    }
-                });
-                
-                const itemsWithStock = await Promise.all(stockCheckPromises);
-                
-                cartItemsList.innerHTML = itemsWithStock.map((item, index) => {
+                cartItemsList.innerHTML = items.map((item, index) => {
                     const itemTotal = item.price * item.quantity;
                     subtotal += itemTotal;
                     
-                    const isOutOfStock = item.availableStock < item.quantity;
-                    
-                    let imageUrl;
-                    if (item.image && !item.image.includes('placeholder')) {
-                        imageUrl = item.image;
-                    } else {
-                        imageUrl = getProductImageUrl(item.product_name || item.name, item.variant_name);
-                    }
-                    
-                    if (!imageUrl || imageUrl.includes('undefined')) {
-                        imageUrl = generatePlaceholder(item.product_name || item.name, item.variant_name);
-                    }
+                    // Generate image placeholder if needed
+                    const imageUrl = item.image || generatePlaceholder(item.product_name || item.name);
                     
                     return `
-                        <div class="cart-item" data-index="${index}" style="${isOutOfStock ? 'border-left: 4px solid #e74c3c;' : ''}">
+                        <div class="cart-item" data-index="${index}">
                             <div class="cart-item-image">
                                 <img src="${imageUrl}" 
                                      alt="${item.name}" 
-                                     onerror="this.src='${generatePlaceholder(item.product_name || item.name, item.variant_name)}'">
+                                     onerror="this.src='${generatePlaceholder(item.product_name || item.name)}'">
                             </div>
                             <div class="cart-item-details">
                                 <h4>${escapeHtml(item.name)}</h4>
                                 <p class="item-brand">${escapeHtml(item.product_name || 'Accessory')}</p>
                                 <p class="item-price">$${item.price.toFixed(2)}</p>
-                                ${isOutOfStock ? 
-                                    `<p class="stock-warning">
-                                        <i class="fas fa-exclamation-triangle"></i> 
-                                        Only ${item.availableStock} available in stock
-                                    </p>` : 
-                                    ''
-                                }
                             </div>
                             <div class="cart-item-quantity">
-                                <button onclick="updateQuantity(${index}, -1)" ${isOutOfStock ? 'disabled' : ''}>-</button>
+                                <button onclick="updateQuantity(${index}, -1)">-</button>
                                 <span>${item.quantity}</span>
-                                <button onclick="updateQuantity(${index}, 1)" ${isOutOfStock ? 'disabled' : ''}>+</button>
+                                <button onclick="updateQuantity(${index}, 1)">+</button>
                             </div>
                             <div class="cart-item-total">
                                 $${itemTotal.toFixed(2)}
@@ -761,6 +698,7 @@
                     `;
                 }).join('');
                 
+                // Update summary
                 const shipping = subtotal > 50 ? 0 : 10;
                 const tax = subtotal * 0.1;
                 const total = subtotal + shipping + tax;
@@ -770,127 +708,74 @@
                 document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
                 document.getElementById('total').textContent = `$${total.toFixed(2)}`;
                 
-                const hasOutOfStock = itemsWithStock.some(item => item.availableStock < item.quantity);
-                const checkoutBtn = document.getElementById('checkout-btn');
-                if (checkoutBtn) {
-                    checkoutBtn.disabled = hasOutOfStock;
-                    checkoutBtn.title = hasOutOfStock ? 'Some items are out of stock' : '';
-                    checkoutBtn.style.opacity = hasOutOfStock ? '0.5' : '1';
-                    checkoutBtn.style.cursor = hasOutOfStock ? 'not-allowed' : 'pointer';
-                }
-                
                 updateCartCount();
             }
             
+            // Generate placeholder image
+            function generatePlaceholder(productName) {
+                const colors = ['e74c3c', '3498db', '2ecc71', 'f39c12', '9b59b6', 'e67e22', '1abc9c', '34495e'];
+                const color = colors[productName.length % colors.length];
+                return `data:image/svg+xml,${encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+                        <rect width="80" height="80" fill="#${color}"/>
+                        <text x="40" y="40" font-family="Arial" font-size="10" fill="white" text-anchor="middle">${productName}</text>
+                    </svg>
+                `)}`;
+            }
+            
+            // Update quantity
             window.updateQuantity = async function(index, change) {
-                const cart = getCart();
+                const items = [...cartItems];
                 
-                if (cart[index]) {
-                    const newQuantity = cart[index].quantity + change;
+                if (items[index]) {
+                    const newQuantity = items[index].quantity + change;
                     
                     if (newQuantity <= 0) {
-                        await removeItem(index);
-                        return;
-                    }
-                    
-                    let availableStock = 0;
-                    if (cart[index].variant_id) {
-                        const { data, error } = await _supabase
-                            .rpc('get_available_stock', {
-                                p_variant_id: cart[index].variant_id,
-                                p_cart_id: cartId
-                            });
-                        if (!error) availableStock = data || 0;
+                        items.splice(index, 1);
                     } else {
-                        const { data, error } = await _supabase
-                            .rpc('get_product_available_stock', {
-                                p_product_id: cart[index].product_id,
-                                p_cart_id: cartId
-                            });
-                        if (!error) availableStock = data || 0;
+                        items[index].quantity = newQuantity;
                     }
                     
-                    if (newQuantity > availableStock) {
-                        showNotification(`Only ${availableStock} items available in stock`, true);
-                        return;
-                    }
-                    
-                    const { error } = await _supabase
-                        .rpc('reserve_stock', {
-                            p_cart_id: cartId,
-                            p_product_id: cart[index].product_id,
-                            p_variant_id: cart[index].variant_id || null,
-                            p_quantity: change > 0 ? 1 : -1
-                        });
-                    
-                    if (error) {
-                        console.error('Error updating reservation:', error);
-                        showNotification('Failed to update stock reservation', true);
-                        return;
-                    }
-                    
-                    cart[index].quantity = newQuantity;
-                    saveCart(cart);
-                    await loadCart();
+                    cartItems = items;
+                    await saveCartToDB(items);
+                    displayCart(items);
                 }
             };
             
+            // Remove item
             window.removeItem = async function(index) {
-                const cart = getCart();
-                const item = cart[index];
-                
-                if (item) {
-                    try {
-                        await _supabase
-                            .rpc('release_stock', {
-                                p_cart_id: cartId,
-                                p_product_id: item.product_id,
-                                p_variant_id: item.variant_id || null
-                            });
-                    } catch (error) {
-                        console.error('Error releasing stock:', error);
-                    }
-                    
-                    cart.splice(index, 1);
-                    saveCart(cart);
-                    await loadCart();
-                    showNotification('Item removed from cart');
-                }
+                const items = [...cartItems];
+                items.splice(index, 1);
+                cartItems = items;
+                await saveCartToDB(items);
+                displayCart(items);
+                showToast('Item removed from cart');
             };
             
+            // Clear cart
             window.clearCart = async function() {
                 if (confirm('Are you sure you want to clear your entire cart?')) {
-                    try {
-                        await _supabase
-                            .rpc('release_stock', {
-                                p_cart_id: cartId,
-                                p_product_id: null,
-                                p_variant_id: null
-                            });
-                    } catch (error) {
-                        console.error('Error releasing stock:', error);
-                    }
-                    
-                    localStorage.removeItem('cart');
-                    await loadCart();
-                    showNotification('Cart cleared');
+                    cartItems = [];
+                    await saveCartToDB([]);
+                    displayCart([]);
+                    showToast('Cart cleared');
                 }
             };
             
+            // Proceed to checkout
             window.proceedToCheckout = function() {
                 const user = getCurrentUser();
-                const cart = getCart();
-                
-                if (cart.length === 0) {
-                    showNotification('Your cart is empty', true);
-                    return;
-                }
                 
                 if (!user || !user.id) {
-                    showNotification('Please login to continue', true);
+                    showToast('Please login to continue', true);
                     setTimeout(() => {
                         window.location.href = 'auth.html';
                     }, 1500);
+                    return;
+                }
+                
+                if (cartItems.length === 0) {
+                    showToast('Your cart is empty', true);
                     return;
                 }
                 
@@ -899,6 +784,7 @@
                 document.getElementById('checkout-modal').style.display = 'flex';
             };
             
+            // Checkout form submission
             document.getElementById('checkout-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -908,21 +794,20 @@
                 const address = document.getElementById('address').value.trim();
                 const notes = document.getElementById('notes').value.trim();
                 const paymentMethod = document.getElementById('payment-method').value;
-                const cart = getCart();
                 const user = getCurrentUser();
                 
                 if (!fullName || !email || !phone || !address) {
-                    showNotification('Please fill in all required fields', true);
+                    showToast('Please fill in all required fields', true);
                     return;
                 }
                 
                 if (!paymentMethod) {
-                    showNotification('Please select a payment method', true);
+                    showToast('Please select a payment method', true);
                     return;
                 }
                 
                 if (!user || !user.id) {
-                    showNotification('You must be logged in to place an order', true);
+                    showToast('You must be logged in to place an order', true);
                     return;
                 }
                 
@@ -932,8 +817,14 @@
                 showLoading(true);
                 
                 try {
-                    // Prepare order items with all details
-                    const orderItems = cart.map(item => ({
+                    // Calculate totals
+                    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    const shipping = subtotal > 50 ? 0 : 10;
+                    const tax = subtotal * 0.1;
+                    const total = subtotal + shipping + tax;
+                    
+                    // Prepare order items
+                    const orderItems = cartItems.map(item => ({
                         product_id: item.product_id,
                         variant_id: item.variant_id || null,
                         product_name: item.product_name,
@@ -941,85 +832,46 @@
                         variant_type: item.variant_type || null,
                         price: parseFloat(item.price),
                         quantity: parseInt(item.quantity),
-                        image: item.image || null,
-                        subtotal: parseFloat(item.price) * parseInt(item.quantity)
+                        image: item.image || null
                     }));
                     
-                    // Store for confirmation display
-                    currentOrderItems = orderItems;
+                    // Create order
+                    const { data: order, error: orderError } = await _supabase
+                        .from('orders')
+                        .insert([{
+                            customer_name: fullName,
+                            customer_phone: phone,
+                            customer_email: email,
+                            delivery_address: address,
+                            notes: notes || null,
+                            items: orderItems,
+                            total: total,
+                            status: 'pending',
+                            user_id: user.id
+                        }])
+                        .select()
+                        .single();
                     
-                    console.log('Placing order with items:', orderItems);
+                    if (orderError) throw orderError;
                     
-                    const { data, error } = await _supabase
-                        .rpc('checkout_with_order', {
-                            p_cart_id: cartId,
-                            p_customer_name: fullName,
-                            p_customer_phone: phone,
-                            p_customer_email: email,
-                            p_delivery_address: address,
-                            p_notes: notes || null,
-                            p_user_id: String(user.id),
-                            p_items: orderItems
-                        });
+                    // Clear cart
+                    cartItems = [];
+                    await saveCartToDB([]);
+                    displayCart([]);
                     
-                    if (error) {
-                        console.error('Checkout error:', error);
-                        throw new Error(error.message || 'Failed to process order');
-                    }
-                    
-                    const orderResult = data;
-                    console.log('Order placed successfully:', orderResult);
-                    
-                    localStorage.removeItem('cart');
+                    // Close modal
                     closeCheckoutModal();
                     
-                    // Show order confirmation with items
-                    document.getElementById('order-id-display').textContent = orderResult.order_id;
-                    
-                    // Display order items in confirmation
-                    const itemsPreview = document.getElementById('order-items-preview');
-                    if (orderResult.items && orderResult.items.length > 0) {
-                        itemsPreview.innerHTML = `
-                            <p style="font-weight: 600; margin-bottom: 0.5rem;">Order Items:</p>
-                            ${orderResult.items.map(item => `
-                                <div class="order-item-preview">
-                                    <span class="order-item-name">${escapeHtml(item.product_name)}${item.variant_name ? ' (' + escapeHtml(item.variant_name) + ')' : ''}</span>
-                                    <span class="order-item-qty">× ${item.quantity}</span>
-                                    <span class="order-item-price">$${parseFloat(item.price).toFixed(2)}</span>
-                                </div>
-                            `).join('')}
-                            <div style="border-top: 2px solid #eee; margin-top: 0.5rem; padding-top: 0.5rem; display: flex; justify-content: space-between; font-weight: 700;">
-                                <span>Total:</span>
-                                <span>$${parseFloat(orderResult.total).toFixed(2)}</span>
-                            </div>
-                        `;
-                    } else {
-                        // Fallback: display from local cart data
-                        itemsPreview.innerHTML = `
-                            <p style="font-weight: 600; margin-bottom: 0.5rem;">Order Items:</p>
-                            ${currentOrderItems.map(item => `
-                                <div class="order-item-preview">
-                                    <span class="order-item-name">${escapeHtml(item.product_name)}${item.variant_name ? ' (' + escapeHtml(item.variant_name) + ')' : ''}</span>
-                                    <span class="order-item-qty">× ${item.quantity}</span>
-                                    <span class="order-item-price">$${parseFloat(item.price).toFixed(2)}</span>
-                                </div>
-                            `).join('')}
-                            <div style="border-top: 2px solid #eee; margin-top: 0.5rem; padding-top: 0.5rem; display: flex; justify-content: space-between; font-weight: 700;">
-                                <span>Total:</span>
-                                <span>$${currentOrderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</span>
-                            </div>
-                        `;
-                    }
-                    
+                    // Show confirmation
+                    document.getElementById('order-id-display').textContent = order.id;
                     document.getElementById('order-confirmation-modal').style.display = 'flex';
                     
-                    showNotification(`Order placed successfully! Order ID: ${orderResult.order_id}`);
+                    showToast(`Order placed successfully! Order ID: ${order.id}`);
                     updateCartCount();
-                    await loadCart();
                     
                 } catch (error) {
                     console.error('Checkout error:', error);
-                    showNotification(error.message || 'Failed to process checkout. Please try again.', true);
+                    showToast(error.message || 'Failed to process checkout. Please try again.', true);
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Place Order';
                 } finally {
@@ -1028,8 +880,7 @@
             });
             
             function closeCheckoutModal() {
-                const modal = document.getElementById('checkout-modal');
-                if (modal) modal.style.display = 'none';
+                document.getElementById('checkout-modal').style.display = 'none';
                 document.getElementById('checkout-form').reset();
                 
                 const submitBtn = document.getElementById('place-order-btn');
@@ -1040,12 +891,47 @@
             }
             
             function updateCartCount() {
-                const cart = getCart();
-                const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-                const cartCount = document.querySelector('.cart-count');
-                if (cartCount) cartCount.textContent = totalItems;
+                const count = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+                document.querySelector('.cart-count').textContent = count;
             }
             
+            function showLoading(show) {
+                document.getElementById('loading-spinner').style.display = show ? 'block' : 'none';
+            }
+            
+            function showToast(message, isError = false) {
+                const notification = document.createElement('div');
+                notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${message}`;
+                notification.style.cssText = `
+                    position: fixed; bottom: 20px; right: 20px; 
+                    background: ${isError ? '#dc2626' : '#1e293b'};
+                    color: white; padding: 1rem 1.5rem; border-radius: 8px;
+                    display: flex; align-items: center; gap: 0.5rem;
+                    z-index: 10000; animation: slideInRight 0.3s ease;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    font-family: 'Inter', sans-serif;
+                    max-width: 400px;
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+            
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str).replace(/[&<>"]/g, function(m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    if (m === '"') return '&quot;';
+                    return m;
+                });
+            }
+            
+            // Update auth UI
             function updateAuthUI() {
                 const user = getCurrentUser();
                 const authIcon = document.getElementById('auth-icon');
@@ -1053,13 +939,13 @@
                 if (authIcon) {
                     if (user && user.name) {
                         authIcon.innerHTML = `
-                            <div class="user-menu" style="position: relative; cursor: pointer;">
+                            <div class="user-menu" style="position: relative; cursor: pointer; display: inline-block;">
                                 <i class="fas fa-user-circle"></i>
                                 <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
-                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 0.5rem 0;">
+                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100; padding: 0.5rem 0; margin-top: 0.5rem;">
                                     <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
                                     <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
-                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none; transition: 0.3s ease;">Logout</a>
+                                    <a href="#" onclick="event.preventDefault(); logout();" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none; transition: 0.3s ease;">Logout</a>
                                 </div>
                             </div>
                         `;
@@ -1068,7 +954,21 @@
                         const dropdown = authIcon.querySelector('.user-dropdown');
                         if (userMenu && dropdown) {
                             userMenu.addEventListener('mouseenter', () => dropdown.style.display = 'block');
-                            userMenu.addEventListener('mouseleave', () => dropdown.style.display = 'none');
+                            dropdown.addEventListener('mouseenter', () => dropdown.style.display = 'block');
+                            userMenu.addEventListener('mouseleave', () => {
+                                setTimeout(() => {
+                                    if (!dropdown.matches(':hover')) {
+                                        dropdown.style.display = 'none';
+                                    }
+                                }, 100);
+                            });
+                            dropdown.addEventListener('mouseleave', () => {
+                                setTimeout(() => {
+                                    if (!userMenu.matches(':hover')) {
+                                        dropdown.style.display = 'none';
+                                    }
+                                }, 100);
+                            });
                         }
                     } else {
                         authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
@@ -1078,56 +978,18 @@
             
             window.logout = function() {
                 localStorage.removeItem('user');
-                localStorage.removeItem('cartId');
-                showNotification('Logged out successfully!');
+                localStorage.removeItem('cart');
+                showToast('Logged out successfully!');
                 setTimeout(() => window.location.reload(), 1000);
             };
             
-            function showNotification(message, isError = false) {
-                const notification = document.createElement('div');
-                notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i><span>${message}</span>`;
-                document.body.appendChild(notification);
-                
-                notification.style.cssText = `
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    background: ${isError ? '#e74c3c' : '#27ae60'};
-                    color: white;
-                    padding: 1rem 1.5rem;
-                    border-radius: 10px;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.5rem;
-                    z-index: 10000;
-                    animation: slideInRight 0.3s ease;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                    font-family: 'Inter', sans-serif;
-                    max-width: 400px;
-                `;
-                
-                setTimeout(() => notification.remove(), 3000);
-            }
-            
-            function escapeHtml(str) {
-                if (!str) return '';
-                return str.replace(/[&<>]/g, function(m) {
-                    if (m === '&') return '&amp;';
-                    if (m === '<') return '&lt;';
-                    if (m === '>') return '&gt;';
-                    return m;
-                });
-            }
-            
+            // Initialize
             document.addEventListener('DOMContentLoaded', async function() {
-                await loadCart();
                 updateAuthUI();
+                await loadCartFromDB();
                 
-                const closeBtn = document.getElementById('checkout-modal-close');
-                if (closeBtn) {
-                    closeBtn.onclick = closeCheckoutModal;
-                }
-                
+                // Modal close
+                document.getElementById('checkout-modal-close').onclick = closeCheckoutModal;
                 window.onclick = function(event) {
                     const checkoutModal = document.getElementById('checkout-modal');
                     const confirmationModal = document.getElementById('order-confirmation-modal');
@@ -1137,21 +999,10 @@
                     }
                 };
                 
-                const menuToggle = document.querySelector('.menu-toggle');
-                const navMenu = document.querySelector('.nav-menu');
-                if (menuToggle) {
-                    menuToggle.addEventListener('click', function() {
-                        if (navMenu) navMenu.classList.toggle('active');
-                    });
-                }
-                
-                setInterval(async () => {
-                    try {
-                        await _supabase.rpc('cleanup_expired_reservations');
-                    } catch (error) {
-                        console.error('Error cleaning up reservations:', error);
-                    }
-                }, 5 * 60 * 1000);
+                // Mobile menu
+                document.querySelector('.menu-toggle').addEventListener('click', function() {
+                    document.querySelector('.nav-menu').classList.toggle('active');
+                });
             });
         })();
     </script>

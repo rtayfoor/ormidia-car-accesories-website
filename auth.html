@@ -446,46 +446,17 @@
             const authSubtitle = document.getElementById('auth-subtitle');
             
             // Check if user is already logged in
-            async function checkAuth() {
-                try {
-                    // Check for existing session in localStorage
-                    const sessionStr = localStorage.getItem('supabase_session');
-                    if (sessionStr) {
-                        try {
-                            const session = JSON.parse(sessionStr);
-                            if (session && session.access_token) {
-                                await _supabase.auth.setSession(session);
-                            }
-                        } catch (e) {
-                            console.warn('Invalid session data:', e);
-                        }
-                    }
-                    
-                    // Get current session
-                    const { data: { session }, error } = await _supabase.auth.getSession();
-                    
-                    if (session && !error) {
-                        // User is already logged in, redirect to products
-                        const userData = {
-                            id: session.user.id,
-                            email: session.user.email,
-                            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User'
-                        };
-                        localStorage.setItem('user', JSON.stringify(userData));
-                        localStorage.setItem('supabase_session', JSON.stringify(session));
-                        
-                        showNotification('Welcome back! Redirecting...');
-                        setTimeout(() => {
-                            window.location.href = 'products.html';
-                        }, 1000);
-                        return true;
-                    }
-                    
-                    return false;
-                } catch (error) {
-                    console.error('Auth check error:', error);
-                    return false;
+            function checkAuth() {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (user && user.id) {
+                    // User is already logged in, redirect to products
+                    showNotification('Welcome back! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = 'products.html';
+                    }, 1000);
+                    return true;
                 }
+                return false;
             }
             
             // Toggle password visibility
@@ -535,7 +506,7 @@
                 }
             }
             
-            // Handle login
+            // Handle login with custom users table
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -554,22 +525,39 @@
                 showLoading(true);
                 
                 try {
-                    const { data, error } = await _supabase.auth.signInWithPassword({
-                        email: email,
-                        password: password
-                    });
+                    // Query the users table for this email
+                    const { data: users, error } = await _supabase
+                        .from('users')
+                        .select('*')
+                        .eq('email', email)
+                        .single();
                     
-                    if (error) throw error;
+                    if (error) {
+                        if (error.code === 'PGRST116') {
+                            throw new Error('No account found with this email');
+                        }
+                        throw error;
+                    }
                     
-                    // Store user data and session
+                    if (!users) {
+                        throw new Error('No account found with this email');
+                    }
+                    
+                    // Check password (in production, you should use bcrypt or similar)
+                    // For now, we're doing a simple comparison
+                    // IMPORTANT: In production, hash the password before storing!
+                    if (users.password !== password) {
+                        throw new Error('Incorrect password');
+                    }
+                    
+                    // Store user data in localStorage (excluding password)
                     const userData = {
-                        id: data.user.id,
-                        email: data.user.email,
-                        name: data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User'
+                        id: users.id,
+                        email: users.email,
+                        name: users.name
                     };
                     
                     localStorage.setItem('user', JSON.stringify(userData));
-                    localStorage.setItem('supabase_session', JSON.stringify(data.session));
                     
                     showNotification('Login successful! Redirecting...');
                     
@@ -588,7 +576,7 @@
                 }
             });
             
-            // Handle registration
+            // Handle registration with custom users table
             registerForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -618,44 +606,48 @@
                 showLoading(true);
                 
                 try {
-                    const { data, error } = await _supabase.auth.signUp({
-                        email: email,
-                        password: password,
-                        options: {
-                            data: {
-                                name: name
+                    // Check if user already exists
+                    const { data: existingUser, error: checkError } = await _supabase
+                        .from('users')
+                        .select('email')
+                        .eq('email', email)
+                        .single();
+                    
+                    if (existingUser) {
+                        throw new Error('An account with this email already exists');
+                    }
+                    
+                    // Insert new user
+                    // IMPORTANT: In production, hash the password before storing!
+                    const { data: newUser, error: insertError } = await _supabase
+                        .from('users')
+                        .insert([
+                            {
+                                name: name,
+                                email: email,
+                                password: password // In production, this should be hashed!
                             }
-                        }
-                    });
+                        ])
+                        .select()
+                        .single();
                     
-                    if (error) throw error;
+                    if (insertError) throw insertError;
                     
-                    if (data.user) {
-                        // Store user data and session
+                    if (newUser) {
+                        // Store user data in localStorage (excluding password)
                         const userData = {
-                            id: data.user.id,
-                            email: data.user.email,
-                            name: name || data.user.email?.split('@')[0] || 'User'
+                            id: newUser.id,
+                            email: newUser.email,
+                            name: newUser.name
                         };
                         
                         localStorage.setItem('user', JSON.stringify(userData));
-                        if (data.session) {
-                            localStorage.setItem('supabase_session', JSON.stringify(data.session));
-                        }
                         
                         showNotification('Account created successfully! Redirecting...');
                         
                         setTimeout(() => {
                             window.location.href = 'products.html';
                         }, 1000);
-                    } else {
-                        showNotification('Registration successful! Please check your email to confirm your account.', false);
-                        
-                        // Switch back to login form
-                        registerBtn.disabled = false;
-                        registerBtn.textContent = 'Create Account';
-                        showLoading(false);
-                        switchToLogin();
                     }
                     
                 } catch (error) {
@@ -758,25 +750,18 @@
             }
             
             // Handle logout
-            window.handleLogout = async function() {
-                try {
-                    await _supabase.auth.signOut();
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('supabase_session');
-                    showNotification('Logged out successfully!');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } catch (error) {
-                    console.error('Logout error:', error);
-                    showNotification('Logout failed. Please try again.', true);
-                }
+            window.handleLogout = function() {
+                localStorage.removeItem('user');
+                showNotification('Logged out successfully!');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
             };
             
             // Initialize
-            document.addEventListener('DOMContentLoaded', async function() {
+            document.addEventListener('DOMContentLoaded', function() {
                 // Check if user is already logged in
-                const isLoggedIn = await checkAuth();
+                const isLoggedIn = checkAuth();
                 
                 if (!isLoggedIn) {
                     // Update UI

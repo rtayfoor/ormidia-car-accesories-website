@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ... keep existing styles ... */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -416,16 +415,40 @@
             color: #94a3b8;
             margin-top: 4px;
         }
-        .stock-indicator {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 20px;
+        .sync-status {
             font-size: 0.75rem;
-            font-weight: 600;
+            color: #94a3b8;
+            padding: 4px 12px;
+            background: #f1f5f9;
+            border-radius: 20px;
+            display: inline-block;
         }
-        .stock-indicator.in-stock { background: #dcfce7; color: #166534; }
-        .stock-indicator.low-stock { background: #fef3c7; color: #92400e; }
-        .stock-indicator.out-of-stock { background: #fee2e2; color: #991b1b; }
+        .sync-status i {
+            color: #22c55e;
+            font-size: 0.5rem;
+            margin-right: 4px;
+        }
+        .refresh-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .refresh-indicator.online { background: #22c55e; }
+        .refresh-indicator.loading { background: #f59e0b; animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .stock-difference {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 6px;
+        }
+        .stock-difference.higher { background: #dcfce7; color: #166534; }
+        .stock-difference.lower { background: #fee2e2; color: #991b1b; }
         @media (max-width: 768px) {
             .sidebar { width: 250px; }
             .app-container { flex-direction: column; }
@@ -469,6 +492,7 @@
                     <span id="rowCount"><i class="fas fa-rows"></i> 0 rows</span>
                     <span id="colCount"><i class="fas fa-columns"></i> 0 columns</span>
                     <span id="tableNameDisplay"></span>
+                    <span class="sync-status"><i class="fas fa-circle"></i> Live data</span>
                 </div>
             </div>
             <div class="quick-actions">
@@ -519,7 +543,7 @@
 <div id="stockModal" class="modal">
     <div class="modal-content">
         <h3><i class="fas fa-boxes" style="color:#1d4ed8;"></i> Manage Stock</h3>
-        <p class="subtitle">Update stock quantities for <strong id="stockTableName">product_variants</strong></p>
+        <p class="subtitle">Update stock quantities for <strong>product_variants</strong></p>
         
         <div id="stockSuccess" class="insert-success">
             <i class="fas fa-check-circle" style="color:#22c55e;"></i>
@@ -714,7 +738,11 @@
                     document.getElementById('tableInfo').style.display = 'flex';
                     document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${currentTable} <small>${fallbackCount || 0} rows</small>`;
                     
-                    renderTable(currentColumns, currentData, currentTable, fallbackCount);
+                    if (currentTable === 'product_variants') {
+                        await renderTableWithStock(currentColumns, currentData, currentTable, fallbackCount);
+                    } else {
+                        renderTable(currentColumns, currentData, currentTable, fallbackCount);
+                    }
                 } else {
                     currentData = data || [];
                     totalPages = Math.ceil((count || 0) / pageSize);
@@ -725,7 +753,11 @@
                     document.getElementById('tableInfo').style.display = 'flex';
                     document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${currentTable} <small>${count || 0} rows</small>`;
                     
-                    renderTable(currentColumns, currentData, currentTable, count);
+                    if (currentTable === 'product_variants') {
+                        await renderTableWithStock(currentColumns, currentData, currentTable, count);
+                    } else {
+                        renderTable(currentColumns, currentData, currentTable, count);
+                    }
                 }
                 
                 document.querySelectorAll('.table-chip').forEach(el => {
@@ -811,7 +843,6 @@
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
-                        ${tableName === 'product_variants' ? `<button class="btn btn-stock btn-sm" id="stockBtn"><i class="fas fa-boxes"></i> Stock</button>` : ''}
                         <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i></button>
                     </div>
                 </div>
@@ -835,22 +866,6 @@
                     columns.forEach(col => {
                         const value = rowData[col.name] !== null && rowData[col.name] !== undefined ? String(rowData[col.name]) : '';
                         const isPrimaryKey = col.name === currentPrimaryKey;
-                        
-                        // Special rendering for stock_quantity
-                        if (col.name === 'stock_quantity' && !isEditing) {
-                            const stock = parseInt(value) || 0;
-                            let stockClass = 'stock-ok';
-                            let stockLabel = '✅ In Stock';
-                            if (stock === 0) {
-                                stockClass = 'stock-out';
-                                stockLabel = '❌ Out of Stock';
-                            } else if (stock < 5) {
-                                stockClass = 'stock-low';
-                                stockLabel = '⚠️ Low Stock (' + stock + ')';
-                            }
-                            html += `<td><span class="${stockClass}">${stockLabel}</span></td>`;
-                            return;
-                        }
                         
                         if (isEditing) {
                             html += `<td>
@@ -901,9 +916,7 @@
             
             document.getElementById('dataViewer').innerHTML = html;
             
-            // Event listeners
             document.getElementById('insertRowBtn')?.addEventListener('click', () => openInsertRowModal());
-            document.getElementById('stockBtn')?.addEventListener('click', () => openStockModal());
             document.getElementById('refreshDataBtn')?.addEventListener('click', () => {
                 if (Object.keys(editedRows).length > 0) {
                     if (!confirm('You have unsaved changes. Refresh anyway?')) {
@@ -1011,6 +1024,257 @@
             document.getElementById('saveChangesBtn').addEventListener('click', saveAllChanges);
         }
 
+        // ============ RENDER TABLE WITH STOCK ============
+        async function renderTableWithStock(columns, rows, tableName, totalRows) {
+            if (!columns || !columns.length) {
+                document.getElementById('dataViewer').innerHTML = '<div class="loading">No columns found</div>';
+                return;
+            }
+            
+            let html = `
+                <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                        <strong><i class="fas fa-table"></i> ${tableName}</strong>
+                        <span style="font-size:0.8rem;color:#94a3b8;margin-left:8px;">${totalRows || 0} total rows</span>
+                        ${Object.keys(editedRows).length > 0 ? `<span class="status-badge warning"><i class="fas fa-edit"></i> ${Object.keys(editedRows).length} unsaved changes</span>` : ''}
+                        <span class="sync-status"><i class="fas fa-circle" style="color:#22c55e;font-size:0.5rem;"></i> Live stock data</span>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
+                        <button class="btn btn-stock btn-sm" id="refreshStockBtn"><i class="fas fa-sync-alt"></i> Refresh Stock</button>
+                        <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
+                </div>
+                <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead><tr>
+                        ${columns.map(col => `<th>${col.name}<br><small style="font-weight:400;color:#94a3b8;">${col.type}</small></th>`).join('')}
+                        <th style="width:100px;text-align:center;">Total Stock</th>
+                        <th style="width:100px;text-align:center;">Reserved</th>
+                        <th style="width:100px;text-align:center;">Available</th>
+                        <th style="width:140px;text-align:center;">Actions</th>
+                    </tr></thead>
+                    <tbody>`;
+            
+            if (!rows || rows.length === 0) {
+                html += `<tr><td colspan="${columns.length + 4}" style="text-align:center;padding:2rem;color:#94a3b8;">No data. Click "Insert Row" to add</td></tr>`;
+            } else {
+                for (const row of rows) {
+                    const rowId = row[currentPrimaryKey];
+                    const isEditing = editedRows[rowId] !== undefined;
+                    const rowData = isEditing ? editedRows[rowId] : row;
+                    
+                    // Get stock status from Supabase
+                    let totalStock = row.stock_quantity || 0;
+                    let reservedStock = 0;
+                    let availableStock = totalStock;
+                    
+                    try {
+                        // Get available stock
+                        const { data: availData, error: availError } = await supabase
+                            .rpc('get_available_stock', {
+                                p_variant_id: row.id,
+                                p_cart_id: null
+                            });
+                        
+                        if (!availError && availData !== null) {
+                            availableStock = availData || 0;
+                        }
+                        
+                        // Get reserved quantity
+                        const { data: reservedData, error: reservedError } = await supabase
+                            .from('cart_reservations')
+                            .select('sum(quantity)')
+                            .eq('variant_id', row.id)
+                            .eq('is_active', true)
+                            .gt('expires_at', new Date().toISOString());
+                        
+                        if (!reservedError && reservedData && reservedData[0]) {
+                            reservedStock = parseInt(reservedData[0].sum) || 0;
+                        }
+                    } catch (e) {
+                        // If RPC fails, use the stock_quantity from the row
+                        availableStock = row.stock_quantity || 0;
+                    }
+                    
+                    const stockClass = availableStock === 0 ? 'stock-out' : (availableStock < 5 ? 'stock-low' : 'stock-ok');
+                    
+                    html += `<tr ${isEditing ? 'class="editable"' : ''}>`;
+                    
+                    columns.forEach(col => {
+                        const value = rowData[col.name] !== null && rowData[col.name] !== undefined ? String(rowData[col.name]) : '';
+                        const isPrimaryKey = col.name === currentPrimaryKey;
+                        
+                        if (isEditing) {
+                            html += `<td>
+                                <input type="text" 
+                                       class="editable-input" 
+                                       data-col="${col.name}" 
+                                       data-rowid="${rowId}"
+                                       value="${escapeHtml(value)}"
+                                       ${isPrimaryKey ? 'disabled' : ''}
+                                       placeholder="NULL">
+                            </td>`;
+                        } else {
+                            let display = value || '<span class="null-value">NULL</span>';
+                            if (String(display).length > 150) display = display.substring(0, 150) + '...';
+                            html += `<td style="max-width:250px;overflow-x:auto;word-break:break-word;">${display}</td>`;
+                        }
+                    });
+                    
+                    // Total Stock
+                    html += `<td style="text-align:center;">${totalStock}</td>`;
+                    
+                    // Reserved Stock
+                    html += `<td style="text-align:center;color:#f59e0b;">${reservedStock > 0 ? reservedStock : '0'}</td>`;
+                    
+                    // Available Stock
+                    html += `<td style="text-align:center;font-weight:600;" class="${stockClass}">
+                        ${availableStock}
+                    </td>`;
+                    
+                    // Actions
+                    html += `<td style="text-align:center;white-space:nowrap;" class="action-icons">`;
+                    
+                    if (isEditing) {
+                        html += `
+                            <i class="fas fa-save save-row" data-rowid="${rowId}" title="Save changes"></i>
+                            <i class="fas fa-times cancel-edit" data-rowid="${rowId}" title="Cancel"></i>
+                        `;
+                    } else {
+                        html += `
+                            <i class="fas fa-eye view-row" data-rowid="${rowId}" title="View"></i>
+                            <i class="fas fa-edit edit-row" data-rowid="${rowId}" title="Edit"></i>
+                            <i class="fas fa-trash-alt delete-row" data-rowid="${rowId}" title="Delete"></i>
+                        `;
+                    }
+                    
+                    html += `</td></tr>`;
+                }
+            }
+            html += `</tbody></table></div>`;
+            
+            if (totalPages > 1) {
+                html += `<div class="pagination">`;
+                html += `<button class="page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+                for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+                    html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+                html += `<button class="page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+                html += `</div>`;
+            }
+            
+            document.getElementById('dataViewer').innerHTML = html;
+            
+            // Event listeners
+            document.getElementById('insertRowBtn')?.addEventListener('click', () => openInsertRowModal());
+            document.getElementById('refreshDataBtn')?.addEventListener('click', () => {
+                if (Object.keys(editedRows).length > 0) {
+                    if (!confirm('You have unsaved changes. Refresh anyway?')) {
+                        return;
+                    }
+                    editedRows = {};
+                    originalRows = {};
+                    document.getElementById('saveChangesBtn').style.display = 'none';
+                }
+                if (currentTable) loadTableData(currentTable, currentPage);
+            });
+            
+            document.getElementById('refreshStockBtn')?.addEventListener('click', () => {
+                if (currentTable) loadTableData(currentTable, currentPage);
+                showToast('Stock data refreshed from database');
+            });
+            
+            // Same event listeners as renderTable
+            document.querySelectorAll('.editable-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    const rowId = this.dataset.rowid;
+                    const colName = this.dataset.col;
+                    const value = this.value || null;
+                    
+                    if (!editedRows[rowId]) {
+                        const originalRow = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
+                        if (originalRow) {
+                            originalRows[rowId] = { ...originalRow };
+                        }
+                        editedRows[rowId] = { ...originalRows[rowId] };
+                    }
+                    
+                    editedRows[rowId][colName] = value;
+                    document.getElementById('saveChangesBtn').style.display = 'block';
+                });
+            });
+            
+            document.querySelectorAll('.save-row').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const rowId = this.dataset.rowid;
+                    await saveRow(rowId);
+                });
+            });
+            
+            document.querySelectorAll('.cancel-edit').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const rowId = this.dataset.rowid;
+                    delete editedRows[rowId];
+                    delete originalRows[rowId];
+                    
+                    if (Object.keys(editedRows).length === 0) {
+                        document.getElementById('saveChangesBtn').style.display = 'none';
+                    }
+                    
+                    loadTableData(currentTable, currentPage);
+                });
+            });
+            
+            document.querySelectorAll('.view-row').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const rowId = btn.dataset.rowid;
+                    const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
+                    if (row) openViewRowModal(row);
+                });
+            });
+            
+            document.querySelectorAll('.edit-row').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const rowId = this.dataset.rowid;
+                    const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
+                    if (row) {
+                        editedRows[rowId] = { ...row };
+                        originalRows[rowId] = { ...row };
+                        loadTableData(currentTable, currentPage);
+                        document.getElementById('saveChangesBtn').style.display = 'block';
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.delete-row').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const rowId = this.dataset.rowid;
+                    const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
+                    if (row) deleteRow(row);
+                });
+            });
+            
+            document.querySelectorAll('.page-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    if (!this.disabled && currentTable) {
+                        if (Object.keys(editedRows).length > 0) {
+                            if (!confirm('You have unsaved changes. Navigate anyway?')) {
+                                return;
+                            }
+                            editedRows = {};
+                            originalRows = {};
+                            document.getElementById('saveChangesBtn').style.display = 'none';
+                        }
+                        loadTableData(currentTable, parseInt(this.dataset.page));
+                    }
+                });
+            });
+            
+            document.getElementById('saveChangesBtn').addEventListener('click', saveAllChanges);
+        }
+
+        // ============ SAVE ROW ============
         async function saveRow(rowId) {
             if (!editedRows[rowId]) {
                 showToast('No changes to save', true);
@@ -1092,7 +1356,6 @@
             stockChanges = {};
             
             try {
-                // Fetch all variants with their stock
                 const { data, error } = await supabase
                     .from('product_variants')
                     .select(`
@@ -1185,7 +1448,6 @@
                 
                 container.innerHTML = html;
                 
-                // Add event listeners for real-time stock changes
                 document.querySelectorAll('#stockItems input[type="number"]').forEach(input => {
                     input.addEventListener('change', function() {
                         const variantId = this.dataset.variantId;
@@ -1200,17 +1462,6 @@
                             delete stockChanges[variantId];
                             statusEl.innerHTML = '';
                         }
-                        
-                        // Update the stock status indicator
-                        const parentDiv = this.closest('div[style*="background: #f8fafc"]');
-                        if (parentDiv) {
-                            const statusSpan = parentDiv.querySelector('span:last-child');
-                            if (statusSpan) {
-                                if (newStock === 0) statusSpan.textContent = '❌ Out of Stock';
-                                else if (newStock < 5) statusSpan.textContent = '⚠️ Low Stock';
-                                else statusSpan.textContent = '✅ In Stock';
-                            }
-                        }
                     });
                 });
                 
@@ -1222,7 +1473,6 @@
             }
         }
 
-        // Make updateSingleStock accessible globally
         window.updateSingleStock = async function(variantId) {
             const input = document.getElementById(`stock_${variantId}`);
             if (!input) return;
@@ -1237,7 +1487,6 @@
                 
                 if (error) throw error;
                 
-                // Update the input's dataset
                 input.dataset.originalStock = newStock;
                 const statusEl = document.getElementById(`stock_${variantId}_status`);
                 statusEl.innerHTML = `<span style="color: #22c55e;">✅ Updated to ${newStock}</span>`;
@@ -1245,19 +1494,15 @@
                     statusEl.innerHTML = '';
                 }, 3000);
                 
-                // Remove from pending changes
                 delete stockChanges[variantId];
-                
                 showToast(`Stock updated for variant ${variantId}`);
             } catch (err) {
                 showToast(err.message, true);
-                // Revert input value
                 const original = parseInt(input.dataset.originalStock) || 0;
                 input.value = original;
             }
         };
 
-        // Save all stock changes
         document.getElementById('saveStockBtn')?.addEventListener('click', async function() {
             const changes = Object.keys(stockChanges);
             if (changes.length === 0) {
@@ -1294,7 +1539,6 @@
             
             stockChanges = {};
             
-            // Show success message
             const successDiv = document.getElementById('stockSuccess');
             const successMsg = document.getElementById('stockSuccessMessage');
             successMsg.textContent = `✅ ${successCount} variants updated${errorCount > 0 ? `, ${errorCount} failed` : ''}`;
@@ -1302,10 +1546,10 @@
             
             showToast(`Saved stock for ${successCount} variants`);
             
-            // Refresh stock modal after delay
             setTimeout(() => {
                 successDiv.classList.remove('show');
                 openStockModal();
+                loadTableData('product_variants', currentPage);
             }, 2000);
         });
 
@@ -1314,7 +1558,9 @@
             stockChanges = {};
         });
 
-        // ============ INSERT ROW FUNCTIONALITY ============
+        document.getElementById('manageStockBtn')?.addEventListener('click', openStockModal);
+
+        // ============ INSERT ROW ============
         function openInsertRowModal() {
             const container = document.getElementById('insertRowFields');
             const tableNameDisplay = document.getElementById('insertTableName');
@@ -1529,7 +1775,6 @@
             document.getElementById('viewRowModal').classList.remove('active');
         });
         document.getElementById('refreshBtn')?.addEventListener('click', loadTables);
-        document.getElementById('manageStockBtn')?.addEventListener('click', openStockModal);
 
         document.getElementById('insertForm')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
@@ -1567,6 +1812,14 @@
 
         // ============ INIT ============
         loadTables();
+
+        // Auto-refresh stock every 30 seconds
+        setInterval(() => {
+            if (currentTable === 'product_variants') {
+                loadTableData(currentTable, currentPage);
+            }
+        }, 30000);
+
     })();
 </script>
 </body>

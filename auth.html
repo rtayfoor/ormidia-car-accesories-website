@@ -531,18 +531,23 @@
             const alreadyLoggedIn = document.getElementById('alreadyLoggedIn');
             const loggedInUserName = document.getElementById('loggedInUserName');
             
-            // Check if user is already logged in - NO REDIRECT!
+            // Check if user is already logged in - NO REDIRECT AT ALL!
             function checkAuthStatus() {
-                const user = JSON.parse(localStorage.getItem('user'));
-                if (user && user.id) {
-                    // Show already logged in message
-                    alreadyLoggedIn.style.display = 'block';
-                    loggedInUserName.textContent = user.name || 'User';
-                    loginForm.style.display = 'none';
-                    registerForm.style.display = 'none';
-                    authTitle.textContent = 'Already Logged In';
-                    authSubtitle.textContent = 'You are currently signed in to your account';
-                    return true;
+                try {
+                    const user = JSON.parse(localStorage.getItem('user'));
+                    if (user && user.id) {
+                        // Show already logged in message
+                        alreadyLoggedIn.style.display = 'block';
+                        loggedInUserName.textContent = user.name || 'User';
+                        loginForm.style.display = 'none';
+                        registerForm.style.display = 'none';
+                        authTitle.textContent = 'Already Logged In';
+                        authSubtitle.textContent = 'You are currently signed in to your account';
+                        return true;
+                    }
+                } catch (e) {
+                    // If there's an error parsing, just show login
+                    console.log('No user found or invalid user data');
                 }
                 return false;
             }
@@ -591,7 +596,7 @@
                     alreadyLoggedIn.style.display = 'none';
                 } else {
                     authLoading.style.display = 'none';
-                    // Check if already logged in
+                    // Check if already logged in (but DON'T redirect)
                     if (checkAuthStatus()) {
                         return;
                     }
@@ -759,6 +764,7 @@
             window.handleLogout = function() {
                 localStorage.removeItem('user');
                 showToast('Logged out successfully!');
+                // Reload the page to show login form
                 setTimeout(() => {
                     window.location.reload();
                 }, 1000);
@@ -847,10 +853,13 @@
                 }
             }
             
-            // Initialize
+            // Initialize - NO REDIRECTS ANYWHERE!
             document.addEventListener('DOMContentLoaded', function() {
-                // Check auth status - NO REDIRECT!
+                console.log('Auth page loaded - checking login status');
+                
+                // Check auth status - this will NOT redirect
                 const isLoggedIn = checkAuthStatus();
+                console.log('Is logged in?', isLoggedIn);
                 
                 // Update UI
                 updateCartCount();

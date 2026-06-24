@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORMIDIA Database Admin - Full Control Panel</title>
+    <title>ORMIDIA Database Admin - Supabase</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -19,7 +20,6 @@
             display: flex;
             height: 100vh;
         }
-        /* Sidebar */
         .sidebar {
             width: 320px;
             background: white;
@@ -88,27 +88,6 @@
             align-items: center;
             gap: 8px;
         }
-        .db-size {
-            font-size: 0.7rem;
-            opacity: 0.7;
-            margin-top: 4px;
-        }
-        .db-item .db-actions {
-            float: right;
-            opacity: 0;
-            transition: 0.2s;
-        }
-        .db-item:hover .db-actions {
-            opacity: 1;
-        }
-        .db-actions i {
-            margin-left: 6px;
-            font-size: 0.8rem;
-            color: #94a3b8;
-            cursor: pointer;
-        }
-        .db-actions i:hover { color: #E30613; }
-        /* Main Content */
         .main-content {
             flex: 1;
             display: flex;
@@ -157,7 +136,6 @@
         .btn-success { background: #dcfce7; color: #166534; }
         .btn-success:hover { background: #bbf7d0; }
         .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
-        /* Tables List */
         .tables-list {
             background: white;
             padding: 0.75rem 1.5rem;
@@ -189,7 +167,6 @@
             border-radius: 10px;
         }
         .table-chip.active .chip-count { background: rgba(255,255,255,0.2); }
-        /* Data Viewer */
         .data-viewer {
             flex: 1;
             overflow: auto;
@@ -237,7 +214,6 @@
         .delete-row:hover { background: #fee2e2; }
         .view-row { color: #8b5cf6; }
         .view-row:hover { background: #f5f3ff; }
-        /* Query Editor */
         .query-editor {
             background: white;
             border-top: 1px solid #e2e8f0;
@@ -256,7 +232,6 @@
             min-height: 80px;
         }
         .query-editor textarea:focus { outline: none; border-color: #E30613; }
-        /* Modals */
         .modal {
             position: fixed;
             top: 0; left: 0;
@@ -286,10 +261,7 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        .modal-content h3 {
-            margin-bottom: 1rem;
-            color: #1e293b;
-        }
+        .modal-content h3 { margin-bottom: 1rem; color: #1e293b; }
         .modal-content label {
             display: block;
             font-size: 0.8rem;
@@ -333,6 +305,35 @@
             to { transform: translateX(0); opacity: 1; }
         }
         .toast i { font-size: 1.1rem; }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+        }
+        .loading i { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+        .badge-primary { background: #dbeafe; color: #1d4ed8; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .table-info {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.8rem;
+            color: #64748b;
+            flex-wrap: wrap;
+        }
+        .table-info span { display: flex; align-items: center; gap: 4px; }
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
         .pagination {
             display: flex;
             justify-content: center;
@@ -350,39 +351,7 @@
         }
         .page-btn:hover { background: #f1f5f9; }
         .page-btn.active { background: #E30613; color: white; border-color: #E30613; }
-        .sql-result { margin-top: 10px; overflow-x: auto; }
-        .sql-result .data-table { font-size: 0.8rem; }
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #94a3b8;
-        }
-        .loading i { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.6rem;
-            font-weight: 600;
-        }
-        .badge-primary { background: #dbeafe; color: #1d4ed8; }
-        .badge-success { background: #dcfce7; color: #166534; }
-        .badge-danger { background: #fee2e2; color: #991b1b; }
-        .badge-warning { background: #fef3c7; color: #92400e; }
-        .table-info {
-            display: flex;
-            gap: 1.5rem;
-            font-size: 0.8rem;
-            color: #64748b;
-            flex-wrap: wrap;
-        }
-        .table-info span { display: flex; align-items: center; gap: 4px; }
-        .quick-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-        .quick-actions .btn { font-size: 0.7rem; padding: 4px 10px; }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         @media (max-width: 768px) {
             .sidebar { width: 250px; }
             .app-container { flex-direction: column; }
@@ -393,71 +362,64 @@
 </head>
 <body>
 <div class="app-container">
-    <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
             <h2><i class="fas fa-database"></i> ORMIDIA DB Admin</h2>
-            <p>Full Database Control Panel</p>
-            <div class="sidebar-stats" id="sidebarStats">
-                <span id="dbCount"><i class="fas fa-database"></i> 0 DBs</span>
+            <p>Supabase Database Control Panel</p>
+            <div class="sidebar-stats">
                 <span id="tableCount"><i class="fas fa-table"></i> 0 Tables</span>
+                <span id="dbStatus"><i class="fas fa-circle" style="color:#22c55e;"></i> Connected</span>
             </div>
         </div>
-        <div class="db-list" id="dbList">
-            <div class="loading"><i class="fas fa-spinner fa-spin"></i>Loading databases...</div>
+        <div style="padding: 1rem; border-bottom: 1px solid #e2e8f0;">
+            <button class="btn btn-outline btn-sm" id="refreshBtn" style="width:100%;">
+                <i class="fas fa-sync-alt"></i> Refresh Tables
+            </button>
         </div>
-        <div style="padding: 1rem; border-top: 1px solid #e2e8f0; display: flex; gap: 8px;">
-            <button class="btn btn-primary btn-sm" id="createDbBtn" style="flex:1;">
-                <i class="fas fa-plus"></i> New DB
-            </button>
-            <button class="btn btn-outline btn-sm" id="refreshDbBtn">
-                <i class="fas fa-sync-alt"></i>
-            </button>
+        <div class="db-list" id="dbList">
+            <div class="loading"><i class="fas fa-spinner fa-spin"></i>Loading tables...</div>
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="main-content">
         <div class="toolbar">
             <div>
                 <h3 id="currentDbTitle">
-                    <i class="fas fa-server"></i> Select a database
-                    <small>to manage</small>
+                    <i class="fas fa-server"></i> Ormidia Database
+                    <small>supabase</small>
                 </h3>
                 <div class="table-info" id="tableInfo" style="display:none;">
                     <span id="rowCount"><i class="fas fa-rows"></i> 0 rows</span>
                     <span id="colCount"><i class="fas fa-columns"></i> 0 columns</span>
+                    <span id="tableNameDisplay"></span>
                 </div>
             </div>
             <div class="quick-actions">
-                <button class="btn btn-outline btn-sm" id="refreshTablesBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
-                <button class="btn btn-primary btn-sm" id="createTableBtn"><i class="fas fa-plus"></i> New Table</button>
+                <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
                 <button class="btn btn-outline btn-sm" id="showQueryBtn"><i class="fas fa-terminal"></i> SQL</button>
                 <button class="btn btn-outline btn-sm" id="exportDataBtn"><i class="fas fa-download"></i> Export</button>
             </div>
         </div>
 
         <div class="tables-list" id="tablesList">
-            <div class="loading" style="padding:0.5rem; font-size:0.8rem;">Select a database to see tables</div>
+            <div class="loading" style="padding:0.5rem; font-size:0.8rem;">Loading tables...</div>
         </div>
 
         <div class="data-viewer" id="dataViewer">
             <div class="loading"><i class="fas fa-arrow-left"></i> Select a table to view/edit data</div>
         </div>
 
-        <!-- Query Editor -->
         <div class="query-editor" id="queryEditor" style="display: none;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <strong><i class="fas fa-terminal"></i> SQL Query <span style="font-weight:400;font-size:0.8rem;color:#94a3b8;">(database: <span id="queryDbName">-</span>)</span></strong>
+                <strong><i class="fas fa-terminal"></i> SQL Query</strong>
                 <div style="display:flex;gap:8px;">
-                    <button class="btn btn-sm btn-outline" id="queryHistoryBtn"><i class="fas fa-history"></i></button>
-                    <button class="btn btn-sm btn-outline" id="closeQueryBtn"><i class="fas fa-times"></i></button>
+                    <button class="btn btn-sm btn-outline" id="closeQueryBtn"><i class="fas fa-times"></i> Close</button>
                 </div>
             </div>
             <textarea id="sqlQuery" rows="3" placeholder="SELECT * FROM products ORDER BY id DESC LIMIT 10"></textarea>
             <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
                 <button class="btn btn-primary btn-sm" id="executeQueryBtn"><i class="fas fa-play"></i> Execute</button>
-                <button class="btn btn-outline btn-sm" id="formatQueryBtn"><i class="fas fa-magic"></i> Format</button>
                 <button class="btn btn-outline btn-sm" id="clearQueryBtn"><i class="fas fa-eraser"></i> Clear</button>
             </div>
             <div id="queryResult" class="sql-result"></div>
@@ -466,28 +428,13 @@
 </div>
 
 <!-- Modals -->
-<div id="createDbModal" class="modal">
+<div id="insertRowModal" class="modal">
     <div class="modal-content">
-        <h3><i class="fas fa-plus-circle"></i> Create Database</h3>
-        <label>Database Name</label>
-        <input type="text" id="newDbName" placeholder="e.g., ormidia_production">
+        <h3><i class="fas fa-plus"></i> Insert Row</h3>
+        <div id="insertRowFields"></div>
         <div class="flex-buttons">
-            <button class="btn btn-outline" id="cancelDbModal">Cancel</button>
-            <button class="btn btn-primary" id="confirmCreateDb">Create</button>
-        </div>
-    </div>
-</div>
-
-<div id="createTableModal" class="modal">
-    <div class="modal-content">
-        <h3><i class="fas fa-plus-circle"></i> Create Table</h3>
-        <label>Table Name</label>
-        <input type="text" id="newTableName" placeholder="e.g., products">
-        <label>Column Definitions (one per line)</label>
-        <textarea id="columnsDef" rows="6" placeholder="id SERIAL PRIMARY KEY&#10;name VARCHAR(100) NOT NULL&#10;description TEXT&#10;price DECIMAL(10,2)&#10;created_at TIMESTAMP DEFAULT NOW()"></textarea>
-        <div class="flex-buttons">
-            <button class="btn btn-outline" id="cancelTableModal">Cancel</button>
-            <button class="btn btn-primary" id="confirmCreateTable">Create</button>
+            <button class="btn btn-outline" id="cancelInsertModal">Cancel</button>
+            <button class="btn btn-primary" id="confirmInsertRow">Insert</button>
         </div>
     </div>
 </div>
@@ -503,17 +450,6 @@
     </div>
 </div>
 
-<div id="insertRowModal" class="modal">
-    <div class="modal-content">
-        <h3><i class="fas fa-plus"></i> Insert Row</h3>
-        <div id="insertRowFields"></div>
-        <div class="flex-buttons">
-            <button class="btn btn-outline" id="cancelInsertModal">Cancel</button>
-            <button class="btn btn-primary" id="confirmInsertRow">Insert</button>
-        </div>
-    </div>
-</div>
-
 <div id="viewRowModal" class="modal">
     <div class="modal-content">
         <h3><i class="fas fa-eye"></i> Row Details</h3>
@@ -525,475 +461,431 @@
 </div>
 
 <script>
-let currentDatabase = null;
-let currentTableName = null;
-let currentColumns = [];
-let currentPrimaryKey = null;
-let currentPage = 1;
-let totalPages = 1;
-let queryHistory = [];
-let isQueryVisible = false;
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let currentTable = null;
+    let currentColumns = [];
+    let currentPrimaryKey = 'id';
+    let currentPage = 1;
+    let totalPages = 1;
+    let currentData = [];
+    let pageSize = 20;
+    let tables = [];
 
-function showToast(msg, isError = false) {
-    let toast = document.querySelector('.toast');
-    if (!toast) { 
-        toast = document.createElement('div'); 
-        toast.className = 'toast'; 
-        document.body.appendChild(toast); 
-    }
-    toast.style.background = isError ? '#dc2626' : '#1e293b';
-    toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${msg}`;
-    toast.style.display = 'flex';
-    clearTimeout(toast._timeout);
-    toast._timeout = setTimeout(() => toast.style.display = 'none', 3000);
-}
-
-async function apiCall(endpoint, method = 'GET', body = null) {
-    const opts = { method, headers: { 'Content-Type': 'application/json' } };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(endpoint, opts);
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-    }
-    return res.json();
-}
-
-async function loadDatabases() {
-    try {
-        const data = await apiCall('/api/admin/databases');
-        const container = document.getElementById('dbList');
-        const systemDbs = ['postgres', 'template0', 'template1', 'information_schema'];
-        const userDbs = data.databases.filter(db => !systemDbs.includes(db));
-        
-        document.getElementById('dbCount').textContent = `${userDbs.length} DBs`;
-        
-        if (userDbs.length === 0) {
-            container.innerHTML = '<div class="loading"><i class="fas fa-database"></i>No databases found<br><small>Create one to get started</small></div>';
-            return;
-        }
-        
-        container.innerHTML = userDbs.map(db => `
-            <div class="db-item" data-db="${db}">
-                <div class="db-name">
-                    <i class="fas fa-database"></i> ${db}
-                    <span class="db-actions">
-                        <i class="fas fa-trash" onclick="event.stopPropagation(); deleteDatabase('${db}')" title="Delete Database"></i>
-                    </span>
+    async function loadTables() {
+        try {
+            const { data, error } = await supabase
+                .from('information_schema.tables')
+                .select('table_name')
+                .eq('table_schema', 'public')
+                .order('table_name');
+            
+            if (error) throw error;
+            
+            tables = data.map(t => t.table_name);
+            const container = document.getElementById('tablesList');
+            document.getElementById('tableCount').textContent = `${tables.length} Tables`;
+            
+            if (tables.length === 0) {
+                container.innerHTML = '<div class="loading" style="padding:0.5rem;font-size:0.8rem;">No tables found</div>';
+                return;
+            }
+            
+            container.innerHTML = tables.map(table => `
+                <div class="table-chip" data-table="${table}">
+                    📄 ${table}
                 </div>
-                <div class="db-size">Click to manage</div>
-            </div>
-        `).join('');
-        
-        document.querySelectorAll('.db-item').forEach(el => {
-            el.addEventListener('click', () => selectDatabase(el.dataset.db));
-        });
-    } catch (err) {
-        document.getElementById('dbList').innerHTML = `<div class="loading" style="color:#E30613;"><i class="fas fa-exclamation-triangle"></i>Error: ${err.message}</div>`;
-        showToast(err.message, true);
-    }
-}
-
-async function deleteDatabase(dbName) {
-    if (!confirm(`⚠️ Delete database "${dbName}" permanently? This cannot be undone!`)) return;
-    if (!confirm(`Are you absolutely sure? All data in "${dbName}" will be lost!`)) return;
-    try {
-        await apiCall('/api/admin/databases', 'DELETE', { dbName });
-        showToast(`Database "${dbName}" deleted`);
-        if (currentDatabase === dbName) {
-            currentDatabase = null;
-            currentTableName = null;
-            document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-server"></i> Select a database <small>to manage</small>`;
-            document.getElementById('tablesList').innerHTML = '<div class="loading" style="padding:0.5rem;font-size:0.8rem;">Select a database to see tables</div>';
-            document.getElementById('dataViewer').innerHTML = '<div class="loading"><i class="fas fa-arrow-left"></i> Select a table to view/edit data</div>';
+            `).join('');
+            
+            document.querySelectorAll('.table-chip').forEach(el => {
+                el.addEventListener('click', () => loadTableData(el.dataset.table));
+            });
+            
+            if (tables.length > 0 && !currentTable) {
+                loadTableData(tables[0]);
+            }
+        } catch (err) {
+            console.error('Error loading tables:', err);
+            document.getElementById('tablesList').innerHTML = `<div class="loading" style="color:#E30613;">Error: ${err.message}</div>`;
+            showToast(err.message, true);
         }
-        loadDatabases();
-    } catch (err) { showToast(err.message, true); }
-}
+    }
 
-async function selectDatabase(dbName) {
-    currentDatabase = dbName;
-    currentPage = 1;
-    document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${dbName} <small>connected</small>`;
-    document.getElementById('queryDbName').textContent = dbName;
-    
-    document.querySelectorAll('.db-item').forEach(el => {
-        el.classList.remove('active');
-        if (el.dataset.db === dbName) el.classList.add('active');
-    });
-    
-    await loadTables();
-}
-
-async function loadTables() {
-    if (!currentDatabase) return;
-    try {
-        const data = await apiCall(`/api/admin/${currentDatabase}/tables`);
-        const container = document.getElementById('tablesList');
-        document.getElementById('tableCount').textContent = `${data.tables.length} Tables`;
+    async function loadTableData(tableName, page = 1) {
+        currentTable = tableName;
+        currentPage = page;
         
-        if (data.tables.length === 0) {
-            container.innerHTML = '<div class="loading" style="padding:0.5rem;font-size:0.8rem;">No tables yet. Create one!</div>';
+        try {
+            // Get table columns
+            const { data: columnsData, error: columnsError } = await supabase
+                .from('information_schema.columns')
+                .select('column_name, data_type, is_nullable')
+                .eq('table_schema', 'public')
+                .eq('table_name', tableName)
+                .order('ordinal_position');
+            
+            if (columnsError) throw columnsError;
+            
+            currentColumns = columnsData.map(col => ({
+                name: col.column_name,
+                type: col.data_type,
+                nullable: col.is_nullable === 'YES'
+            }));
+            
+            // Check if 'id' column exists for primary key
+            const hasId = currentColumns.some(c => c.name === 'id');
+            currentPrimaryKey = hasId ? 'id' : currentColumns[0]?.name || 'id';
+            
+            // Get data with pagination
+            const from = (page - 1) * pageSize;
+            const to = from + pageSize - 1;
+            
+            let query = supabase
+                .from(tableName)
+                .select('*', { count: 'exact' });
+            
+            // Add ordering if id column exists
+            if (hasId) {
+                query = query.order('id', { ascending: false });
+            }
+            
+            const { data, error, count } = await query.range(from, to);
+            
+            if (error) throw error;
+            
+            currentData = data || [];
+            totalPages = Math.ceil((count || 0) / pageSize);
+            
+            document.getElementById('rowCount').textContent = `${count || 0} rows`;
+            document.getElementById('colCount').textContent = `${currentColumns.length} columns`;
+            document.getElementById('tableNameDisplay').textContent = `📄 ${tableName}`;
+            document.getElementById('tableInfo').style.display = 'flex';
+            document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${tableName} <small>${count || 0} rows</small>`;
+            
+            renderTable(currentColumns, currentData, tableName, count);
+            
+            document.querySelectorAll('.table-chip').forEach(el => {
+                el.classList.remove('active');
+                if (el.dataset.table === tableName) el.classList.add('active');
+            });
+        } catch (err) {
+            console.error('Error loading table data:', err);
+            document.getElementById('dataViewer').innerHTML = `<div class="loading" style="color:#E30613;">Error: ${err.message}</div>`;
+            showToast(err.message, true);
+        }
+    }
+
+    function renderTable(columns, rows, tableName, totalRows) {
+        if (!columns.length) {
+            document.getElementById('dataViewer').innerHTML = '<div class="loading">No columns found</div>';
             return;
         }
         
-        container.innerHTML = data.tables.map(table => `
-            <div class="table-chip" data-table="${table.tablename}">
-                📄 ${table.tablename}
-                <span class="chip-count">${table.column_count}</span>
+        let html = `
+            <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <strong><i class="fas fa-table"></i> ${tableName}</strong>
+                    <span style="font-size:0.8rem;color:#94a3b8;margin-left:8px;">${totalRows || 0} total rows</span>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
+                    <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i></button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+            <table class="data-table">
+                <thead><tr>
+                    ${columns.map(col => `<th>${col.name}<br><small style="font-weight:400;color:#94a3b8;">${col.type}</small></th>`).join('')}
+                    <th style="width:110px;text-align:center;">Actions</th>
+                </tr></thead>
+                <tbody>`;
+        
+        if (rows.length === 0) {
+            html += `<tr><td colspan="${columns.length + 1}" style="text-align:center;padding:2rem;color:#94a3b8;">No data. Click "Insert Row" to add</td></tr>`;
+        } else {
+            rows.forEach((row, idx) => {
+                html += `<tr>`;
+                columns.forEach(col => {
+                    let val = row[col.name];
+                    let display = (val === null || val === undefined) ? '<span class="null-value">NULL</span>' : 
+                                  (typeof val === 'object' ? JSON.stringify(val).substring(0, 50) : String(val));
+                    if (String(display).length > 150) display = display.substring(0, 150) + '...';
+                    html += `<td style="max-width:250px;overflow-x:auto;word-break:break-word;">${display}</td>`;
+                });
+                html += `<td style="text-align:center;white-space:nowrap;" class="action-icons">
+                    <i class="fas fa-eye view-row" data-index="${idx}" title="View"></i>
+                    <i class="fas fa-edit edit-row" data-index="${idx}" title="Edit"></i>
+                    <i class="fas fa-trash-alt delete-row" data-index="${idx}" title="Delete"></i>
+                </td></tr>`;
+            });
+        }
+        html += `</tbody></table></div>`;
+        
+        if (totalPages > 1) {
+            html += `<div class="pagination">`;
+            html += `<button class="page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+            for (let i = 1; i <= Math.min(totalPages, 10); i++) {
+                html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+            }
+            html += `<button class="page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+            html += `</div>`;
+        }
+        
+        document.getElementById('dataViewer').innerHTML = html;
+        
+        // Event listeners
+        document.getElementById('insertRowBtn')?.addEventListener('click', () => openInsertRowModal());
+        document.getElementById('refreshDataBtn')?.addEventListener('click', () => loadTableData(currentTable, currentPage));
+        
+        document.querySelectorAll('.view-row').forEach(btn => {
+            btn.addEventListener('click', () => openViewRowModal(currentData[parseInt(btn.dataset.index)]));
+        });
+        document.querySelectorAll('.edit-row').forEach(btn => {
+            btn.addEventListener('click', () => openEditRowModal(currentData[parseInt(btn.dataset.index)]));
+        });
+        document.querySelectorAll('.delete-row').forEach(btn => {
+            btn.addEventListener('click', () => deleteRow(currentData[parseInt(btn.dataset.index)]));
+        });
+        document.querySelectorAll('.page-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!btn.disabled) loadTableData(currentTable, parseInt(btn.dataset.page));
+            });
+        });
+    }
+
+    function openViewRowModal(row) {
+        const container = document.getElementById('viewRowFields');
+        container.innerHTML = currentColumns.map(col => `
+            <div style="margin-bottom:12px;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
+                <label style="font-weight:600;font-size:0.85rem;color:#475569;">${col.name} <span style="font-weight:400;color:#94a3b8;">(${col.type})</span></label>
+                <div style="padding:8px 4px;word-break:break-word;background:#f8fafc;border-radius:4px;margin-top:4px;font-family:monospace;font-size:0.9rem;">
+                    ${row[col.name] !== null && row[col.name] !== undefined ? escapeHtml(String(row[col.name])) : '<span style="color:#94a3b8;">NULL</span>'}
+                </div>
             </div>
         `).join('');
-        
-        document.querySelectorAll('.table-chip').forEach(el => {
-            el.addEventListener('click', () => loadTableData(el.dataset.table));
-        });
-        
-        if (data.tables.length > 0 && !currentTableName) loadTableData(data.tables[0].tablename);
-    } catch (err) {
-        showToast(err.message, true);
+        document.getElementById('viewRowModal').classList.add('active');
     }
-}
 
-async function loadTableData(tableName, page = 1) {
-    if (!currentDatabase) { showToast('Select a database first', true); return; }
-    currentTableName = tableName;
-    currentPage = page;
-    
-    try {
-        const data = await apiCall(`/api/admin/${currentDatabase}/data/${tableName}?page=${page}&limit=50`);
-        currentColumns = data.columns;
-        currentPrimaryKey = data.columns.find(c => c.isPrimary)?.name || data.columns[0]?.name;
-        totalPages = data.pagination.totalPages;
-        
-        document.getElementById('rowCount').textContent = `${data.pagination.totalRows} rows`;
-        document.getElementById('colCount').textContent = `${data.columns.length} columns`;
-        document.getElementById('tableInfo').style.display = 'flex';
-        
-        renderTable(data.columns, data.rows, tableName, data.pagination);
-        
-        document.querySelectorAll('.table-chip').forEach(el => {
-            el.classList.remove('active');
-            if (el.dataset.table === tableName) el.classList.add('active');
-        });
-    } catch (err) {
-        document.getElementById('dataViewer').innerHTML = `<div class="loading" style="color:#E30613;"><i class="fas fa-exclamation-triangle"></i>Error: ${err.message}</div>`;
-        showToast(err.message, true);
+    function openInsertRowModal() {
+        const container = document.getElementById('insertRowFields');
+        container.innerHTML = currentColumns.map(col => `
+            <label>${col.name} <span style="font-weight:400;color:#94a3b8;">(${col.type})</span></label>
+            <input type="text" id="ins_${col.name}" placeholder="Enter value" ${col.name === currentPrimaryKey ? 'disabled' : ''}>
+        `).join('');
+        document.getElementById('insertRowModal').classList.add('active');
     }
-}
 
-function renderTable(columns, rows, tableName, pagination) {
-    if (!columns.length) {
-        document.getElementById('dataViewer').innerHTML = '<div class="loading">No columns found</div>';
-        return;
-    }
-    
-    let html = `
-        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-            <div>
-                <strong><i class="fas fa-table"></i> ${tableName}</strong>
-                <span style="font-size:0.8rem;color:#94a3b8;margin-left:8px;">${pagination.totalRows} total rows</span>
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
-                <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i></button>
-            </div>
-        </div>
-        <div style="overflow-x:auto;">
-        <table class="data-table">
-            <thead><tr>
-                ${columns.map(col => `<th>${col.name}<br><small style="font-weight:400;color:#94a3b8;">${col.type}</small></th>`).join('')}
-                <th style="width:110px;text-align:center;">Actions</th>
-            </tr></thead>
-            <tbody>`;
-    
-    if (rows.length === 0) {
-        html += `<tr><td colspan="${columns.length + 1}" style="text-align:center;padding:2rem;color:#94a3b8;">No data. Click "Insert Row" to add</td></tr>`;
-    } else {
-        rows.forEach((row, idx) => {
-            html += `<tr>`;
-            columns.forEach(col => {
-                let val = row[col.name];
-                let display = (val === null || val === undefined) ? '<span class="null-value">NULL</span>' : 
-                              (typeof val === 'object' ? JSON.stringify(val) : String(val));
-                if (String(display).length > 150) display = display.substring(0, 150) + '...';
-                html += `<td style="max-width:250px;overflow-x:auto;word-break:break-word;">${display}</td>`;
-            });
-            html += `<td style="text-align:center;white-space:nowrap;" class="action-icons">
-                <i class="fas fa-eye view-row" data-index="${idx}" title="View"></i>
-                <i class="fas fa-edit edit-row" data-index="${idx}" title="Edit"></i>
-                <i class="fas fa-trash-alt delete-row" data-index="${idx}" title="Delete"></i>
-            </td></tr>`;
-        });
-    }
-    html += `</tbody></table></div>`;
-    
-    if (pagination.totalPages > 1) {
-        html += `<div class="pagination">`;
-        html += `<button class="page-btn ${pagination.currentPage === 1 ? 'active' : ''}" data-page="${pagination.currentPage - 1 || 1}" ${pagination.currentPage === 1 ? 'disabled' : ''}>‹</button>`;
-        for (let i = 1; i <= Math.min(pagination.totalPages, 10); i++) {
-            html += `<button class="page-btn ${i === pagination.currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
-        }
-        html += `<button class="page-btn ${pagination.currentPage === pagination.totalPages ? 'active' : ''}" data-page="${pagination.currentPage + 1 || pagination.totalPages}" ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}>›</button>`;
-        html += `</div>`;
-    }
-    
-    document.getElementById('dataViewer').innerHTML = html;
-    
-    document.getElementById('insertRowBtn')?.addEventListener('click', () => openInsertRowModal(columns));
-    document.getElementById('refreshDataBtn')?.addEventListener('click', () => loadTableData(tableName, currentPage));
-    document.querySelectorAll('.view-row').forEach(btn => {
-        btn.addEventListener('click', () => openViewRowModal(rows[parseInt(btn.dataset.index)], columns));
-    });
-    document.querySelectorAll('.edit-row').forEach(btn => {
-        btn.addEventListener('click', () => openEditRowModal(rows[parseInt(btn.dataset.index)], columns));
-    });
-    document.querySelectorAll('.delete-row').forEach(btn => {
-        btn.addEventListener('click', () => deleteRow(rows[parseInt(btn.dataset.index)]));
-    });
-    document.querySelectorAll('.page-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (!btn.disabled) loadTableData(tableName, parseInt(btn.dataset.page));
-        });
-    });
-}
-
-function openViewRowModal(row, columns) {
-    const container = document.getElementById('viewRowFields');
-    container.innerHTML = columns.map(col => `
-        <div style="margin-bottom:12px;border-bottom:1px solid #f1f5f9;padding-bottom:8px;">
-            <label style="font-weight:600;font-size:0.85rem;color:#475569;">${col.name} <span style="font-weight:400;color:#94a3b8;">(${col.type})</span></label>
-            <div style="padding:8px 4px;word-break:break-word;background:#f8fafc;border-radius:4px;margin-top:4px;font-family:monospace;font-size:0.9rem;">
-                ${row[col.name] !== null && row[col.name] !== undefined ? escapeHtml(String(row[col.name])) : '<span style="color:#94a3b8;">NULL</span>'}
-            </div>
-        </div>
-    `).join('');
-    document.getElementById('viewRowModal').classList.add('active');
-}
-
-function openInsertRowModal(columns) {
-    const container = document.getElementById('insertRowFields');
-    container.innerHTML = columns.map(col => `
-        <label>${col.name} <span style="font-weight:400;color:#94a3b8;">(${col.type})</span></label>
-        <input type="text" id="ins_${col.name}" placeholder="Enter value" ${col.isPrimary ? 'disabled' : ''}>
-    `).join('');
-    document.getElementById('insertRowModal').classList.add('active');
-}
-
-document.getElementById('confirmInsertRow')?.addEventListener('click', async () => {
-    const rowData = {};
-    for (let col of currentColumns) {
-        const val = document.getElementById(`ins_${col.name}`)?.value;
-        if (val && val.trim() && !col.isPrimary) {
-            rowData[col.name] = val;
-        }
-    }
-    try {
-        await apiCall(`/api/admin/${currentDatabase}/row/${currentTableName}`, 'POST', { row: rowData });
-        showToast('Row inserted successfully');
-        document.getElementById('insertRowModal').classList.remove('active');
-        loadTableData(currentTableName, currentPage);
-    } catch (err) { showToast(err.message, true); }
-});
-
-function openEditRowModal(row, columns) {
-    const container = document.getElementById('editRowFields');
-    container.innerHTML = columns.map(col => `
-        <label>${col.name} <span style="font-weight:400;color:#94a3b8;">(${col.type})</span></label>
-        <input type="text" id="edit_${col.name}" value="${escapeHtml(String(row[col.name] || ''))}" ${col.isPrimary ? 'disabled' : ''}>
-    `).join('');
-    document.getElementById('editRowModal').classList.add('active');
-    window.editRowData = row;
-}
-
-document.getElementById('confirmEditRow')?.addEventListener('click', async () => {
-    const updatedRow = {};
-    for (let col of currentColumns) {
-        const val = document.getElementById(`edit_${col.name}`)?.value;
-        if (!col.isPrimary) {
-            updatedRow[col.name] = (val && val.trim()) ? val : null;
-        }
-    }
-    try {
-        await apiCall(`/api/admin/${currentDatabase}/row/${currentTableName}`, 'PUT', {
-            pkCol: currentPrimaryKey,
-            pkValue: window.editRowData[currentPrimaryKey],
-            updatedRow
-        });
-        showToast('Row updated successfully');
-        document.getElementById('editRowModal').classList.remove('active');
-        loadTableData(currentTableName, currentPage);
-    } catch (err) { showToast(err.message, true); }
-});
-
-async function deleteRow(row) {
-    if (!confirm('Delete this row permanently?')) return;
-    try {
-        await apiCall(`/api/admin/${currentDatabase}/row/${currentTableName}`, 'DELETE', {
-            pkCol: currentPrimaryKey,
-            pkValue: row[currentPrimaryKey]
-        });
-        showToast('Row deleted');
-        loadTableData(currentTableName, currentPage);
-    } catch (err) { showToast(err.message, true); }
-}
-
-// Database actions
-document.getElementById('createDbBtn')?.addEventListener('click', () => document.getElementById('createDbModal').classList.add('active'));
-document.getElementById('cancelDbModal')?.addEventListener('click', () => document.getElementById('createDbModal').classList.remove('active'));
-document.getElementById('refreshDbBtn')?.addEventListener('click', loadDatabases);
-document.getElementById('confirmCreateDb')?.addEventListener('click', async () => {
-    const dbName = document.getElementById('newDbName').value.trim();
-    if (!dbName) return showToast('Enter database name', true);
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(dbName)) return showToast('Invalid database name (letters, numbers, underscore only)', true);
-    try {
-        await apiCall('/api/admin/databases', 'POST', { dbName });
-        showToast(`Database "${dbName}" created`);
-        document.getElementById('createDbModal').classList.remove('active');
-        document.getElementById('newDbName').value = '';
-        loadDatabases();
-    } catch (err) { showToast(err.message, true); }
-});
-
-// Table actions
-document.getElementById('createTableBtn')?.addEventListener('click', () => {
-    if (!currentDatabase) return showToast('Select a database first', true);
-    document.getElementById('createTableModal').classList.add('active');
-});
-document.getElementById('cancelTableModal')?.addEventListener('click', () => document.getElementById('createTableModal').classList.remove('active'));
-document.getElementById('confirmCreateTable')?.addEventListener('click', async () => {
-    const tableName = document.getElementById('newTableName').value.trim();
-    const columnsDef = document.getElementById('columnsDef').value;
-    if (!tableName || !columnsDef) return showToast('Table name and columns required', true);
-    try {
-        await apiCall(`/api/admin/${currentDatabase}/tables`, 'POST', { tableName, columnsDefinition: columnsDef });
-        showToast(`Table "${tableName}" created`);
-        document.getElementById('createTableModal').classList.remove('active');
-        document.getElementById('newTableName').value = '';
-        document.getElementById('columnsDef').value = '';
-        loadTables();
-    } catch (err) { showToast(err.message, true); }
-});
-
-document.getElementById('refreshTablesBtn')?.addEventListener('click', loadTables);
-document.getElementById('cancelEditModal')?.addEventListener('click', () => document.getElementById('editRowModal').classList.remove('active'));
-document.getElementById('cancelInsertModal')?.addEventListener('click', () => document.getElementById('insertRowModal').classList.remove('active'));
-document.getElementById('closeViewModal')?.addEventListener('click', () => document.getElementById('viewRowModal').classList.remove('active'));
-
-// SQL Query
-document.getElementById('showQueryBtn')?.addEventListener('click', () => {
-    const editor = document.getElementById('queryEditor');
-    isQueryVisible = !isQueryVisible;
-    editor.style.display = isQueryVisible ? 'block' : 'none';
-});
-document.getElementById('closeQueryBtn')?.addEventListener('click', () => {
-    document.getElementById('queryEditor').style.display = 'none';
-    isQueryVisible = false;
-});
-
-document.getElementById('formatQueryBtn')?.addEventListener('click', () => {
-    const sql = document.getElementById('sqlQuery');
-    sql.value = sql.value.replace(/\s+/g, ' ').trim();
-});
-
-document.getElementById('clearQueryBtn')?.addEventListener('click', () => {
-    document.getElementById('sqlQuery').value = '';
-    document.getElementById('queryResult').innerHTML = '';
-});
-
-document.getElementById('executeQueryBtn')?.addEventListener('click', async () => {
-    if (!currentDatabase) return showToast('Select a database first', true);
-    const sql = document.getElementById('sqlQuery').value.trim();
-    if (!sql) return showToast('Enter SQL query', true);
-    
-    // Add to history
-    queryHistory.push({ sql, time: new Date().toLocaleString() });
-    
-    try {
-        const data = await apiCall('/api/admin/query', 'POST', { database: currentDatabase, sql });
-        const resultDiv = document.getElementById('queryResult');
-        if (data.rows && data.rows.length > 0) {
-            const columns = Object.keys(data.rows[0]);
-            let html = `<div style="margin-top: 10px; overflow-x: auto;"><table class="data-table"><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
-            data.rows.forEach(row => {
-                html += `<tr>${columns.map(c => `<td style="max-width:200px;overflow-x:auto;">${escapeHtml(String(row[c] !== null && row[c] !== undefined ? row[c] : 'NULL'))}</td>`).join('')}</tr>`;
-            });
-            html += `</tbody></table><div style="margin-top: 8px;display:flex;justify-content:space-between;">
-                <span style="color:#166534;">✅ ${data.rowCount} rows returned</span>
-                <span style="color:#94a3b8;font-size:0.8rem;">${data.executionTime || ''}</span>
-            </div></div>`;
-            resultDiv.innerHTML = html;
-        } else if (data.rowCount !== undefined) {
-            resultDiv.innerHTML = `<div style="margin-top: 10px;color:#166534;">✅ Query executed successfully. ${data.rowCount || 0} rows affected.</div>`;
-        } else {
-            resultDiv.innerHTML = `<div style="margin-top: 10px;color:#166534;">✅ Query executed successfully.</div>`;
-        }
-    } catch (err) {
-        document.getElementById('queryResult').innerHTML = `<div style="margin-top: 10px;color:#E30613;">❌ Error: ${err.message}</div>`;
-    }
-});
-
-document.getElementById('queryHistoryBtn')?.addEventListener('click', () => {
-    if (queryHistory.length === 0) return showToast('No query history');
-    const historyHtml = queryHistory.map((q, i) => `
-        <div style="padding:4px 8px;border-bottom:1px solid #f1f5f9;font-size:0.8rem;cursor:pointer;" onclick="document.getElementById('sqlQuery').value = '${escapeHtml(q.sql)}'">
-            <span style="color:#94a3b8;">${q.time}</span> - ${escapeHtml(q.sql.substring(0, 80))}${q.sql.length > 80 ? '...' : ''}
-        </div>
-    `).join('');
-    const resultDiv = document.getElementById('queryResult');
-    resultDiv.innerHTML = `<div style="margin-top:10px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;max-height:200px;overflow-y:auto;">
-        <div style="padding:8px;background:#f8fafc;font-weight:600;">Query History</div>
-        ${historyHtml}
-    </div>`;
-});
-
-// Export data
-document.getElementById('exportDataBtn')?.addEventListener('click', async () => {
-    if (!currentTableName) return showToast('Select a table first', true);
-    try {
-        const data = await apiCall(`/api/admin/${currentDatabase}/data/${currentTableName}?page=1&limit=10000`);
-        const rows = data.rows;
-        if (rows.length === 0) return showToast('No data to export');
-        
-        // Create CSV
-        const headers = data.columns.map(c => c.name);
-        let csv = headers.join(',') + '\n';
-        rows.forEach(row => {
-            csv += headers.map(h => {
-                let val = row[h] !== null && row[h] !== undefined ? String(row[h]) : '';
-                if (val.includes(',') || val.includes('"')) {
-                    val = `"${val.replace(/"/g, '""')}"`;
+    async function confirmInsert() {
+        const rowData = {};
+        for (let col of currentColumns) {
+            const val = document.getElementById(`ins_${col.name}`)?.value;
+            if (val && val.trim() && col.name !== currentPrimaryKey) {
+                // Try to parse as number if column type is numeric
+                if (col.type.includes('int') || col.type.includes('numeric') || col.type.includes('decimal')) {
+                    rowData[col.name] = parseFloat(val) || null;
+                } else if (col.type.includes('bool')) {
+                    rowData[col.name] = val.toLowerCase() === 'true';
+                } else {
+                    rowData[col.name] = val;
                 }
-                return val;
-            }).join(',') + '\n';
-        });
-        
-        // Download CSV
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${currentTableName}_export.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showToast(`Exported ${rows.length} rows from ${currentTableName}`);
-    } catch (err) { showToast(err.message, true); }
-});
+            }
+        }
+        try {
+            const { error } = await supabase
+                .from(currentTable)
+                .insert([rowData]);
+            
+            if (error) throw error;
+            
+            showToast('Row inserted successfully');
+            document.getElementById('insertRowModal').classList.remove('active');
+            loadTableData(currentTable, currentPage);
+        } catch (err) {
+            showToast(err.message, true);
+        }
+    }
 
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>"]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        if (m === '"') return '&quot;';
-        return m;
+    function openEditRowModal(row) {
+        const container = document.getElementById('editRowFields');
+        container.innerHTML = currentColumns.map(col => `
+            <label>${col.name} <span style="font-weight:400;color:#94a3b8;">(${col.type})</span></label>
+            <input type="text" id="edit_${col.name}" value="${escapeHtml(String(row[col.name] || ''))}" ${col.name === currentPrimaryKey ? 'disabled' : ''}>
+        `).join('');
+        document.getElementById('editRowModal').classList.add('active');
+        window.editRowData = row;
+    }
+
+    async function confirmEdit() {
+        const updatedRow = {};
+        for (let col of currentColumns) {
+            const val = document.getElementById(`edit_${col.name}`)?.value;
+            if (col.name !== currentPrimaryKey) {
+                if (val && val.trim()) {
+                    // Try to parse as number if column type is numeric
+                    if (col.type.includes('int') || col.type.includes('numeric') || col.type.includes('decimal')) {
+                        updatedRow[col.name] = parseFloat(val) || null;
+                    } else if (col.type.includes('bool')) {
+                        updatedRow[col.name] = val.toLowerCase() === 'true';
+                    } else {
+                        updatedRow[col.name] = val;
+                    }
+                } else {
+                    updatedRow[col.name] = null;
+                }
+            }
+        }
+        try {
+            const { error } = await supabase
+                .from(currentTable)
+                .update(updatedRow)
+                .eq(currentPrimaryKey, window.editRowData[currentPrimaryKey]);
+            
+            if (error) throw error;
+            
+            showToast('Row updated successfully');
+            document.getElementById('editRowModal').classList.remove('active');
+            loadTableData(currentTable, currentPage);
+        } catch (err) {
+            showToast(err.message, true);
+        }
+    }
+
+    async function deleteRow(row) {
+        if (!confirm('Delete this row permanently?')) return;
+        try {
+            const { error } = await supabase
+                .from(currentTable)
+                .delete()
+                .eq(currentPrimaryKey, row[currentPrimaryKey]);
+            
+            if (error) throw error;
+            
+            showToast('Row deleted');
+            loadTableData(currentTable, currentPage);
+        } catch (err) {
+            showToast(err.message, true);
+        }
+    }
+
+    // SQL Query
+    document.getElementById('showQueryBtn')?.addEventListener('click', () => {
+        const editor = document.getElementById('queryEditor');
+        editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
     });
-}
+    
+    document.getElementById('closeQueryBtn')?.addEventListener('click', () => {
+        document.getElementById('queryEditor').style.display = 'none';
+    });
+    
+    document.getElementById('clearQueryBtn')?.addEventListener('click', () => {
+        document.getElementById('sqlQuery').value = '';
+        document.getElementById('queryResult').innerHTML = '';
+    });
+    
+    document.getElementById('executeQueryBtn')?.addEventListener('click', async () => {
+        const sql = document.getElementById('sqlQuery').value.trim();
+        if (!sql) return showToast('Enter SQL query', true);
+        
+        try {
+            const { data, error } = await supabase.rpc('execute_sql', { query: sql });
+            if (error) throw error;
+            
+            const resultDiv = document.getElementById('queryResult');
+            if (data && data.length > 0) {
+                const columns = Object.keys(data[0]);
+                let html = `<div style="margin-top: 10px; overflow-x: auto;"><table class="data-table"><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+                data.slice(0, 100).forEach(row => {
+                    html += `<tr>${columns.map(c => `<td style="max-width:200px;overflow-x:auto;">${escapeHtml(String(row[c] !== null && row[c] !== undefined ? row[c] : 'NULL'))}</td>`).join('')}</tr>`;
+                });
+                html += `</tbody></table><div style="margin-top: 8px;color:#166534;">✅ ${data.length} rows returned</div></div>`;
+                resultDiv.innerHTML = html;
+            } else {
+                resultDiv.innerHTML = `<div style="margin-top: 10px;color:#166534;">✅ Query executed successfully. 0 rows returned.</div>`;
+            }
+        } catch (err) {
+            document.getElementById('queryResult').innerHTML = `<div style="margin-top: 10px;color:#E30613;">❌ Error: ${err.message}</div>`;
+            showToast(err.message, true);
+        }
+    });
 
-// Initialize
-loadDatabases();
+    // Export data
+    document.getElementById('exportDataBtn')?.addEventListener('click', async () => {
+        if (!currentTable) return showToast('Select a table first', true);
+        try {
+            const { data, error } = await supabase
+                .from(currentTable)
+                .select('*')
+                .limit(10000);
+            
+            if (error) throw error;
+            if (!data || data.length === 0) return showToast('No data to export');
+            
+            const headers = currentColumns.map(c => c.name);
+            let csv = headers.join(',') + '\n';
+            data.forEach(row => {
+                csv += headers.map(h => {
+                    let val = row[h] !== null && row[h] !== undefined ? String(row[h]) : '';
+                    if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+                        val = `"${val.replace(/"/g, '""')}"`;
+                    }
+                    return val;
+                }).join(',') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentTable}_export.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`Exported ${data.length} rows from ${currentTable}`);
+        } catch (err) {
+            showToast(err.message, true);
+        }
+    });
+
+    // Modal event listeners
+    document.getElementById('confirmInsertRow')?.addEventListener('click', confirmInsert);
+    document.getElementById('confirmEditRow')?.addEventListener('click', confirmEdit);
+    document.getElementById('cancelInsertModal')?.addEventListener('click', () => document.getElementById('insertRowModal').classList.remove('active'));
+    document.getElementById('cancelEditModal')?.addEventListener('click', () => document.getElementById('editRowModal').classList.remove('active'));
+    document.getElementById('closeViewModal')?.addEventListener('click', () => document.getElementById('viewRowModal').classList.remove('active'));
+    document.getElementById('refreshBtn')?.addEventListener('click', loadTables);
+
+    function showToast(msg, isError = false) {
+        let toast = document.querySelector('.toast');
+        if (!toast) { 
+            toast = document.createElement('div'); 
+            toast.className = 'toast'; 
+            document.body.appendChild(toast); 
+        }
+        toast.style.background = isError ? '#dc2626' : '#1e293b';
+        toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${msg}`;
+        toast.style.display = 'flex';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => toast.style.display = 'none', 3000);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            if (m === '"') return '&quot;';
+            return m;
+        });
+    }
+
+    // Initialize
+    loadTables();
 </script>
 </body>
 </html>

@@ -20,7 +20,6 @@
             display: flex;
             height: 100vh;
         }
-        /* Sidebar */
         .sidebar {
             width: 320px;
             background: white;
@@ -231,10 +230,10 @@
         .modal-content {
             background: white;
             width: 90%;
-            max-width: 600px;
+            max-width: 700px;
             border-radius: 16px;
             padding: 1.5rem;
-            max-height: 80vh;
+            max-height: 90vh;
             overflow-y: auto;
             animation: modalSlideIn 0.3s ease;
         }
@@ -242,13 +241,33 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-        .modal-content h3 { margin-bottom: 1rem; color: #1e293b; }
+        .modal-content h3 { 
+            margin-bottom: 0.5rem; 
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-content p.subtitle {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
         .modal-content label {
             display: block;
             font-size: 0.8rem;
             font-weight: 600;
             margin-top: 12px;
             color: #475569;
+        }
+        .modal-content label .required {
+            color: #E30613;
+            margin-left: 4px;
+        }
+        .modal-content label .field-type {
+            font-weight: 400;
+            color: #94a3b8;
+            font-size: 0.7rem;
         }
         .modal-content input, .modal-content textarea, .modal-content select {
             width: 100%;
@@ -258,13 +277,33 @@
             border-radius: 8px;
             font-family: inherit;
             font-size: 0.9rem;
+            transition: 0.2s;
         }
         .modal-content input:focus, .modal-content textarea:focus, .modal-content select:focus {
             outline: none;
             border-color: #E30613;
             box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.1);
         }
-        .flex-buttons { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+        .modal-content textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .modal-content .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .modal-content .form-row .full-width {
+            grid-column: 1 / -1;
+        }
+        .flex-buttons { 
+            display: flex; 
+            justify-content: flex-end; 
+            gap: 12px; 
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
         .toast {
             position: fixed;
             bottom: 20px;
@@ -325,7 +364,7 @@
         .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .editable {
             background: #fef9f5;
-            border: 1px solid #E30613;
+            border-left: 3px solid #E30613;
         }
         .editable-input {
             width: 100%;
@@ -347,19 +386,38 @@
         }
         .status-badge {
             display: inline-block;
-            padding: 2px 8px;
+            padding: 2px 10px;
             border-radius: 12px;
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             font-weight: 600;
         }
         .status-badge.success { background: #dcfce7; color: #166534; }
         .status-badge.error { background: #fee2e2; color: #991b1b; }
         .status-badge.warning { background: #fef3c7; color: #92400e; }
+        .insert-success {
+            background: #dcfce7;
+            border: 2px solid #22c55e;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .insert-success.show {
+            display: block;
+        }
+        .field-hint {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
         @media (max-width: 768px) {
             .sidebar { width: 250px; }
             .app-container { flex-direction: column; }
             .sidebar { width: 100%; max-height: 200px; border-right: none; border-bottom: 1px solid #e2e8f0; }
             .data-viewer { padding: 1rem; }
+            .modal-content .form-row {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -416,18 +474,31 @@
     </div>
 </div>
 
-<!-- Modals -->
+<!-- Insert Row Modal -->
 <div id="insertRowModal" class="modal">
     <div class="modal-content">
-        <h3><i class="fas fa-plus"></i> Insert New Row</h3>
-        <div id="insertRowFields"></div>
-        <div class="flex-buttons">
-            <button class="btn btn-outline" id="cancelInsertModal">Cancel</button>
-            <button class="btn btn-primary" id="confirmInsertRow">Insert</button>
+        <h3><i class="fas fa-plus-circle" style="color:#E30613;"></i> Insert New Row</h3>
+        <p class="subtitle">Add a new record to <strong id="insertTableName">table</strong></p>
+        
+        <div id="insertSuccess" class="insert-success">
+            <i class="fas fa-check-circle" style="color:#22c55e;"></i>
+            <span id="insertSuccessMessage">Row inserted successfully!</span>
         </div>
+        
+        <form id="insertForm" onsubmit="return false;">
+            <div id="insertRowFields"></div>
+            
+            <div class="flex-buttons">
+                <button type="button" class="btn btn-outline" id="cancelInsertModal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="confirmInsertRow">
+                    <i class="fas fa-plus"></i> Insert Row
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
+<!-- View Row Modal -->
 <div id="viewRowModal" class="modal">
     <div class="modal-content">
         <h3><i class="fas fa-eye"></i> Row Details</h3>
@@ -457,14 +528,12 @@
         let editedRows = {};
         let originalRows = {};
 
-        // Predefined tables for your schema
         const KNOWN_TABLES = ['products', 'product_variants', 'orders', 'users', 'cart_reservations'];
 
         async function loadTables() {
             try {
                 const container = document.getElementById('tablesList');
                 
-                // Try known tables
                 const existingTables = [];
                 for (const table of KNOWN_TABLES) {
                     try {
@@ -476,9 +545,7 @@
                         if (!error) {
                             existingTables.push(table);
                         }
-                    } catch (e) {
-                        // Table doesn't exist or is not accessible
-                    }
+                    } catch (e) {}
                 }
                 
                 if (existingTables.length > 0) {
@@ -512,7 +579,6 @@
                 el.addEventListener('click', function() {
                     const tableName = this.dataset.table;
                     if (tableName && typeof tableName === 'string' && tableName.trim()) {
-                        // Check for unsaved changes before switching
                         if (Object.keys(editedRows).length > 0) {
                             if (!confirm('You have unsaved changes. Switch table anyway?')) {
                                 return;
@@ -558,7 +624,6 @@
             document.getElementById('saveChangesBtn').style.display = 'none';
             
             try {
-                // Get table columns by querying one row
                 const { data: sampleData, error: sampleError } = await supabase
                     .from(currentTable)
                     .select('*')
@@ -731,7 +796,6 @@
                         const isPrimaryKey = col.name === currentPrimaryKey;
                         
                         if (isEditing) {
-                            // Editable cell
                             html += `<td>
                                 <input type="text" 
                                        class="editable-input" 
@@ -742,7 +806,6 @@
                                        placeholder="NULL">
                             </td>`;
                         } else {
-                            // Display cell
                             let display = value || '<span class="null-value">NULL</span>';
                             if (String(display).length > 150) display = display.substring(0, 150) + '...';
                             html += `<td style="max-width:250px;overflow-x:auto;word-break:break-word;">${display}</td>`;
@@ -795,7 +858,6 @@
                 if (currentTable) loadTableData(currentTable, currentPage);
             });
             
-            // Edit mode - listen to input changes
             document.querySelectorAll('.editable-input').forEach(input => {
                 input.addEventListener('change', function() {
                     const rowId = this.dataset.rowid;
@@ -803,7 +865,6 @@
                     const value = this.value || null;
                     
                     if (!editedRows[rowId]) {
-                        // Store original row data
                         const originalRow = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
                         if (originalRow) {
                             originalRows[rowId] = { ...originalRow };
@@ -814,7 +875,6 @@
                     editedRows[rowId][colName] = value;
                     document.getElementById('saveChangesBtn').style.display = 'block';
                     
-                    // Update the status badge
                     const badge = document.querySelector('.status-badge');
                     if (badge) {
                         const count = Object.keys(editedRows).length;
@@ -824,7 +884,6 @@
                 });
             });
             
-            // Save individual row
             document.querySelectorAll('.save-row').forEach(btn => {
                 btn.addEventListener('click', async function() {
                     const rowId = this.dataset.rowid;
@@ -832,7 +891,6 @@
                 });
             });
             
-            // Cancel editing
             document.querySelectorAll('.cancel-edit').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const rowId = this.dataset.rowid;
@@ -847,7 +905,6 @@
                 });
             });
             
-            // View row
             document.querySelectorAll('.view-row').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const rowId = btn.dataset.rowid;
@@ -856,11 +913,9 @@
                 });
             });
             
-            // Edit row
             document.querySelectorAll('.edit-row').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const rowId = this.dataset.rowid;
-                    // Start editing this row
                     const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
                     if (row) {
                         editedRows[rowId] = { ...row };
@@ -871,7 +926,6 @@
                 });
             });
             
-            // Delete row
             document.querySelectorAll('.delete-row').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const rowId = this.dataset.rowid;
@@ -880,7 +934,6 @@
                 });
             });
             
-            // Pagination
             document.querySelectorAll('.page-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     if (!this.disabled && currentTable) {
@@ -897,7 +950,6 @@
                 });
             });
             
-            // Save all changes button
             document.getElementById('saveChangesBtn').addEventListener('click', saveAllChanges);
         }
 
@@ -908,7 +960,6 @@
             }
             
             const updatedData = { ...editedRows[rowId] };
-            // Remove the primary key from update data
             delete updatedData[currentPrimaryKey];
             
             try {
@@ -976,6 +1027,204 @@
             loadTableData(currentTable, currentPage);
         }
 
+        // ============ INSERT ROW FUNCTIONALITY ============
+        function openInsertRowModal() {
+            const container = document.getElementById('insertRowFields');
+            const tableNameDisplay = document.getElementById('insertTableName');
+            tableNameDisplay.textContent = currentTable;
+            
+            // Hide success message
+            document.getElementById('insertSuccess').classList.remove('show');
+            
+            // Get column definitions with better type hints
+            const columnDefs = getColumnDefinitions(currentTable);
+            
+            container.innerHTML = currentColumns.map(col => {
+                const isPrimaryKey = col.name === currentPrimaryKey;
+                const def = columnDefs[col.name] || {};
+                const placeholder = def.placeholder || `Enter ${col.name}`;
+                const hint = def.hint || '';
+                const type = col.type;
+                const isRequired = !col.nullable && !isPrimaryKey;
+                const inputType = getInputType(type, col.name);
+                
+                // Special handling for specific fields
+                let inputHtml = '';
+                if (col.name === 'items' && type === 'object') {
+                    inputHtml = `<textarea id="ins_${col.name}" placeholder='${placeholder}' ${isPrimaryKey ? 'disabled' : ''}></textarea>`;
+                } else if (type === 'boolean' || type === 'bool') {
+                    inputHtml = `
+                        <select id="ins_${col.name}" ${isPrimaryKey ? 'disabled' : ''}>
+                            <option value="">Select...</option>
+                            <option value="true">True</option>
+                            <option value="false">False</option>
+                        </select>
+                    `;
+                } else if (type === 'number' || type.includes('int') || type.includes('numeric') || type.includes('decimal') || type.includes('float')) {
+                    inputHtml = `<input type="number" id="ins_${col.name}" placeholder="${placeholder}" step="any" ${isPrimaryKey ? 'disabled' : ''}>`;
+                } else if (type === 'string' && (col.name === 'description' || col.name === 'notes' || col.name === 'delivery_address')) {
+                    inputHtml = `<textarea id="ins_${col.name}" placeholder="${placeholder}" ${isPrimaryKey ? 'disabled' : ''}></textarea>`;
+                } else {
+                    inputHtml = `<input type="text" id="ins_${col.name}" placeholder="${placeholder}" ${isPrimaryKey ? 'disabled' : ''}>`;
+                }
+                
+                return `
+                    <div class="${col.name === 'description' || col.name === 'notes' || col.name === 'items' ? 'full-width' : ''}">
+                        <label>
+                            ${col.name}
+                            ${isRequired ? '<span class="required">*</span>' : ''}
+                            <span class="field-type">(${type})</span>
+                        </label>
+                        ${inputHtml}
+                        ${hint ? `<div class="field-hint">${hint}</div>` : ''}
+                        ${isPrimaryKey ? `<div class="field-hint">Auto-generated, will be ignored</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('insertRowModal').classList.add('active');
+        }
+
+        function getColumnDefinitions(tableName) {
+            // Custom definitions for better UX
+            const definitions = {
+                'products': {
+                    'name': { placeholder: 'e.g., Premium Steering Wheel Cover', hint: 'Product name (required)' },
+                    'description': { placeholder: 'Detailed product description...', hint: 'Full description of the product' },
+                    'base_price': { placeholder: 'e.g., 29.99', hint: 'Base price in USD' }
+                },
+                'product_variants': {
+                    'product_id': { placeholder: 'e.g., 1', hint: 'ID of the parent product' },
+                    'variant_name': { placeholder: 'e.g., Red', hint: 'Variant name (e.g., color, size)' },
+                    'variant_type': { placeholder: 'e.g., Color', hint: 'Type of variant' },
+                    'price': { placeholder: 'e.g., 29.99', hint: 'Price for this variant' },
+                    'sku': { placeholder: 'e.g., PRD-001-RED', hint: 'Stock keeping unit' },
+                    'stock_quantity': { placeholder: 'e.g., 10', hint: 'Available stock quantity' }
+                },
+                'orders': {
+                    'customer_name': { placeholder: 'e.g., John Doe', hint: 'Full name of customer' },
+                    'customer_phone': { placeholder: 'e.g., +1 234 567 8900', hint: 'Phone number with country code' },
+                    'customer_email': { placeholder: 'e.g., john@example.com', hint: 'Email address' },
+                    'delivery_address': { placeholder: '123 Main St, City, Country', hint: 'Full delivery address' },
+                    'notes': { placeholder: 'Any special instructions...', hint: 'Optional order notes' },
+                    'total': { placeholder: 'e.g., 59.98', hint: 'Total order amount' },
+                    'status': { placeholder: 'pending', hint: 'Order status: pending, confirmed, shipped, delivered' },
+                    'user_id': { placeholder: 'e.g., 1', hint: 'ID of the user who placed the order' }
+                },
+                'users': {
+                    'name': { placeholder: 'e.g., John Doe', hint: 'Full name' },
+                    'email': { placeholder: 'e.g., john@example.com', hint: 'Email address (unique)' },
+                    'password': { placeholder: 'e.g., securepassword123', hint: 'Password (store hashed in production)' }
+                },
+                'cart_reservations': {
+                    'cart_id': { placeholder: 'e.g., cart_123456', hint: 'Unique cart identifier' },
+                    'product_id': { placeholder: 'e.g., 1', hint: 'Product ID' },
+                    'variant_id': { placeholder: 'e.g., 5', hint: 'Variant ID (optional)' },
+                    'quantity': { placeholder: 'e.g., 2', hint: 'Quantity reserved' }
+                }
+            };
+            
+            return definitions[tableName] || {};
+        }
+
+        function getInputType(type, columnName) {
+            if (type === 'number' || type.includes('int') || type.includes('numeric') || type.includes('decimal') || type.includes('float')) {
+                return 'number';
+            }
+            if (type === 'boolean' || type === 'bool') {
+                return 'select';
+            }
+            if (columnName === 'description' || columnName === 'notes' || columnName === 'delivery_address' || columnName === 'items') {
+                return 'textarea';
+            }
+            return 'text';
+        }
+
+        async function confirmInsert() {
+            const rowData = {};
+            let hasError = false;
+            
+            // Get all field values
+            for (let col of currentColumns) {
+                const isPrimaryKey = col.name === currentPrimaryKey;
+                if (isPrimaryKey) continue;
+                
+                const element = document.getElementById(`ins_${col.name}`);
+                if (!element) continue;
+                
+                let value = element.value;
+                
+                // Check required fields
+                if (!col.nullable && (!value || value.trim() === '')) {
+                    showToast(`"${col.name}" is required`, true);
+                    element.style.borderColor = '#E30613';
+                    hasError = true;
+                    continue;
+                }
+                
+                element.style.borderColor = '#cbd5e1';
+                
+                // Process value based on type
+                if (value && value.trim()) {
+                    if (col.type === 'number' || col.type.includes('int') || col.type.includes('numeric') || col.type.includes('decimal') || col.type.includes('float')) {
+                        rowData[col.name] = parseFloat(value) || 0;
+                    } else if (col.type === 'boolean' || col.type.includes('bool')) {
+                        rowData[col.name] = value.toLowerCase() === 'true';
+                    } else if (col.type === 'object') {
+                        try {
+                            rowData[col.name] = JSON.parse(value);
+                        } catch (e) {
+                            showToast(`Invalid JSON format for "${col.name}"`, true);
+                            element.style.borderColor = '#E30613';
+                            hasError = true;
+                            continue;
+                        }
+                    } else {
+                        rowData[col.name] = value;
+                    }
+                } else if (col.nullable) {
+                    rowData[col.name] = null;
+                }
+            }
+            
+            if (hasError) {
+                return;
+            }
+            
+            try {
+                console.log('Inserting data:', rowData);
+                
+                const { data, error } = await supabase
+                    .from(currentTable)
+                    .insert([rowData])
+                    .select();
+                
+                if (error) {
+                    console.error('Insert error:', error);
+                    throw new Error(error.message);
+                }
+                
+                // Show success message
+                const successDiv = document.getElementById('insertSuccess');
+                const successMsg = document.getElementById('insertSuccessMessage');
+                successMsg.textContent = `Row inserted successfully! ${data && data.length > 0 ? `New ID: ${data[0][currentPrimaryKey]}` : ''}`;
+                successDiv.classList.add('show');
+                
+                showToast('Row inserted successfully!');
+                
+                // Close modal after delay
+                setTimeout(() => {
+                    document.getElementById('insertRowModal').classList.remove('active');
+                    if (currentTable) loadTableData(currentTable, currentPage);
+                }, 1500);
+                
+            } catch (err) {
+                console.error('Insert error:', err);
+                showToast(err.message || 'Failed to insert row', true);
+            }
+        }
+
+        // ============ VIEW ROW ============
         function openViewRowModal(row) {
             const container = document.getElementById('viewRowFields');
             container.innerHTML = currentColumns.map(col => `
@@ -989,46 +1238,9 @@
             document.getElementById('viewRowModal').classList.add('active');
         }
 
-        function openInsertRowModal() {
-            const container = document.getElementById('insertRowFields');
-            container.innerHTML = currentColumns.map(col => `
-                <label>${col.name} <span style="font-weight:400;color:#94a3b8;">(${col.type})</span></label>
-                <input type="text" id="ins_${col.name}" placeholder="Enter value" ${col.name === currentPrimaryKey ? 'disabled' : ''}>
-            `).join('');
-            document.getElementById('insertRowModal').classList.add('active');
-        }
-
-        async function confirmInsert() {
-            const rowData = {};
-            for (let col of currentColumns) {
-                const val = document.getElementById(`ins_${col.name}`)?.value;
-                if (val && val.trim() && col.name !== currentPrimaryKey) {
-                    if (col.type === 'number' || col.type.includes('int') || col.type.includes('numeric') || col.type.includes('decimal')) {
-                        rowData[col.name] = parseFloat(val) || null;
-                    } else if (col.type === 'boolean' || col.type.includes('bool')) {
-                        rowData[col.name] = val.toLowerCase() === 'true';
-                    } else {
-                        rowData[col.name] = val;
-                    }
-                }
-            }
-            try {
-                const { error } = await supabase
-                    .from(currentTable)
-                    .insert([rowData]);
-                
-                if (error) throw error;
-                
-                showToast('Row inserted successfully');
-                document.getElementById('insertRowModal').classList.remove('active');
-                if (currentTable) loadTableData(currentTable, currentPage);
-            } catch (err) {
-                showToast(err.message, true);
-            }
-        }
-
+        // ============ DELETE ROW ============
         async function deleteRow(row) {
-            if (!confirm('Delete this row permanently?')) return;
+            if (!confirm(`Delete this row permanently?`)) return;
             try {
                 const { error } = await supabase
                     .from(currentTable)
@@ -1044,12 +1256,25 @@
             }
         }
 
-        // Modal event listeners
+        // ============ EVENT LISTENERS ============
         document.getElementById('confirmInsertRow')?.addEventListener('click', confirmInsert);
-        document.getElementById('cancelInsertModal')?.addEventListener('click', () => document.getElementById('insertRowModal').classList.remove('active'));
-        document.getElementById('closeViewModal')?.addEventListener('click', () => document.getElementById('viewRowModal').classList.remove('active'));
+        document.getElementById('cancelInsertModal')?.addEventListener('click', () => {
+            document.getElementById('insertRowModal').classList.remove('active');
+        });
+        document.getElementById('closeViewModal')?.addEventListener('click', () => {
+            document.getElementById('viewRowModal').classList.remove('active');
+        });
         document.getElementById('refreshBtn')?.addEventListener('click', loadTables);
 
+        // Enter key support for insert form
+        document.getElementById('insertForm')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                confirmInsert();
+            }
+        });
+
+        // ============ TOAST ============
         function showToast(msg, isError = false) {
             let toast = document.querySelector('.toast');
             if (!toast) { 
@@ -1064,6 +1289,7 @@
             toast._timeout = setTimeout(() => toast.style.display = 'none', 3000);
         }
 
+        // ============ ESCAPE HTML ============
         function escapeHtml(str) {
             if (!str) return '';
             return String(str).replace(/[&<>"]/g, function(m) {
@@ -1075,7 +1301,7 @@
             });
         }
 
-        // Initialize
+        // ============ INIT ============
         loadTables();
     })();
 </script>

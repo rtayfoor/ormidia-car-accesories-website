@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        /* ... keep existing styles ... */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
@@ -139,6 +140,8 @@
         .btn-success { background: #dcfce7; color: #166534; }
         .btn-success:hover { background: #bbf7d0; }
         .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
+        .btn-stock { background: #dbeafe; color: #1d4ed8; }
+        .btn-stock:hover { background: #bfdbfe; }
         .tables-list {
             background: white;
             padding: 0.75rem 1.5rem;
@@ -212,6 +215,9 @@
         .save-row:hover { background: #dcfce7; }
         .cancel-edit { color: #94a3b8; }
         .cancel-edit:hover { background: #f1f5f9; }
+        .stock-low { color: #f59e0b; }
+        .stock-out { color: #E30613; font-weight: bold; }
+        .stock-ok { color: #22c55e; }
         .modal {
             position: fixed;
             top: 0; left: 0;
@@ -410,23 +416,16 @@
             color: #94a3b8;
             margin-top: 4px;
         }
-        .rls-warning {
-            background: #fef3c7;
-            border: 2px solid #f59e0b;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            display: none;
+        .stock-indicator {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
-        .rls-warning.show {
-            display: block;
-        }
-        .rls-warning code {
-            background: #f1f5f9;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-        }
+        .stock-indicator.in-stock { background: #dcfce7; color: #166534; }
+        .stock-indicator.low-stock { background: #fef3c7; color: #92400e; }
+        .stock-indicator.out-of-stock { background: #fee2e2; color: #991b1b; }
         @media (max-width: 768px) {
             .sidebar { width: 250px; }
             .app-container { flex-direction: column; }
@@ -477,6 +476,7 @@
                     <i class="fas fa-save"></i> Save All Changes
                 </button>
                 <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
+                <button class="btn btn-stock btn-sm" id="manageStockBtn"><i class="fas fa-boxes"></i> Manage Stock</button>
                 <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
             </div>
         </div>
@@ -502,18 +502,6 @@
             <span id="insertSuccessMessage">Row inserted successfully!</span>
         </div>
         
-        <div id="rlsWarning" class="rls-warning">
-            <i class="fas fa-exclamation-triangle" style="color:#f59e0b;"></i>
-            <strong>RLS Policy Blocking Insert</strong>
-            <p style="margin-top: 4px; font-size: 0.85rem;">
-                Row Level Security is preventing inserts. Run this in your Supabase SQL editor:
-            </p>
-            <code style="display: block; background: #1e293b; color: #e2e8f0; padding: 8px; border-radius: 4px; margin-top: 4px; font-size: 0.75rem; white-space: pre-wrap;">
-                alter table public.<span id="rlsTableName">products</span> disable row level security;
-                grant all on public.<span id="rlsTableName2">products</span> to anon, authenticated;
-            </code>
-        </div>
-        
         <form id="insertForm" onsubmit="return false;">
             <div id="insertRowFields"></div>
             
@@ -524,6 +512,28 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Manage Stock Modal -->
+<div id="stockModal" class="modal">
+    <div class="modal-content">
+        <h3><i class="fas fa-boxes" style="color:#1d4ed8;"></i> Manage Stock</h3>
+        <p class="subtitle">Update stock quantities for <strong id="stockTableName">product_variants</strong></p>
+        
+        <div id="stockSuccess" class="insert-success">
+            <i class="fas fa-check-circle" style="color:#22c55e;"></i>
+            <span id="stockSuccessMessage">Stock updated successfully!</span>
+        </div>
+        
+        <div id="stockItems"></div>
+        
+        <div class="flex-buttons">
+            <button type="button" class="btn btn-outline" id="cancelStockModal">Close</button>
+            <button type="button" class="btn btn-success" id="saveStockBtn">
+                <i class="fas fa-save"></i> Save All Stock Changes
+            </button>
+        </div>
     </div>
 </div>
 
@@ -556,6 +566,7 @@
         let tables = [];
         let editedRows = {};
         let originalRows = {};
+        let stockChanges = {};
 
         const KNOWN_TABLES = ['products', 'product_variants', 'orders', 'users', 'cart_reservations'];
 
@@ -800,6 +811,7 @@
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
+                        ${tableName === 'product_variants' ? `<button class="btn btn-stock btn-sm" id="stockBtn"><i class="fas fa-boxes"></i> Stock</button>` : ''}
                         <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i></button>
                     </div>
                 </div>
@@ -823,6 +835,22 @@
                     columns.forEach(col => {
                         const value = rowData[col.name] !== null && rowData[col.name] !== undefined ? String(rowData[col.name]) : '';
                         const isPrimaryKey = col.name === currentPrimaryKey;
+                        
+                        // Special rendering for stock_quantity
+                        if (col.name === 'stock_quantity' && !isEditing) {
+                            const stock = parseInt(value) || 0;
+                            let stockClass = 'stock-ok';
+                            let stockLabel = '✅ In Stock';
+                            if (stock === 0) {
+                                stockClass = 'stock-out';
+                                stockLabel = '❌ Out of Stock';
+                            } else if (stock < 5) {
+                                stockClass = 'stock-low';
+                                stockLabel = '⚠️ Low Stock (' + stock + ')';
+                            }
+                            html += `<td><span class="${stockClass}">${stockLabel}</span></td>`;
+                            return;
+                        }
                         
                         if (isEditing) {
                             html += `<td>
@@ -875,6 +903,7 @@
             
             // Event listeners
             document.getElementById('insertRowBtn')?.addEventListener('click', () => openInsertRowModal());
+            document.getElementById('stockBtn')?.addEventListener('click', () => openStockModal());
             document.getElementById('refreshDataBtn')?.addEventListener('click', () => {
                 if (Object.keys(editedRows).length > 0) {
                     if (!confirm('You have unsaved changes. Refresh anyway?')) {
@@ -1056,19 +1085,242 @@
             loadTableData(currentTable, currentPage);
         }
 
-        // ============ INSERT ROW FUNCTIONALITY WITH RLS ERROR HANDLING ============
+        // ============ STOCK MANAGEMENT ============
+        async function openStockModal() {
+            document.getElementById('stockTableName').textContent = 'product_variants';
+            document.getElementById('stockSuccess').classList.remove('show');
+            stockChanges = {};
+            
+            try {
+                // Fetch all variants with their stock
+                const { data, error } = await supabase
+                    .from('product_variants')
+                    .select(`
+                        id,
+                        variant_name,
+                        variant_type,
+                        product_id,
+                        price,
+                        sku,
+                        stock_quantity,
+                        products (
+                            name
+                        )
+                    `)
+                    .order('product_id')
+                    .order('id');
+                
+                if (error) throw error;
+                
+                const container = document.getElementById('stockItems');
+                
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<div class="loading">No variants found</div>';
+                    document.getElementById('stockModal').classList.add('active');
+                    return;
+                }
+                
+                // Group by product
+                const grouped = {};
+                data.forEach(variant => {
+                    const productName = variant.products?.name || 'Unknown Product';
+                    if (!grouped[productName]) {
+                        grouped[productName] = [];
+                    }
+                    grouped[productName].push(variant);
+                });
+                
+                let html = '';
+                for (const [productName, variants] of Object.entries(grouped)) {
+                    html += `
+                        <div style="margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem;">
+                            <h4 style="color: #E30613; margin-bottom: 0.75rem;">
+                                <i class="fas fa-box"></i> ${productName}
+                                <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 400;">
+                                    (${variants.length} variants)
+                                </span>
+                            </h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    `;
+                    
+                    variants.forEach(variant => {
+                        const stock = variant.stock_quantity || 0;
+                        let stockStatus = '';
+                        if (stock === 0) stockStatus = '❌ Out of Stock';
+                        else if (stock < 5) stockStatus = '⚠️ Low Stock';
+                        else stockStatus = '✅ In Stock';
+                        
+                        html += `
+                            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>${escapeHtml(variant.variant_name)}</strong>
+                                        <span style="font-size: 0.75rem; color: #94a3b8; display: block;">
+                                            ${escapeHtml(variant.variant_type || 'Variant')}
+                                            ${variant.sku ? ` • SKU: ${escapeHtml(variant.sku)}` : ''}
+                                        </span>
+                                    </div>
+                                    <span style="font-size: 0.75rem;">${stockStatus}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <label style="font-size: 0.75rem; font-weight: 600; min-width: 50px;">Stock:</label>
+                                    <input type="number" 
+                                           id="stock_${variant.id}" 
+                                           value="${stock}" 
+                                           min="0"
+                                           style="width: 80px; padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.85rem;"
+                                           data-variant-id="${variant.id}"
+                                           data-original-stock="${stock}">
+                                    <button class="btn btn-sm btn-primary" onclick="updateSingleStock(${variant.id})" style="padding: 2px 12px; font-size: 0.7rem;">
+                                        Update
+                                    </button>
+                                </div>
+                                <div id="stock_${variant.id}_status" style="font-size: 0.7rem; color: #94a3b8; margin-top: 2px;"></div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `</div></div>`;
+                }
+                
+                container.innerHTML = html;
+                
+                // Add event listeners for real-time stock changes
+                document.querySelectorAll('#stockItems input[type="number"]').forEach(input => {
+                    input.addEventListener('change', function() {
+                        const variantId = this.dataset.variantId;
+                        const originalStock = parseInt(this.dataset.originalStock);
+                        const newStock = parseInt(this.value) || 0;
+                        const statusEl = document.getElementById(`stock_${variantId}_status`);
+                        
+                        if (newStock !== originalStock) {
+                            stockChanges[variantId] = newStock;
+                            statusEl.innerHTML = `<span style="color: #f59e0b;">⚠️ Changed from ${originalStock} to ${newStock}</span>`;
+                        } else {
+                            delete stockChanges[variantId];
+                            statusEl.innerHTML = '';
+                        }
+                        
+                        // Update the stock status indicator
+                        const parentDiv = this.closest('div[style*="background: #f8fafc"]');
+                        if (parentDiv) {
+                            const statusSpan = parentDiv.querySelector('span:last-child');
+                            if (statusSpan) {
+                                if (newStock === 0) statusSpan.textContent = '❌ Out of Stock';
+                                else if (newStock < 5) statusSpan.textContent = '⚠️ Low Stock';
+                                else statusSpan.textContent = '✅ In Stock';
+                            }
+                        }
+                    });
+                });
+                
+                document.getElementById('stockModal').classList.add('active');
+                
+            } catch (err) {
+                console.error('Error loading stock:', err);
+                showToast(err.message, true);
+            }
+        }
+
+        // Make updateSingleStock accessible globally
+        window.updateSingleStock = async function(variantId) {
+            const input = document.getElementById(`stock_${variantId}`);
+            if (!input) return;
+            
+            const newStock = parseInt(input.value) || 0;
+            
+            try {
+                const { error } = await supabase
+                    .from('product_variants')
+                    .update({ stock_quantity: newStock })
+                    .eq('id', variantId);
+                
+                if (error) throw error;
+                
+                // Update the input's dataset
+                input.dataset.originalStock = newStock;
+                const statusEl = document.getElementById(`stock_${variantId}_status`);
+                statusEl.innerHTML = `<span style="color: #22c55e;">✅ Updated to ${newStock}</span>`;
+                setTimeout(() => {
+                    statusEl.innerHTML = '';
+                }, 3000);
+                
+                // Remove from pending changes
+                delete stockChanges[variantId];
+                
+                showToast(`Stock updated for variant ${variantId}`);
+            } catch (err) {
+                showToast(err.message, true);
+                // Revert input value
+                const original = parseInt(input.dataset.originalStock) || 0;
+                input.value = original;
+            }
+        };
+
+        // Save all stock changes
+        document.getElementById('saveStockBtn')?.addEventListener('click', async function() {
+            const changes = Object.keys(stockChanges);
+            if (changes.length === 0) {
+                showToast('No stock changes to save');
+                return;
+            }
+            
+            if (!confirm(`Save stock changes for ${changes.length} variant(s)?`)) {
+                return;
+            }
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (const variantId of changes) {
+                const newStock = stockChanges[variantId];
+                try {
+                    const { error } = await supabase
+                        .from('product_variants')
+                        .update({ stock_quantity: newStock })
+                        .eq('id', parseInt(variantId));
+                    
+                    if (error) {
+                        console.error('Error updating stock:', error);
+                        errorCount++;
+                    } else {
+                        successCount++;
+                    }
+                } catch (err) {
+                    console.error('Error updating stock:', err);
+                    errorCount++;
+                }
+            }
+            
+            stockChanges = {};
+            
+            // Show success message
+            const successDiv = document.getElementById('stockSuccess');
+            const successMsg = document.getElementById('stockSuccessMessage');
+            successMsg.textContent = `✅ ${successCount} variants updated${errorCount > 0 ? `, ${errorCount} failed` : ''}`;
+            successDiv.classList.add('show');
+            
+            showToast(`Saved stock for ${successCount} variants`);
+            
+            // Refresh stock modal after delay
+            setTimeout(() => {
+                successDiv.classList.remove('show');
+                openStockModal();
+            }, 2000);
+        });
+
+        document.getElementById('cancelStockModal')?.addEventListener('click', () => {
+            document.getElementById('stockModal').classList.remove('active');
+            stockChanges = {};
+        });
+
+        // ============ INSERT ROW FUNCTIONALITY ============
         function openInsertRowModal() {
             const container = document.getElementById('insertRowFields');
             const tableNameDisplay = document.getElementById('insertTableName');
             tableNameDisplay.textContent = currentTable;
             
-            // Hide messages
             document.getElementById('insertSuccess').classList.remove('show');
-            document.getElementById('rlsWarning').classList.remove('show');
-            
-            // Update RLS warning with current table name
-            document.getElementById('rlsTableName').textContent = currentTable;
-            document.getElementById('rlsTableName2').textContent = currentTable;
             
             const columnDefs = getColumnDefinitions(currentTable);
             
@@ -1157,12 +1409,10 @@
             return definitions[tableName] || {};
         }
 
-        // ============ UPDATED CONFIRM INSERT WITH RLS ERROR HANDLING ============
         async function confirmInsert() {
             const rowData = {};
             let hasError = false;
             
-            // Get all field values
             for (let col of currentColumns) {
                 const isPrimaryKey = col.name === currentPrimaryKey;
                 if (isPrimaryKey) continue;
@@ -1172,7 +1422,6 @@
                 
                 let value = element.value;
                 
-                // Check required fields
                 if (!col.nullable && (!value || value.trim() === '')) {
                     showToast(`"${col.name}" is required`, true);
                     element.style.borderColor = '#E30613';
@@ -1182,7 +1431,6 @@
                 
                 element.style.borderColor = '#cbd5e1';
                 
-                // Process value based on type
                 if (value && value.trim()) {
                     if (col.type === 'number' || col.type.includes('int') || col.type.includes('numeric') || col.type.includes('decimal') || col.type.includes('float')) {
                         rowData[col.name] = parseFloat(value) || 0;
@@ -1219,24 +1467,9 @@
                 
                 if (error) {
                     console.error('Insert error:', error);
-                    
-                    // Check for RLS error
-                    if (error.message && error.message.includes('row-level security policy')) {
-                        // Show RLS warning in modal
-                        const rlsWarning = document.getElementById('rlsWarning');
-                        rlsWarning.classList.add('show');
-                        
-                        // Update table names in the warning
-                        document.getElementById('rlsTableName').textContent = currentTable;
-                        document.getElementById('rlsTableName2').textContent = currentTable;
-                        
-                        throw new Error('RLS policy is blocking the insert. Please run the SQL commands shown above in your Supabase SQL editor to fix this.');
-                    }
-                    
                     throw new Error(error.message);
                 }
                 
-                // Show success message
                 const successDiv = document.getElementById('insertSuccess');
                 const successMsg = document.getElementById('insertSuccessMessage');
                 successMsg.textContent = `✅ Row inserted successfully! ${data && data.length > 0 ? `New ID: ${data[0][currentPrimaryKey]}` : ''}`;
@@ -1244,7 +1477,6 @@
                 
                 showToast('Row inserted successfully! ✅');
                 
-                // Close modal after delay
                 setTimeout(() => {
                     document.getElementById('insertRowModal').classList.remove('active');
                     if (currentTable) loadTableData(currentTable, currentPage);
@@ -1297,8 +1529,8 @@
             document.getElementById('viewRowModal').classList.remove('active');
         });
         document.getElementById('refreshBtn')?.addEventListener('click', loadTables);
+        document.getElementById('manageStockBtn')?.addEventListener('click', openStockModal);
 
-        // Enter key support for insert form
         document.getElementById('insertForm')?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
                 e.preventDefault();

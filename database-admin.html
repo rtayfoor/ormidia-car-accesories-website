@@ -454,7 +454,13 @@
                 try {
                     const { data, error } = await supabase.rpc('get_tables');
                     if (!error && data && data.length > 0) {
-                        tables = data.map(t => t.table_name || t);
+                        tables = data.map(t => {
+                            // Handle different response formats
+                            if (typeof t === 'string') return t;
+                            if (t && t.table_name) return t.table_name;
+                            if (t && t.tablename) return t.tablename;
+                            return String(t);
+                        }).filter(t => t && t.trim());
                         renderTableList(tables);
                         return;
                     }
@@ -496,39 +502,56 @@
             const container = document.getElementById('tablesList');
             document.getElementById('tableCount').textContent = `${tableList.length} Tables`;
             
-            if (tableList.length === 0) {
+            if (!tableList || tableList.length === 0) {
                 container.innerHTML = '<div class="loading" style="padding:0.5rem;font-size:0.8rem;">No tables found</div>';
                 return;
             }
             
-            container.innerHTML = tableList.map(table => `
-                <div class="table-chip" data-table="${table}">
-                    📄 ${table}
-                </div>
-            `).join('');
+            container.innerHTML = tableList.map(table => {
+                const tableName = typeof table === 'string' ? table : String(table);
+                return `<div class="table-chip" data-table="${tableName}">📄 ${tableName}</div>`;
+            }).join('');
             
             document.querySelectorAll('.table-chip').forEach(el => {
-                el.addEventListener('click', () => {
-                    const tableName = el.dataset.table;
-                    if (tableName && tableName.trim()) {
-                        loadTableData(tableName);
+                el.addEventListener('click', function() {
+                    const tableName = this.dataset.table;
+                    if (tableName && typeof tableName === 'string' && tableName.trim()) {
+                        loadTableData(tableName.trim());
+                    } else {
+                        showToast('Invalid table name', true);
                     }
                 });
             });
             
             if (tableList.length > 0 && !currentTable) {
-                loadTableData(tableList[0]);
+                const firstTable = typeof tableList[0] === 'string' ? tableList[0] : String(tableList[0]);
+                if (firstTable && firstTable.trim()) {
+                    loadTableData(firstTable.trim());
+                }
             }
         }
 
         async function loadTableData(tableName, page = 1) {
-            if (!tableName || !tableName.trim()) {
+            // Validate tableName
+            if (!tableName) {
+                showToast('Table name is required', true);
+                return;
+            }
+            
+            // Ensure tableName is a string
+            if (typeof tableName !== 'string') {
+                tableName = String(tableName);
+            }
+            
+            tableName = tableName.trim();
+            
+            if (!tableName) {
                 showToast('Invalid table name', true);
                 return;
             }
             
-            currentTable = tableName.trim();
-            currentPage = page;
+            currentTable = tableName;
+            currentPage = page || 1;
             
             try {
                 // Get table columns by querying one row
@@ -555,7 +578,7 @@
                 currentPrimaryKey = hasId ? 'id' : currentColumns[0]?.name || 'id';
                 
                 // Get data with pagination
-                const from = (page - 1) * pageSize;
+                const from = (currentPage - 1) * pageSize;
                 const to = from + pageSize - 1;
                 
                 let query = supabase

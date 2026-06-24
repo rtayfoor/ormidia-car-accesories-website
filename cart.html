@@ -596,6 +596,56 @@
                 }
             }
             
+            // Check authentication and restore session
+            async function checkAuth() {
+                try {
+                    // Try to get the session from localStorage
+                    const sessionStr = localStorage.getItem('supabase_session');
+                    if (sessionStr) {
+                        try {
+                            const session = JSON.parse(sessionStr);
+                            if (session && session.access_token) {
+                                // Set the session on the supabase client
+                                await _supabase.auth.setSession(session);
+                            }
+                        } catch (e) {
+                            console.warn('Invalid session data:', e);
+                        }
+                    }
+                    
+                    // Check if we have a valid session
+                    const { data: { session }, error } = await _supabase.auth.getSession();
+                    
+                    if (error || !session) {
+                        // Try to get user from localStorage
+                        const user = JSON.parse(localStorage.getItem('user'));
+                        if (user && user.id) {
+                            // If we have user data but no session, redirect to login
+                            console.warn('User data found but no valid session. Please login again.');
+                            localStorage.removeItem('user');
+                            localStorage.removeItem('supabase_session');
+                            return null;
+                        }
+                        return null;
+                    }
+                    
+                    // Update user data with session info
+                    const userData = {
+                        id: session.user.id,
+                        email: session.user.email,
+                        name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || 'User'
+                    };
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    localStorage.setItem('supabase_session', JSON.stringify(session));
+                    
+                    return userData;
+                    
+                } catch (error) {
+                    console.error('Auth check error:', error);
+                    return null;
+                }
+            }
+            
             // Load and display cart items
             async function loadCart() {
                 const cart = getCart();
@@ -850,7 +900,6 @@
                 const notes = document.getElementById('notes').value.trim();
                 const paymentMethod = document.getElementById('payment-method').value;
                 const cart = getCart();
-                const user = JSON.parse(localStorage.getItem('user'));
                 
                 if (!fullName || !email || !phone || !address) {
                     showNotification('Please fill in all required fields', true);
@@ -870,6 +919,35 @@
                 showLoading(true);
                 
                 try {
+                    // Get the current session
+                    const { data: { session }, error: sessionError } = await _supabase.auth.getSession();
+                    
+                    if (sessionError || !session) {
+                        // Try to restore session from localStorage
+                        const sessionStr = localStorage.getItem('supabase_session');
+                        if (sessionStr) {
+                            try {
+                                const savedSession = JSON.parse(sessionStr);
+                                await _supabase.auth.setSession(savedSession);
+                            } catch (e) {
+                                console.warn('Could not restore session:', e);
+                            }
+                        }
+                        
+                        // Check again
+                        const { data: { session: newSession } } = await _supabase.auth.getSession();
+                        if (!newSession) {
+                            throw new Error('You must be logged in to place an order. Please login again.');
+                        }
+                    }
+                    
+                    // Get the authenticated user
+                    const { data: { user }, error: userError } = await _supabase.auth.getUser();
+                    
+                    if (userError || !user) {
+                        throw new Error('Could not authenticate user. Please login again.');
+                    }
+                    
                     // Prepare order items for the database
                     const orderItems = cart.map(item => ({
                         product_id: item.product_id,
@@ -891,13 +969,12 @@
                             p_customer_email: email,
                             p_delivery_address: address,
                             p_notes: notes || null,
-                            p_user_id: user.id, // The function will use auth.uid() instead
+                            p_user_id: user.id,
                             p_items: orderItems
                         });
                     
                     if (error) {
                         console.error('Checkout error:', error);
-                        // Check if it's an RLS error
                         if (error.message && error.message.includes('row-level security policy')) {
                             throw new Error('Permission denied. Please make sure you are logged in properly.');
                         }
@@ -991,6 +1068,8 @@
             
             window.logout = function() {
                 localStorage.removeItem('user');
+                localStorage.removeItem('supabase_session');
+                _supabase.auth.signOut();
                 showNotification('Logged out successfully!');
                 setTimeout(() => window.location.reload(), 1000);
             };
@@ -1031,9 +1110,13 @@
             }
             
             // Initialize
-            document.addEventListener('DOMContentLoaded', function() {
-                loadCart();
+            document.addEventListener('DOMContentLoaded', async function() {
+                // Check authentication and restore session
+                const user = await checkAuth();
                 updateAuthUI();
+                
+                // Load cart
+                await loadCart();
                 
                 // Modal close buttons
                 const closeBtn = document.getElementById('checkout-modal-close');

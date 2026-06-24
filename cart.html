@@ -131,12 +131,15 @@
 
     <!-- Order Confirmation Modal -->
     <div id="order-confirmation-modal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-body" style="text-align: center; padding: 2rem;">
                 <i class="fas fa-check-circle" style="font-size: 4rem; color: #27ae60; margin-bottom: 1rem;"></i>
                 <h2 style="color: #27ae60;">Order Placed!</h2>
                 <p>Your order has been successfully placed.</p>
                 <p style="font-size: 0.9rem; color: #666;">Order ID: <strong id="order-id-display"></strong></p>
+                <div id="order-items-preview" style="margin: 1rem 0; text-align: left; background: #f9f9f9; padding: 1rem; border-radius: 8px; max-height: 200px; overflow-y: auto;">
+                    <p style="font-size: 0.85rem; color: #666; text-align: center;">Loading order details...</p>
+                </div>
                 <p style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">We'll send you a confirmation email shortly.</p>
                 <button onclick="window.location.href='products.html'" class="btn btn-primary" style="margin-top: 1rem;">
                     Continue Shopping
@@ -448,6 +451,27 @@
             font-size: 0.8rem;
             margin-top: 0.25rem;
         }
+        .order-item-preview {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.4rem 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
+        .order-item-preview:last-child {
+            border-bottom: none;
+        }
+        .order-item-name {
+            flex: 2;
+        }
+        .order-item-qty {
+            flex: 1;
+            text-align: center;
+        }
+        .order-item-price {
+            flex: 1;
+            text-align: right;
+        }
         @keyframes slideUp {
             from { transform: translateY(50px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -507,6 +531,7 @@
             const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             
             let cartId = localStorage.getItem('cartId') || generateCartId();
+            let currentOrderItems = [];
             
             function generateCartId() {
                 const id = 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -541,7 +566,6 @@
                 }
             }
             
-            // Generate a colored placeholder SVG
             function generatePlaceholder(productName, variantName = null, size = 80) {
                 const text = variantName ? `${productName}` : productName;
                 const shortText = text.length > 20 ? text.substring(0, 18) + '...' : text;
@@ -635,7 +659,6 @@
                     return generatePlaceholder(productName, variantName);
                 }
                 
-                // Add cache-busting parameter
                 return imageUrl + '?v=' + Date.now();
             }
             
@@ -691,7 +714,6 @@
                     
                     const isOutOfStock = item.availableStock < item.quantity;
                     
-                    // Generate image URL or placeholder
                     let imageUrl;
                     if (item.image && !item.image.includes('placeholder')) {
                         imageUrl = item.image;
@@ -699,7 +721,6 @@
                         imageUrl = getProductImageUrl(item.product_name || item.name, item.variant_name);
                     }
                     
-                    // If still no image, use placeholder
                     if (!imageUrl || imageUrl.includes('undefined')) {
                         imageUrl = generatePlaceholder(item.product_name || item.name, item.variant_name);
                     }
@@ -911,6 +932,7 @@
                 showLoading(true);
                 
                 try {
+                    // Prepare order items with all details
                     const orderItems = cart.map(item => ({
                         product_id: item.product_id,
                         variant_id: item.variant_id || null,
@@ -919,8 +941,14 @@
                         variant_type: item.variant_type || null,
                         price: parseFloat(item.price),
                         quantity: parseInt(item.quantity),
-                        image: item.image || null
+                        image: item.image || null,
+                        subtotal: parseFloat(item.price) * parseInt(item.quantity)
                     }));
+                    
+                    // Store for confirmation display
+                    currentOrderItems = orderItems;
+                    
+                    console.log('Placing order with items:', orderItems);
                     
                     const { data, error } = await _supabase
                         .rpc('checkout_with_order', {
@@ -940,11 +968,49 @@
                     }
                     
                     const orderResult = data;
+                    console.log('Order placed successfully:', orderResult);
                     
                     localStorage.removeItem('cart');
                     closeCheckoutModal();
                     
+                    // Show order confirmation with items
                     document.getElementById('order-id-display').textContent = orderResult.order_id;
+                    
+                    // Display order items in confirmation
+                    const itemsPreview = document.getElementById('order-items-preview');
+                    if (orderResult.items && orderResult.items.length > 0) {
+                        itemsPreview.innerHTML = `
+                            <p style="font-weight: 600; margin-bottom: 0.5rem;">Order Items:</p>
+                            ${orderResult.items.map(item => `
+                                <div class="order-item-preview">
+                                    <span class="order-item-name">${escapeHtml(item.product_name)}${item.variant_name ? ' (' + escapeHtml(item.variant_name) + ')' : ''}</span>
+                                    <span class="order-item-qty">× ${item.quantity}</span>
+                                    <span class="order-item-price">$${parseFloat(item.price).toFixed(2)}</span>
+                                </div>
+                            `).join('')}
+                            <div style="border-top: 2px solid #eee; margin-top: 0.5rem; padding-top: 0.5rem; display: flex; justify-content: space-between; font-weight: 700;">
+                                <span>Total:</span>
+                                <span>$${parseFloat(orderResult.total).toFixed(2)}</span>
+                            </div>
+                        `;
+                    } else {
+                        // Fallback: display from local cart data
+                        itemsPreview.innerHTML = `
+                            <p style="font-weight: 600; margin-bottom: 0.5rem;">Order Items:</p>
+                            ${currentOrderItems.map(item => `
+                                <div class="order-item-preview">
+                                    <span class="order-item-name">${escapeHtml(item.product_name)}${item.variant_name ? ' (' + escapeHtml(item.variant_name) + ')' : ''}</span>
+                                    <span class="order-item-qty">× ${item.quantity}</span>
+                                    <span class="order-item-price">$${parseFloat(item.price).toFixed(2)}</span>
+                                </div>
+                            `).join('')}
+                            <div style="border-top: 2px solid #eee; margin-top: 0.5rem; padding-top: 0.5rem; display: flex; justify-content: space-between; font-weight: 700;">
+                                <span>Total:</span>
+                                <span>$${currentOrderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2)}</span>
+                            </div>
+                        `;
+                    }
+                    
                     document.getElementById('order-confirmation-modal').style.display = 'flex';
                     
                     showNotification(`Order placed successfully! Order ID: ${orderResult.order_id}`);

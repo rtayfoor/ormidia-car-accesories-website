@@ -44,7 +44,6 @@
                 <p>Review and manage your items</p>
             </div>
 
-            <!-- Loading Spinner -->
             <div id="loading-spinner" style="display: none; text-align: center; padding: 2rem;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--secondary-color);"></i>
                 <p>Processing...</p>
@@ -197,18 +196,15 @@
             padding: 8rem 2rem 5rem;
             min-height: 70vh;
         }
-        
         .cart-header {
             text-align: center;
             margin-bottom: 3rem;
         }
-        
         .cart-header h1 {
             font-size: 2.5rem;
             color: var(--primary-color);
             margin-bottom: 0.5rem;
         }
-        
         .cart-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -216,7 +212,6 @@
             grid-template-columns: 1fr 350px;
             gap: 2rem;
         }
-        
         .cart-item {
             display: grid;
             grid-template-columns: 80px 1fr auto auto auto;
@@ -229,12 +224,10 @@
             margin-bottom: 1rem;
             transition: all 0.3s ease;
         }
-        
         .cart-item:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.1);
         }
-        
         .cart-item-image {
             width: 80px;
             height: 80px;
@@ -245,36 +238,30 @@
             justify-content: center;
             overflow: hidden;
         }
-        
         .cart-item-image img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
-        
         .cart-item-details h4 {
             margin: 0 0 0.25rem 0;
             font-size: 1rem;
         }
-        
         .item-brand {
             font-size: 0.8rem;
             color: var(--text-light);
             margin: 0 0 0.25rem 0;
         }
-        
         .item-price {
             font-weight: 600;
             color: var(--secondary-color);
             margin: 0;
         }
-        
         .cart-item-quantity {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-        
         .cart-item-quantity button {
             width: 30px;
             height: 30px;
@@ -284,29 +271,24 @@
             cursor: pointer;
             transition: var(--transition);
         }
-        
         .cart-item-quantity button:hover:not(:disabled) {
             background: var(--secondary-color);
             color: white;
             border-color: var(--secondary-color);
         }
-        
         .cart-item-quantity button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
         .cart-item-quantity span {
             min-width: 30px;
             text-align: center;
             font-weight: 600;
         }
-        
         .cart-item-total {
             font-weight: 700;
             color: var(--primary-color);
         }
-        
         .cart-item-remove button {
             background: none;
             border: none;
@@ -315,11 +297,9 @@
             font-size: 1.2rem;
             transition: var(--transition);
         }
-        
         .cart-item-remove button:hover {
             transform: scale(1.1);
         }
-        
         .cart-summary {
             background: white;
             padding: 1.5rem;
@@ -329,20 +309,17 @@
             top: 100px;
             height: fit-content;
         }
-        
         .cart-summary h3 {
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
             border-bottom: 2px solid var(--secondary-color);
         }
-        
         .summary-row {
             display: flex;
             justify-content: space-between;
             padding: 0.75rem 0;
             border-bottom: 1px solid #eee;
         }
-        
         .summary-row.total {
             font-size: 1.2rem;
             font-weight: 700;
@@ -352,25 +329,20 @@
             padding-top: 1rem;
             border-top: 2px solid var(--secondary-color);
         }
-        
         .btn-block {
             width: 100%;
             margin-top: 1rem;
         }
-        
         .btn-block:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
-        
         .btn-secondary {
             background: #95a5a6;
         }
-        
         .btn-secondary:hover {
             background: #7f8c8d;
         }
-        
         .empty-cart {
             text-align: center;
             padding: 4rem;
@@ -378,18 +350,15 @@
             border-radius: 10px;
             box-shadow: var(--shadow);
         }
-        
         .empty-cart i {
             font-size: 4rem;
             color: var(--text-light);
             margin-bottom: 1rem;
         }
-        
         .empty-cart h3 {
             font-size: 1.5rem;
             margin-bottom: 0.5rem;
         }
-        
         .modal {
             position: fixed;
             top: 0;
@@ -402,7 +371,6 @@
             justify-content: center;
             z-index: 1001;
         }
-        
         .modal-content {
             background: white;
             border-radius: 15px;
@@ -413,7 +381,6 @@
             position: relative;
             animation: slideUp 0.3s ease;
         }
-        
         .modal-close {
             position: absolute;
             top: 15px;
@@ -423,31 +390,25 @@
             color: #999;
             transition: var(--transition);
         }
-        
         .modal-close:hover {
             color: var(--secondary-color);
         }
-        
         .modal-header {
             padding: 1.5rem;
             border-bottom: 1px solid #eee;
         }
-        
         .modal-body {
             padding: 1.5rem;
         }
-        
         .form-group {
             margin-bottom: 1rem;
         }
-        
         .form-group label {
             display: block;
             margin-bottom: 0.25rem;
             font-weight: 500;
             font-size: 0.9rem;
         }
-        
         .form-group input,
         .form-group select {
             width: 100%;
@@ -457,7 +418,6 @@
             font-family: 'Inter', sans-serif;
             transition: var(--transition);
         }
-        
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
@@ -465,7 +425,6 @@
             border-color: var(--secondary-color);
             box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
         }
-        
         textarea {
             width: 100%;
             padding: 0.75rem;
@@ -475,86 +434,65 @@
             resize: vertical;
             transition: var(--transition);
         }
-        
         #loading-spinner {
             text-align: center;
             padding: 2rem;
             grid-column: 1 / -1;
         }
-        
         #loading-spinner i {
             font-size: 3rem;
             color: var(--secondary-color);
         }
-        
         .stock-warning {
             color: #e74c3c;
             font-size: 0.8rem;
             margin-top: 0.25rem;
         }
-        
         @keyframes slideUp {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        
         @keyframes slideInRight {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
-        
         @media (max-width: 768px) {
             .cart-section {
                 padding: 6rem 1rem 3rem;
             }
-            
             .cart-container {
                 grid-template-columns: 1fr;
             }
-            
             .cart-item {
                 grid-template-columns: 60px 1fr;
                 grid-template-rows: auto auto;
                 gap: 0.75rem;
             }
-            
             .cart-item-image {
                 width: 60px;
                 height: 60px;
                 grid-row: span 2;
             }
-            
             .cart-item-details {
                 grid-column: 2;
             }
-            
             .cart-item-quantity {
                 grid-column: 2;
                 justify-self: start;
             }
-            
             .cart-item-total {
                 grid-column: 2;
                 justify-self: end;
                 margin-top: -30px;
             }
-            
             .cart-item-remove {
                 position: absolute;
                 right: 10px;
                 top: 10px;
             }
-            
             .cart-item {
                 position: relative;
             }
-            
             .cart-summary {
                 position: static;
             }
@@ -563,13 +501,11 @@
 
     <script>
         (function() {
-            // Supabase Configuration
             const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
             
             const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             
-            // Cart ID from localStorage
             let cartId = localStorage.getItem('cartId') || generateCartId();
             
             function generateCartId() {
@@ -578,17 +514,14 @@
                 return id;
             }
             
-            // Get cart from localStorage
             function getCart() {
                 return JSON.parse(localStorage.getItem('cart')) || [];
             }
             
-            // Save cart to localStorage
             function saveCart(cart) {
                 localStorage.setItem('cart', JSON.stringify(cart));
             }
             
-            // Show loading spinner
             function showLoading(show) {
                 const spinner = document.getElementById('loading-spinner');
                 if (spinner) {
@@ -596,7 +529,6 @@
                 }
             }
             
-            // Get current user from localStorage
             function getCurrentUser() {
                 try {
                     const user = JSON.parse(localStorage.getItem('user'));
@@ -605,12 +537,103 @@
                     }
                     return null;
                 } catch (e) {
-                    console.error('Error getting user:', e);
                     return null;
                 }
             }
             
-            // Load and display cart items
+            function generatePlaceholder(productName, variantName = null) {
+                const text = variantName ? `${productName} - ${variantName}` : productName;
+                const colors = ['3498db', '2ecc71', 'e74c3c', 'f39c12', '9b59b6', 'e67e22', '1abc9c', '34495e', 'd35400', '7f8c8d'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                return `data:image/svg+xml,${encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+                        <rect width="80" height="80" fill="#${color}"/>
+                        <text x="40" y="40" font-family="Arial" font-size="10" fill="white" text-anchor="middle">${text}</text>
+                        <text x="40" y="55" font-family="Arial" font-size="8" fill="rgba(255,255,255,0.7)" text-anchor="middle">🚗</text>
+                    </svg>
+                `)}`;
+            }
+            
+            function getProductImageUrl(productName, variantName = null) {
+                const imageMap = {
+                    'Head Rest Pillow': {
+                        type: 'variant',
+                        baseName: 'head-rest-pillow',
+                        extension: '.png'
+                    },
+                    'Simple Rest Pillow': {
+                        type: 'single',
+                        fileName: 'simple-rest-pillow.png'
+                    },
+                    'Anti-Slip Mat': {
+                        type: 'variant',
+                        baseName: 'anti-slip-mat',
+                        extension: '.png'
+                    },
+                    'Plating Number': {
+                        type: 'variant',
+                        baseName: 'plating-number',
+                        extension: '.png'
+                    },
+                    'Pillow Seat Belt': {
+                        type: 'single',
+                        fileName: 'pillow-seat-belt.png'
+                    },
+                    'Keyring': {
+                        type: 'variant',
+                        baseName: 'keyring',
+                        extension: '.png'
+                    },
+                    'Keyring Small Bag': {
+                        type: 'single',
+                        fileName: 'keyring-small-bag.png'
+                    },
+                    'Drink Holder': {
+                        type: 'single',
+                        fileName: 'drink-holder.png'
+                    },
+                    'Coasters': {
+                        type: 'variant',
+                        baseName: 'coasters',
+                        extension: '.png'
+                    },
+                    'Exhaust': {
+                        type: 'single',
+                        fileName: 'exhaust.png'
+                    },
+                    'Steering Cover Carbon 38cm': {
+                        type: 'single',
+                        fileName: 'steering-cover-carbon-38cm.png'
+                    },
+                    'Sparco 28cm': {
+                        type: 'single',
+                        fileName: 'sparco-28cm.png'
+                    }
+                };
+                
+                const config = imageMap[productName];
+                
+                if (!config) {
+                    return generatePlaceholder(productName, variantName);
+                }
+                
+                let imageUrl = '';
+                
+                if (config.type === 'single') {
+                    imageUrl = config.fileName;
+                } else if (config.type === 'variant' && variantName) {
+                    const variantKey = variantName.toLowerCase().replace(/\s+/g, '');
+                    imageUrl = `${config.baseName}_${variantKey}${config.extension}`;
+                }
+                
+                if (!imageUrl) {
+                    return generatePlaceholder(productName, variantName);
+                }
+                
+                return imageUrl + '?v=' + Date.now();
+            }
+            
             async function loadCart() {
                 const cart = getCart();
                 const cartItemsList = document.getElementById('cart-items-list');
@@ -630,7 +653,6 @@
                 
                 let subtotal = 0;
                 
-                // Check stock availability for each item
                 const stockCheckPromises = cart.map(async (item) => {
                     try {
                         let availableStock = 0;
@@ -663,14 +685,14 @@
                     subtotal += itemTotal;
                     
                     const isOutOfStock = item.availableStock < item.quantity;
+                    const imageUrl = item.image || generatePlaceholder(item.product_name || item.name);
                     
                     return `
                         <div class="cart-item" data-index="${index}" style="${isOutOfStock ? 'border-left: 4px solid #e74c3c;' : ''}">
                             <div class="cart-item-image">
-                                ${item.image ? 
-                                    `<img src="${item.image}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/80x80?text=Product'">` :
-                                    `<i class="fas fa-box" style="font-size: 2rem; color: #ccc;"></i>`
-                                }
+                                <img src="${imageUrl}" 
+                                     alt="${item.name}" 
+                                     onerror="this.src='${generatePlaceholder(item.product_name || item.name)}'">
                             </div>
                             <div class="cart-item-details">
                                 <h4>${escapeHtml(item.name)}</h4>
@@ -701,7 +723,6 @@
                     `;
                 }).join('');
                 
-                // Update summary
                 const shipping = subtotal > 50 ? 0 : 10;
                 const tax = subtotal * 0.1;
                 const total = subtotal + shipping + tax;
@@ -711,7 +732,6 @@
                 document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
                 document.getElementById('total').textContent = `$${total.toFixed(2)}`;
                 
-                // Check if any item is out of stock
                 const hasOutOfStock = itemsWithStock.some(item => item.availableStock < item.quantity);
                 const checkoutBtn = document.getElementById('checkout-btn');
                 if (checkoutBtn) {
@@ -724,7 +744,6 @@
                 updateCartCount();
             }
             
-            // Update quantity
             window.updateQuantity = async function(index, change) {
                 const cart = getCart();
                 
@@ -736,7 +755,6 @@
                         return;
                     }
                     
-                    // Check if enough stock available
                     let availableStock = 0;
                     if (cart[index].variant_id) {
                         const { data, error } = await _supabase
@@ -759,7 +777,6 @@
                         return;
                     }
                     
-                    // Update reservation
                     const { error } = await _supabase
                         .rpc('reserve_stock', {
                             p_cart_id: cartId,
@@ -780,13 +797,11 @@
                 }
             };
             
-            // Remove item
             window.removeItem = async function(index) {
                 const cart = getCart();
                 const item = cart[index];
                 
                 if (item) {
-                    // Release stock reservation
                     try {
                         await _supabase
                             .rpc('release_stock', {
@@ -805,10 +820,8 @@
                 }
             };
             
-            // Clear entire cart
             window.clearCart = async function() {
                 if (confirm('Are you sure you want to clear your entire cart?')) {
-                    // Release all stock reservations
                     try {
                         await _supabase
                             .rpc('release_stock', {
@@ -826,7 +839,6 @@
                 }
             };
             
-            // Proceed to checkout
             window.proceedToCheckout = function() {
                 const user = getCurrentUser();
                 const cart = getCart();
@@ -836,7 +848,6 @@
                     return;
                 }
                 
-                // Check if user is logged in
                 if (!user || !user.id) {
                     showNotification('Please login to continue', true);
                     setTimeout(() => {
@@ -845,15 +856,11 @@
                     return;
                 }
                 
-                // Pre-fill form with user data
                 document.getElementById('full-name').value = user.name || '';
                 document.getElementById('email').value = user.email || '';
-                
-                // Show modal
                 document.getElementById('checkout-modal').style.display = 'flex';
             };
             
-            // Handle checkout form submission
             document.getElementById('checkout-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
@@ -881,15 +888,12 @@
                     return;
                 }
                 
-                // Disable submit button
                 const submitBtn = document.getElementById('place-order-btn');
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Processing...';
-                
                 showLoading(true);
                 
                 try {
-                    // Prepare order items for the database
                     const orderItems = cart.map(item => ({
                         product_id: item.product_id,
                         variant_id: item.variant_id || null,
@@ -901,10 +905,6 @@
                         image: item.image || null
                     }));
                     
-                    console.log('Placing order with user ID:', user.id);
-                    console.log('Order items:', orderItems);
-                    
-                    // Call the checkout_with_order function
                     const { data, error } = await _supabase
                         .rpc('checkout_with_order', {
                             p_cart_id: cartId,
@@ -918,53 +918,32 @@
                         });
                     
                     if (error) {
-                        console.error('Checkout error details:', error);
-                        
-                        // Check for specific error types
-                        if (error.message && error.message.includes('row-level security policy')) {
-                            throw new Error('Permission denied. Please make sure you are logged in properly.');
-                        } else if (error.message && error.message.includes('Insufficient stock')) {
-                            throw new Error(error.message);
-                        } else {
-                            throw new Error(error.message || 'Failed to process order');
-                        }
+                        console.error('Checkout error:', error);
+                        throw new Error(error.message || 'Failed to process order');
                     }
                     
                     const orderResult = data;
-                    console.log('Order placed successfully:', orderResult);
                     
-                    // Clear cart
                     localStorage.removeItem('cart');
-                    
-                    // Close modal
                     closeCheckoutModal();
                     
-                    // Show order confirmation
                     document.getElementById('order-id-display').textContent = orderResult.order_id;
                     document.getElementById('order-confirmation-modal').style.display = 'flex';
                     
                     showNotification(`Order placed successfully! Order ID: ${orderResult.order_id}`);
-                    
-                    // Update cart count
                     updateCartCount();
-                    
-                    // Refresh cart display
                     await loadCart();
                     
                 } catch (error) {
                     console.error('Checkout error:', error);
                     showNotification(error.message || 'Failed to process checkout. Please try again.', true);
-                    
-                    // Re-enable submit button
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Place Order';
-                    
                 } finally {
                     showLoading(false);
                 }
             });
             
-            // Close checkout modal
             function closeCheckoutModal() {
                 const modal = document.getElementById('checkout-modal');
                 if (modal) modal.style.display = 'none';
@@ -977,7 +956,6 @@
                 }
             }
             
-            // Update cart count in navbar
             function updateCartCount() {
                 const cart = getCart();
                 const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -985,7 +963,6 @@
                 if (cartCount) cartCount.textContent = totalItems;
             }
             
-            // Update auth UI
             function updateAuthUI() {
                 const user = getCurrentUser();
                 const authIcon = document.getElementById('auth-icon');
@@ -1016,14 +993,11 @@
                 }
             }
             
-            // Logout function
             window.logout = function() {
                 localStorage.removeItem('user');
                 localStorage.removeItem('cartId');
                 showNotification('Logged out successfully!');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
+                setTimeout(() => window.location.reload(), 1000);
             };
             
             function showNotification(message, isError = false) {
@@ -1049,11 +1023,7 @@
                     max-width: 400px;
                 `;
                 
-                setTimeout(() => {
-                    notification.style.opacity = '0';
-                    notification.style.transition = 'opacity 0.3s ease';
-                    setTimeout(() => notification.remove(), 300);
-                }, 4000);
+                setTimeout(() => notification.remove(), 3000);
             }
             
             function escapeHtml(str) {
@@ -1066,19 +1036,15 @@
                 });
             }
             
-            // Initialize
             document.addEventListener('DOMContentLoaded', async function() {
-                // Load cart
                 await loadCart();
                 updateAuthUI();
                 
-                // Modal close buttons
                 const closeBtn = document.getElementById('checkout-modal-close');
                 if (closeBtn) {
                     closeBtn.onclick = closeCheckoutModal;
                 }
                 
-                // Close checkout modal on outside click
                 window.onclick = function(event) {
                     const checkoutModal = document.getElementById('checkout-modal');
                     const confirmationModal = document.getElementById('order-confirmation-modal');
@@ -1088,7 +1054,6 @@
                     }
                 };
                 
-                // Mobile menu toggle
                 const menuToggle = document.querySelector('.menu-toggle');
                 const navMenu = document.querySelector('.nav-menu');
                 if (menuToggle) {
@@ -1097,7 +1062,6 @@
                     });
                 }
                 
-                // Cleanup expired reservations periodically
                 setInterval(async () => {
                     try {
                         await _supabase.rpc('cleanup_expired_reservations');

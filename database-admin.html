@@ -448,11 +448,9 @@
 
         async function loadTables() {
             try {
-                // Try to get tables from the database using a direct query
-                // Since information_schema might not be accessible, we'll use a different approach
                 const container = document.getElementById('tablesList');
                 
-                // First, try to get tables using a custom RPC function if it exists
+                // Try to get tables using a direct query
                 try {
                     const { data, error } = await supabase.rpc('get_tables');
                     if (!error && data && data.length > 0) {
@@ -464,26 +462,7 @@
                     console.log('RPC get_tables not available, using fallback');
                 }
 
-                // Fallback: Try to query information_schema with a different approach
-                try {
-                    const { data, error } = await supabase
-                        .from('information_schema.tables')
-                        .select('table_name')
-                        .eq('table_schema', 'public')
-                        .order('table_name')
-                        .limit(100);
-                    
-                    if (!error && data && data.length > 0) {
-                        tables = data.map(t => t.table_name);
-                        renderTableList(tables);
-                        return;
-                    }
-                } catch (e) {
-                    console.log('information_schema not accessible, using known tables');
-                }
-
-                // Final fallback: Use known tables from your schema
-                // Check which tables exist by trying to query them
+                // Fallback: Try known tables
                 const existingTables = [];
                 for (const table of KNOWN_TABLES) {
                     try {
@@ -529,7 +508,12 @@
             `).join('');
             
             document.querySelectorAll('.table-chip').forEach(el => {
-                el.addEventListener('click', () => loadTableData(el.dataset.table));
+                el.addEventListener('click', () => {
+                    const tableName = el.dataset.table;
+                    if (tableName && tableName.trim()) {
+                        loadTableData(tableName);
+                    }
+                });
             });
             
             if (tableList.length > 0 && !currentTable) {
@@ -538,41 +522,32 @@
         }
 
         async function loadTableData(tableName, page = 1) {
-            currentTable = tableName;
+            if (!tableName || !tableName.trim()) {
+                showToast('Invalid table name', true);
+                return;
+            }
+            
+            currentTable = tableName.trim();
             currentPage = page;
             
             try {
                 // Get table columns by querying one row
                 const { data: sampleData, error: sampleError } = await supabase
-                    .from(tableName)
+                    .from(currentTable)
                     .select('*')
                     .limit(1);
                 
-                if (sampleError) throw sampleError;
-                
-                // Get column info from the sample data
-                if (sampleData && sampleData.length > 0) {
+                if (sampleError) {
+                    // If error, try to get columns from known structure
+                    currentColumns = getDefaultColumns(currentTable);
+                } else if (sampleData && sampleData.length > 0) {
                     currentColumns = Object.keys(sampleData[0]).map(key => ({
                         name: key,
                         type: typeof sampleData[0][key],
                         nullable: true
                     }));
                 } else {
-                    // If no data, try to get columns from a different method
-                    // Try to get column info from the database
-                    try {
-                        const { data: colData, error: colError } = await supabase
-                            .rpc('get_columns', { table_name: tableName });
-                        
-                        if (!colError && colData) {
-                            currentColumns = colData;
-                        } else {
-                            // Fallback: Use common columns based on table name
-                            currentColumns = getDefaultColumns(tableName);
-                        }
-                    } catch (e) {
-                        currentColumns = getDefaultColumns(tableName);
-                    }
+                    currentColumns = getDefaultColumns(currentTable);
                 }
                 
                 // Check if 'id' column exists for primary key
@@ -584,7 +559,7 @@
                 const to = from + pageSize - 1;
                 
                 let query = supabase
-                    .from(tableName)
+                    .from(currentTable)
                     .select('*', { count: 'exact' });
                 
                 // Add ordering if id column exists
@@ -594,26 +569,45 @@
                 
                 const { data, error, count } = await query.range(from, to);
                 
-                if (error) throw error;
-                
-                currentData = data || [];
-                totalPages = Math.ceil((count || 0) / pageSize);
-                
-                document.getElementById('rowCount').textContent = `${count || 0} rows`;
-                document.getElementById('colCount').textContent = `${currentColumns.length} columns`;
-                document.getElementById('tableNameDisplay').textContent = `📄 ${tableName}`;
-                document.getElementById('tableInfo').style.display = 'flex';
-                document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${tableName} <small>${count || 0} rows</small>`;
-                
-                renderTable(currentColumns, currentData, tableName, count);
+                if (error) {
+                    // If query fails, try without ordering
+                    const { data: fallbackData, error: fallbackError, count: fallbackCount } = await supabase
+                        .from(currentTable)
+                        .select('*', { count: 'exact' })
+                        .range(from, to);
+                    
+                    if (fallbackError) throw fallbackError;
+                    
+                    currentData = fallbackData || [];
+                    totalPages = Math.ceil((fallbackCount || 0) / pageSize);
+                    
+                    document.getElementById('rowCount').textContent = `${fallbackCount || 0} rows`;
+                    document.getElementById('colCount').textContent = `${currentColumns.length} columns`;
+                    document.getElementById('tableNameDisplay').textContent = `📄 ${currentTable}`;
+                    document.getElementById('tableInfo').style.display = 'flex';
+                    document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${currentTable} <small>${fallbackCount || 0} rows</small>`;
+                    
+                    renderTable(currentColumns, currentData, currentTable, fallbackCount);
+                } else {
+                    currentData = data || [];
+                    totalPages = Math.ceil((count || 0) / pageSize);
+                    
+                    document.getElementById('rowCount').textContent = `${count || 0} rows`;
+                    document.getElementById('colCount').textContent = `${currentColumns.length} columns`;
+                    document.getElementById('tableNameDisplay').textContent = `📄 ${currentTable}`;
+                    document.getElementById('tableInfo').style.display = 'flex';
+                    document.getElementById('currentDbTitle').innerHTML = `<i class="fas fa-database"></i> ${currentTable} <small>${count || 0} rows</small>`;
+                    
+                    renderTable(currentColumns, currentData, currentTable, count);
+                }
                 
                 document.querySelectorAll('.table-chip').forEach(el => {
                     el.classList.remove('active');
-                    if (el.dataset.table === tableName) el.classList.add('active');
+                    if (el.dataset.table === currentTable) el.classList.add('active');
                 });
             } catch (err) {
                 console.error('Error loading table data:', err);
-                document.getElementById('dataViewer').innerHTML = `<div class="loading" style="color:#E30613;">Error: ${err.message}</div>`;
+                document.getElementById('dataViewer').innerHTML = `<div class="loading" style="color:#E30613;">Error loading table: ${err.message}</div>`;
                 showToast(err.message, true);
             }
         }
@@ -677,7 +671,7 @@
         }
 
         function renderTable(columns, rows, tableName, totalRows) {
-            if (!columns.length) {
+            if (!columns || !columns.length) {
                 document.getElementById('dataViewer').innerHTML = '<div class="loading">No columns found</div>';
                 return;
             }
@@ -701,7 +695,7 @@
                     </tr></thead>
                     <tbody>`;
             
-            if (rows.length === 0) {
+            if (!rows || rows.length === 0) {
                 html += `<tr><td colspan="${columns.length + 1}" style="text-align:center;padding:2rem;color:#94a3b8;">No data. Click "Insert Row" to add</td></tr>`;
             } else {
                 rows.forEach((row, idx) => {
@@ -736,20 +730,39 @@
             
             // Event listeners
             document.getElementById('insertRowBtn')?.addEventListener('click', () => openInsertRowModal());
-            document.getElementById('refreshDataBtn')?.addEventListener('click', () => loadTableData(currentTable, currentPage));
+            document.getElementById('refreshDataBtn')?.addEventListener('click', () => {
+                if (currentTable) loadTableData(currentTable, currentPage);
+            });
             
             document.querySelectorAll('.view-row').forEach(btn => {
-                btn.addEventListener('click', () => openViewRowModal(currentData[parseInt(btn.dataset.index)]));
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.index);
+                    if (currentData && currentData[idx]) {
+                        openViewRowModal(currentData[idx]);
+                    }
+                });
             });
             document.querySelectorAll('.edit-row').forEach(btn => {
-                btn.addEventListener('click', () => openEditRowModal(currentData[parseInt(btn.dataset.index)]));
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.index);
+                    if (currentData && currentData[idx]) {
+                        openEditRowModal(currentData[idx]);
+                    }
+                });
             });
             document.querySelectorAll('.delete-row').forEach(btn => {
-                btn.addEventListener('click', () => deleteRow(currentData[parseInt(btn.dataset.index)]));
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.index);
+                    if (currentData && currentData[idx]) {
+                        deleteRow(currentData[idx]);
+                    }
+                });
             });
             document.querySelectorAll('.page-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    if (!btn.disabled) loadTableData(currentTable, parseInt(btn.dataset.page));
+                    if (!btn.disabled && currentTable) {
+                        loadTableData(currentTable, parseInt(btn.dataset.page));
+                    }
                 });
             });
         }
@@ -781,7 +794,6 @@
             for (let col of currentColumns) {
                 const val = document.getElementById(`ins_${col.name}`)?.value;
                 if (val && val.trim() && col.name !== currentPrimaryKey) {
-                    // Try to parse as number if column type is numeric
                     if (col.type === 'number' || col.type.includes('int') || col.type.includes('numeric') || col.type.includes('decimal')) {
                         rowData[col.name] = parseFloat(val) || null;
                     } else if (col.type === 'boolean' || col.type.includes('bool')) {
@@ -800,7 +812,7 @@
                 
                 showToast('Row inserted successfully');
                 document.getElementById('insertRowModal').classList.remove('active');
-                loadTableData(currentTable, currentPage);
+                if (currentTable) loadTableData(currentTable, currentPage);
             } catch (err) {
                 showToast(err.message, true);
             }
@@ -844,7 +856,7 @@
                 
                 showToast('Row updated successfully');
                 document.getElementById('editRowModal').classList.remove('active');
-                loadTableData(currentTable, currentPage);
+                if (currentTable) loadTableData(currentTable, currentPage);
             } catch (err) {
                 showToast(err.message, true);
             }
@@ -861,7 +873,7 @@
                 if (error) throw error;
                 
                 showToast('Row deleted');
-                loadTableData(currentTable, currentPage);
+                if (currentTable) loadTableData(currentTable, currentPage);
             } catch (err) {
                 showToast(err.message, true);
             }
@@ -887,7 +899,6 @@
             if (!sql) return showToast('Enter SQL query', true);
             
             try {
-                // Try to execute using RPC
                 const { data, error } = await supabase.rpc('execute_sql', { query: sql });
                 if (error) throw error;
                 
@@ -904,14 +915,8 @@
                     resultDiv.innerHTML = `<div style="margin-top: 10px;color:#166534;">✅ Query executed successfully. 0 rows returned.</div>`;
                 }
             } catch (err) {
-                // If RPC fails, try direct query
-                try {
-                    const { data, error } = await supabase.from('_sql').select('*').eq('query', sql);
-                    if (error) throw error;
-                } catch (e) {
-                    document.getElementById('queryResult').innerHTML = `<div style="margin-top: 10px;color:#E30613;">❌ Error: ${err.message || 'SQL execution not available'}</div>`;
-                    showToast('SQL execution requires RPC function: execute_sql', true);
-                }
+                document.getElementById('queryResult').innerHTML = `<div style="margin-top: 10px;color:#E30613;">❌ Error: ${err.message}</div>`;
+                showToast(err.message, true);
             }
         });
 

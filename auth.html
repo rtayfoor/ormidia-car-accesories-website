@@ -266,11 +266,9 @@
     <div id="footer-placeholder"></div>
 
     <script>
-        // Auth page specific JavaScript
-        const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
-        const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+        // Auth page specific JavaScript - Use the global supabase instance from components.js
+        // SUPABASE_URL and _supabase are already declared in components.js
+        
         // Check if already logged in
         function checkAuthStatus() {
             const user = getCurrentUser();
@@ -316,7 +314,7 @@
             document.getElementById('auth-subtitle').textContent = 'Sign in to your account to continue';
         };
 
-        // Login handler
+        // Login handler - uses global _supabase from components.js
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value.trim();
@@ -342,7 +340,7 @@
             }
         });
 
-        // Register handler
+        // Register handler - uses global _supabase from components.js
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('register-name').value.trim();
@@ -383,7 +381,9 @@
         });
 
         // Check auth on load
-        checkAuthStatus();
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+        });
     </script>
 </body>
 </html>

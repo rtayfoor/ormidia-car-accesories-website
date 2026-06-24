@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORMIDIA Database Admin - Supabase</title>
+    <title>ORMIDIA Database Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -20,6 +20,7 @@
             display: flex;
             height: 100vh;
         }
+        /* Sidebar */
         .sidebar {
             width: 320px;
             background: white;
@@ -62,6 +63,34 @@
             flex: 1;
             padding: 1rem;
             overflow-y: auto;
+        }
+        .db-item {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .db-item:hover {
+            background: #fef9f5;
+            border-color: #E30613;
+            transform: translateX(5px);
+        }
+        .db-item.active {
+            background: #E30613;
+            color: white;
+            border-color: #E30613;
+        }
+        .db-name {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .main-content {
             flex: 1;
@@ -135,13 +164,6 @@
         }
         .table-chip:hover { background: #e2e8f0; transform: translateY(-1px); }
         .table-chip.active { background: #E30613; color: white; border-color: #E30613; }
-        .table-chip .chip-count {
-            font-size: 0.6rem;
-            background: rgba(0,0,0,0.1);
-            padding: 1px 6px;
-            border-radius: 10px;
-        }
-        .table-chip.active .chip-count { background: rgba(255,255,255,0.2); }
         .data-viewer {
             flex: 1;
             overflow: auto;
@@ -187,26 +209,10 @@
         .edit-row:hover { background: #eff6ff; }
         .delete-row { color: #E30613; }
         .delete-row:hover { background: #fee2e2; }
-        .view-row { color: #8b5cf6; }
-        .view-row:hover { background: #f5f3ff; }
-        .query-editor {
-            background: white;
-            border-top: 1px solid #e2e8f0;
-            padding: 1rem;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .query-editor textarea {
-            width: 100%;
-            font-family: 'Monaco', 'Courier New', monospace;
-            padding: 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            resize: vertical;
-            min-height: 80px;
-        }
-        .query-editor textarea:focus { outline: none; border-color: #E30613; }
+        .save-row { color: #22c55e; }
+        .save-row:hover { background: #dcfce7; }
+        .cancel-edit { color: #94a3b8; }
+        .cancel-edit:hover { background: #f1f5f9; }
         .modal {
             position: fixed;
             top: 0; left: 0;
@@ -317,6 +323,38 @@
         .page-btn:hover { background: #f1f5f9; }
         .page-btn.active { background: #E30613; color: white; border-color: #E30613; }
         .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .editable {
+            background: #fef9f5;
+            border: 1px solid #E30613;
+        }
+        .editable-input {
+            width: 100%;
+            padding: 4px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: inherit;
+            background: white;
+        }
+        .editable-input:focus {
+            outline: none;
+            border-color: #E30613;
+            box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.1);
+        }
+        .editable-input:disabled {
+            background: #f1f5f9;
+            cursor: not-allowed;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+        .status-badge.success { background: #dcfce7; color: #166534; }
+        .status-badge.error { background: #fee2e2; color: #991b1b; }
+        .status-badge.warning { background: #fef3c7; color: #92400e; }
         @media (max-width: 768px) {
             .sidebar { width: 250px; }
             .app-container { flex-direction: column; }
@@ -330,7 +368,7 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <h2><i class="fas fa-database"></i> ORMIDIA DB Admin</h2>
-            <p>Supabase Database Control Panel</p>
+            <p>Full Database Control Panel</p>
             <div class="sidebar-stats">
                 <span id="tableCount"><i class="fas fa-table"></i> 0 Tables</span>
                 <span id="dbStatus"><i class="fas fa-circle" style="color:#22c55e;"></i> Connected</span>
@@ -360,10 +398,11 @@
                 </div>
             </div>
             <div class="quick-actions">
-                <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+                <button class="btn btn-success btn-sm" id="saveChangesBtn" style="display:none;">
+                    <i class="fas fa-save"></i> Save All Changes
+                </button>
                 <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
-                <button class="btn btn-outline btn-sm" id="showQueryBtn"><i class="fas fa-terminal"></i> SQL</button>
-                <button class="btn btn-outline btn-sm" id="exportDataBtn"><i class="fas fa-download"></i> Export</button>
+                <button class="btn btn-outline btn-sm" id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
             </div>
         </div>
 
@@ -374,43 +413,17 @@
         <div class="data-viewer" id="dataViewer">
             <div class="loading"><i class="fas fa-arrow-left"></i> Select a table to view/edit data</div>
         </div>
-
-        <div class="query-editor" id="queryEditor" style="display: none;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <strong><i class="fas fa-terminal"></i> SQL Query</strong>
-                <div style="display:flex;gap:8px;">
-                    <button class="btn btn-sm btn-outline" id="closeQueryBtn"><i class="fas fa-times"></i> Close</button>
-                </div>
-            </div>
-            <textarea id="sqlQuery" rows="3" placeholder="SELECT * FROM products ORDER BY id DESC LIMIT 10"></textarea>
-            <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
-                <button class="btn btn-primary btn-sm" id="executeQueryBtn"><i class="fas fa-play"></i> Execute</button>
-                <button class="btn btn-outline btn-sm" id="clearQueryBtn"><i class="fas fa-eraser"></i> Clear</button>
-            </div>
-            <div id="queryResult" class="sql-result"></div>
-        </div>
     </div>
 </div>
 
 <!-- Modals -->
 <div id="insertRowModal" class="modal">
     <div class="modal-content">
-        <h3><i class="fas fa-plus"></i> Insert Row</h3>
+        <h3><i class="fas fa-plus"></i> Insert New Row</h3>
         <div id="insertRowFields"></div>
         <div class="flex-buttons">
             <button class="btn btn-outline" id="cancelInsertModal">Cancel</button>
             <button class="btn btn-primary" id="confirmInsertRow">Insert</button>
-        </div>
-    </div>
-</div>
-
-<div id="editRowModal" class="modal">
-    <div class="modal-content">
-        <h3><i class="fas fa-edit"></i> Edit Row</h3>
-        <div id="editRowFields"></div>
-        <div class="flex-buttons">
-            <button class="btn btn-outline" id="cancelEditModal">Cancel</button>
-            <button class="btn btn-primary" id="confirmEditRow">Save Changes</button>
         </div>
     </div>
 </div>
@@ -441,7 +454,8 @@
         let currentData = [];
         let pageSize = 20;
         let tables = [];
-        let editRowData = null;
+        let editedRows = {};
+        let originalRows = {};
 
         // Predefined tables for your schema
         const KNOWN_TABLES = ['products', 'product_variants', 'orders', 'users', 'cart_reservations'];
@@ -450,25 +464,7 @@
             try {
                 const container = document.getElementById('tablesList');
                 
-                // Try to get tables using a direct query
-                try {
-                    const { data, error } = await supabase.rpc('get_tables');
-                    if (!error && data && data.length > 0) {
-                        tables = data.map(t => {
-                            // Handle different response formats
-                            if (typeof t === 'string') return t;
-                            if (t && t.table_name) return t.table_name;
-                            if (t && t.tablename) return t.tablename;
-                            return String(t);
-                        }).filter(t => t && t.trim());
-                        renderTableList(tables);
-                        return;
-                    }
-                } catch (e) {
-                    console.log('RPC get_tables not available, using fallback');
-                }
-
-                // Fallback: Try known tables
+                // Try known tables
                 const existingTables = [];
                 for (const table of KNOWN_TABLES) {
                     try {
@@ -516,9 +512,16 @@
                 el.addEventListener('click', function() {
                     const tableName = this.dataset.table;
                     if (tableName && typeof tableName === 'string' && tableName.trim()) {
+                        // Check for unsaved changes before switching
+                        if (Object.keys(editedRows).length > 0) {
+                            if (!confirm('You have unsaved changes. Switch table anyway?')) {
+                                return;
+                            }
+                            editedRows = {};
+                            originalRows = {};
+                            document.getElementById('saveChangesBtn').style.display = 'none';
+                        }
                         loadTableData(tableName.trim());
-                    } else {
-                        showToast('Invalid table name', true);
                     }
                 });
             });
@@ -532,13 +535,11 @@
         }
 
         async function loadTableData(tableName, page = 1) {
-            // Validate tableName
             if (!tableName) {
                 showToast('Table name is required', true);
                 return;
             }
             
-            // Ensure tableName is a string
             if (typeof tableName !== 'string') {
                 tableName = String(tableName);
             }
@@ -552,6 +553,9 @@
             
             currentTable = tableName;
             currentPage = page || 1;
+            editedRows = {};
+            originalRows = {};
+            document.getElementById('saveChangesBtn').style.display = 'none';
             
             try {
                 // Get table columns by querying one row
@@ -561,7 +565,6 @@
                     .limit(1);
                 
                 if (sampleError) {
-                    // If error, try to get columns from known structure
                     currentColumns = getDefaultColumns(currentTable);
                 } else if (sampleData && sampleData.length > 0) {
                     currentColumns = Object.keys(sampleData[0]).map(key => ({
@@ -573,11 +576,9 @@
                     currentColumns = getDefaultColumns(currentTable);
                 }
                 
-                // Check if 'id' column exists for primary key
                 const hasId = currentColumns.some(c => c.name === 'id');
                 currentPrimaryKey = hasId ? 'id' : currentColumns[0]?.name || 'id';
                 
-                // Get data with pagination
                 const from = (currentPage - 1) * pageSize;
                 const to = from + pageSize - 1;
                 
@@ -585,7 +586,6 @@
                     .from(currentTable)
                     .select('*', { count: 'exact' });
                 
-                // Add ordering if id column exists
                 if (hasId) {
                     query = query.order('id', { ascending: false });
                 }
@@ -593,7 +593,6 @@
                 const { data, error, count } = await query.range(from, to);
                 
                 if (error) {
-                    // If query fails, try without ordering
                     const { data: fallbackData, error: fallbackError, count: fallbackCount } = await supabase
                         .from(currentTable)
                         .select('*', { count: 'exact' })
@@ -636,7 +635,6 @@
         }
 
         function getDefaultColumns(tableName) {
-            // Common columns based on table name
             const defaultColumns = {
                 'products': [
                     { name: 'id', type: 'number' },
@@ -704,6 +702,7 @@
                     <div>
                         <strong><i class="fas fa-table"></i> ${tableName}</strong>
                         <span style="font-size:0.8rem;color:#94a3b8;margin-left:8px;">${totalRows || 0} total rows</span>
+                        ${Object.keys(editedRows).length > 0 ? `<span class="status-badge warning"><i class="fas fa-edit"></i> ${Object.keys(editedRows).length} unsaved changes</span>` : ''}
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <button class="btn btn-primary btn-sm" id="insertRowBtn"><i class="fas fa-plus"></i> Insert Row</button>
@@ -714,7 +713,7 @@
                 <table class="data-table">
                     <thead><tr>
                         ${columns.map(col => `<th>${col.name}<br><small style="font-weight:400;color:#94a3b8;">${col.type}</small></th>`).join('')}
-                        <th style="width:110px;text-align:center;">Actions</th>
+                        <th style="width:140px;text-align:center;">Actions</th>
                     </tr></thead>
                     <tbody>`;
             
@@ -722,19 +721,50 @@
                 html += `<tr><td colspan="${columns.length + 1}" style="text-align:center;padding:2rem;color:#94a3b8;">No data. Click "Insert Row" to add</td></tr>`;
             } else {
                 rows.forEach((row, idx) => {
-                    html += `<tr>`;
+                    const rowId = row[currentPrimaryKey];
+                    const isEditing = editedRows[rowId] !== undefined;
+                    const rowData = isEditing ? editedRows[rowId] : row;
+                    
+                    html += `<tr ${isEditing ? 'class="editable"' : ''}>`;
                     columns.forEach(col => {
-                        let val = row[col.name];
-                        let display = (val === null || val === undefined) ? '<span class="null-value">NULL</span>' : 
-                                      (typeof val === 'object' ? JSON.stringify(val).substring(0, 50) : String(val));
-                        if (String(display).length > 150) display = display.substring(0, 150) + '...';
-                        html += `<td style="max-width:250px;overflow-x:auto;word-break:break-word;">${display}</td>`;
+                        const value = rowData[col.name] !== null && rowData[col.name] !== undefined ? String(rowData[col.name]) : '';
+                        const isPrimaryKey = col.name === currentPrimaryKey;
+                        
+                        if (isEditing) {
+                            // Editable cell
+                            html += `<td>
+                                <input type="text" 
+                                       class="editable-input" 
+                                       data-col="${col.name}" 
+                                       data-rowid="${rowId}"
+                                       value="${escapeHtml(value)}"
+                                       ${isPrimaryKey ? 'disabled' : ''}
+                                       placeholder="NULL">
+                            </td>`;
+                        } else {
+                            // Display cell
+                            let display = value || '<span class="null-value">NULL</span>';
+                            if (String(display).length > 150) display = display.substring(0, 150) + '...';
+                            html += `<td style="max-width:250px;overflow-x:auto;word-break:break-word;">${display}</td>`;
+                        }
                     });
-                    html += `<td style="text-align:center;white-space:nowrap;" class="action-icons">
-                        <i class="fas fa-eye view-row" data-index="${idx}" title="View"></i>
-                        <i class="fas fa-edit edit-row" data-index="${idx}" title="Edit"></i>
-                        <i class="fas fa-trash-alt delete-row" data-index="${idx}" title="Delete"></i>
-                    </td></tr>`;
+                    
+                    html += `<td style="text-align:center;white-space:nowrap;" class="action-icons">`;
+                    
+                    if (isEditing) {
+                        html += `
+                            <i class="fas fa-save save-row" data-rowid="${rowId}" title="Save changes"></i>
+                            <i class="fas fa-times cancel-edit" data-rowid="${rowId}" title="Cancel"></i>
+                        `;
+                    } else {
+                        html += `
+                            <i class="fas fa-eye view-row" data-rowid="${rowId}" title="View"></i>
+                            <i class="fas fa-edit edit-row" data-rowid="${rowId}" title="Edit"></i>
+                            <i class="fas fa-trash-alt delete-row" data-rowid="${rowId}" title="Delete"></i>
+                        `;
+                    }
+                    
+                    html += `</td></tr>`;
                 });
             }
             html += `</tbody></table></div>`;
@@ -754,40 +784,196 @@
             // Event listeners
             document.getElementById('insertRowBtn')?.addEventListener('click', () => openInsertRowModal());
             document.getElementById('refreshDataBtn')?.addEventListener('click', () => {
+                if (Object.keys(editedRows).length > 0) {
+                    if (!confirm('You have unsaved changes. Refresh anyway?')) {
+                        return;
+                    }
+                    editedRows = {};
+                    originalRows = {};
+                    document.getElementById('saveChangesBtn').style.display = 'none';
+                }
                 if (currentTable) loadTableData(currentTable, currentPage);
             });
             
+            // Edit mode - listen to input changes
+            document.querySelectorAll('.editable-input').forEach(input => {
+                input.addEventListener('change', function() {
+                    const rowId = this.dataset.rowid;
+                    const colName = this.dataset.col;
+                    const value = this.value || null;
+                    
+                    if (!editedRows[rowId]) {
+                        // Store original row data
+                        const originalRow = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
+                        if (originalRow) {
+                            originalRows[rowId] = { ...originalRow };
+                        }
+                        editedRows[rowId] = { ...originalRows[rowId] };
+                    }
+                    
+                    editedRows[rowId][colName] = value;
+                    document.getElementById('saveChangesBtn').style.display = 'block';
+                    
+                    // Update the status badge
+                    const badge = document.querySelector('.status-badge');
+                    if (badge) {
+                        const count = Object.keys(editedRows).length;
+                        badge.textContent = `${count} unsaved changes`;
+                        badge.style.display = 'inline-block';
+                    }
+                });
+            });
+            
+            // Save individual row
+            document.querySelectorAll('.save-row').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const rowId = this.dataset.rowid;
+                    await saveRow(rowId);
+                });
+            });
+            
+            // Cancel editing
+            document.querySelectorAll('.cancel-edit').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const rowId = this.dataset.rowid;
+                    delete editedRows[rowId];
+                    delete originalRows[rowId];
+                    
+                    if (Object.keys(editedRows).length === 0) {
+                        document.getElementById('saveChangesBtn').style.display = 'none';
+                    }
+                    
+                    loadTableData(currentTable, currentPage);
+                });
+            });
+            
+            // View row
             document.querySelectorAll('.view-row').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const idx = parseInt(btn.dataset.index);
-                    if (currentData && currentData[idx]) {
-                        openViewRowModal(currentData[idx]);
-                    }
+                    const rowId = btn.dataset.rowid;
+                    const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
+                    if (row) openViewRowModal(row);
                 });
             });
+            
+            // Edit row
             document.querySelectorAll('.edit-row').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const idx = parseInt(btn.dataset.index);
-                    if (currentData && currentData[idx]) {
-                        openEditRowModal(currentData[idx]);
+                btn.addEventListener('click', function() {
+                    const rowId = this.dataset.rowid;
+                    // Start editing this row
+                    const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
+                    if (row) {
+                        editedRows[rowId] = { ...row };
+                        originalRows[rowId] = { ...row };
+                        renderTable(currentColumns, currentData, currentTable, totalRows);
+                        document.getElementById('saveChangesBtn').style.display = 'block';
                     }
                 });
             });
+            
+            // Delete row
             document.querySelectorAll('.delete-row').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const idx = parseInt(btn.dataset.index);
-                    if (currentData && currentData[idx]) {
-                        deleteRow(currentData[idx]);
-                    }
+                btn.addEventListener('click', function() {
+                    const rowId = this.dataset.rowid;
+                    const row = currentData.find(r => String(r[currentPrimaryKey]) === String(rowId));
+                    if (row) deleteRow(row);
                 });
             });
+            
+            // Pagination
             document.querySelectorAll('.page-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    if (!btn.disabled && currentTable) {
-                        loadTableData(currentTable, parseInt(btn.dataset.page));
+                btn.addEventListener('click', function() {
+                    if (!this.disabled && currentTable) {
+                        if (Object.keys(editedRows).length > 0) {
+                            if (!confirm('You have unsaved changes. Navigate anyway?')) {
+                                return;
+                            }
+                            editedRows = {};
+                            originalRows = {};
+                            document.getElementById('saveChangesBtn').style.display = 'none';
+                        }
+                        loadTableData(currentTable, parseInt(this.dataset.page));
                     }
                 });
             });
+            
+            // Save all changes button
+            document.getElementById('saveChangesBtn').addEventListener('click', saveAllChanges);
+        }
+
+        async function saveRow(rowId) {
+            if (!editedRows[rowId]) {
+                showToast('No changes to save', true);
+                return;
+            }
+            
+            const updatedData = { ...editedRows[rowId] };
+            // Remove the primary key from update data
+            delete updatedData[currentPrimaryKey];
+            
+            try {
+                const { error } = await supabase
+                    .from(currentTable)
+                    .update(updatedData)
+                    .eq(currentPrimaryKey, rowId);
+                
+                if (error) throw error;
+                
+                showToast('Row saved successfully');
+                delete editedRows[rowId];
+                delete originalRows[rowId];
+                
+                if (Object.keys(editedRows).length === 0) {
+                    document.getElementById('saveChangesBtn').style.display = 'none';
+                }
+                
+                loadTableData(currentTable, currentPage);
+            } catch (err) {
+                showToast(err.message, true);
+            }
+        }
+
+        async function saveAllChanges() {
+            if (Object.keys(editedRows).length === 0) {
+                showToast('No changes to save');
+                return;
+            }
+            
+            if (!confirm(`Save ${Object.keys(editedRows).length} row(s)?`)) {
+                return;
+            }
+            
+            let successCount = 0;
+            let errorCount = 0;
+            
+            for (const [rowId, rowData] of Object.entries(editedRows)) {
+                const updateData = { ...rowData };
+                delete updateData[currentPrimaryKey];
+                
+                try {
+                    const { error } = await supabase
+                        .from(currentTable)
+                        .update(updateData)
+                        .eq(currentPrimaryKey, rowId);
+                    
+                    if (error) {
+                        console.error('Error saving row:', rowId, error);
+                        errorCount++;
+                    } else {
+                        successCount++;
+                    }
+                } catch (err) {
+                    console.error('Error saving row:', rowId, err);
+                    errorCount++;
+                }
+            }
+            
+            editedRows = {};
+            originalRows = {};
+            document.getElementById('saveChangesBtn').style.display = 'none';
+            
+            showToast(`Saved ${successCount} rows${errorCount > 0 ? `, ${errorCount} failed` : ''}`);
+            loadTableData(currentTable, currentPage);
         }
 
         function openViewRowModal(row) {
@@ -841,50 +1027,6 @@
             }
         }
 
-        function openEditRowModal(row) {
-            const container = document.getElementById('editRowFields');
-            container.innerHTML = currentColumns.map(col => `
-                <label>${col.name} <span style="font-weight:400;color:#94a3b8;">(${col.type})</span></label>
-                <input type="text" id="edit_${col.name}" value="${escapeHtml(String(row[col.name] || ''))}" ${col.name === currentPrimaryKey ? 'disabled' : ''}>
-            `).join('');
-            document.getElementById('editRowModal').classList.add('active');
-            editRowData = row;
-        }
-
-        async function confirmEdit() {
-            const updatedRow = {};
-            for (let col of currentColumns) {
-                const val = document.getElementById(`edit_${col.name}`)?.value;
-                if (col.name !== currentPrimaryKey) {
-                    if (val && val.trim()) {
-                        if (col.type === 'number' || col.type.includes('int') || col.type.includes('numeric') || col.type.includes('decimal')) {
-                            updatedRow[col.name] = parseFloat(val) || null;
-                        } else if (col.type === 'boolean' || col.type.includes('bool')) {
-                            updatedRow[col.name] = val.toLowerCase() === 'true';
-                        } else {
-                            updatedRow[col.name] = val;
-                        }
-                    } else {
-                        updatedRow[col.name] = null;
-                    }
-                }
-            }
-            try {
-                const { error } = await supabase
-                    .from(currentTable)
-                    .update(updatedRow)
-                    .eq(currentPrimaryKey, editRowData[currentPrimaryKey]);
-                
-                if (error) throw error;
-                
-                showToast('Row updated successfully');
-                document.getElementById('editRowModal').classList.remove('active');
-                if (currentTable) loadTableData(currentTable, currentPage);
-            } catch (err) {
-                showToast(err.message, true);
-            }
-        }
-
         async function deleteRow(row) {
             if (!confirm('Delete this row permanently?')) return;
             try {
@@ -902,91 +1044,9 @@
             }
         }
 
-        // SQL Query
-        document.getElementById('showQueryBtn')?.addEventListener('click', () => {
-            const editor = document.getElementById('queryEditor');
-            editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
-        });
-        
-        document.getElementById('closeQueryBtn')?.addEventListener('click', () => {
-            document.getElementById('queryEditor').style.display = 'none';
-        });
-        
-        document.getElementById('clearQueryBtn')?.addEventListener('click', () => {
-            document.getElementById('sqlQuery').value = '';
-            document.getElementById('queryResult').innerHTML = '';
-        });
-        
-        document.getElementById('executeQueryBtn')?.addEventListener('click', async () => {
-            const sql = document.getElementById('sqlQuery').value.trim();
-            if (!sql) return showToast('Enter SQL query', true);
-            
-            try {
-                const { data, error } = await supabase.rpc('execute_sql', { query: sql });
-                if (error) throw error;
-                
-                const resultDiv = document.getElementById('queryResult');
-                if (data && data.length > 0) {
-                    const columns = Object.keys(data[0]);
-                    let html = `<div style="margin-top: 10px; overflow-x: auto;"><table class="data-table"><thead><tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`;
-                    data.slice(0, 100).forEach(row => {
-                        html += `<tr>${columns.map(c => `<td style="max-width:200px;overflow-x:auto;">${escapeHtml(String(row[c] !== null && row[c] !== undefined ? row[c] : 'NULL'))}</td>`).join('')}</tr>`;
-                    });
-                    html += `</tbody></table><div style="margin-top: 8px;color:#166534;">✅ ${data.length} rows returned</div></div>`;
-                    resultDiv.innerHTML = html;
-                } else {
-                    resultDiv.innerHTML = `<div style="margin-top: 10px;color:#166534;">✅ Query executed successfully. 0 rows returned.</div>`;
-                }
-            } catch (err) {
-                document.getElementById('queryResult').innerHTML = `<div style="margin-top: 10px;color:#E30613;">❌ Error: ${err.message}</div>`;
-                showToast(err.message, true);
-            }
-        });
-
-        // Export data
-        document.getElementById('exportDataBtn')?.addEventListener('click', async () => {
-            if (!currentTable) return showToast('Select a table first', true);
-            try {
-                const { data, error } = await supabase
-                    .from(currentTable)
-                    .select('*')
-                    .limit(10000);
-                
-                if (error) throw error;
-                if (!data || data.length === 0) return showToast('No data to export');
-                
-                const headers = currentColumns.map(c => c.name);
-                let csv = headers.join(',') + '\n';
-                data.forEach(row => {
-                    csv += headers.map(h => {
-                        let val = row[h] !== null && row[h] !== undefined ? String(row[h]) : '';
-                        if (val.includes(',') || val.includes('"') || val.includes('\n')) {
-                            val = `"${val.replace(/"/g, '""')}"`;
-                        }
-                        return val;
-                    }).join(',') + '\n';
-                });
-                
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${currentTable}_export.csv`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                showToast(`Exported ${data.length} rows from ${currentTable}`);
-            } catch (err) {
-                showToast(err.message, true);
-            }
-        });
-
         // Modal event listeners
         document.getElementById('confirmInsertRow')?.addEventListener('click', confirmInsert);
-        document.getElementById('confirmEditRow')?.addEventListener('click', confirmEdit);
         document.getElementById('cancelInsertModal')?.addEventListener('click', () => document.getElementById('insertRowModal').classList.remove('active'));
-        document.getElementById('cancelEditModal')?.addEventListener('click', () => document.getElementById('editRowModal').classList.remove('active'));
         document.getElementById('closeViewModal')?.addEventListener('click', () => document.getElementById('viewRowModal').classList.remove('active'));
         document.getElementById('refreshBtn')?.addEventListener('click', loadTables);
 

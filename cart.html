@@ -871,6 +871,24 @@
                 showLoading(true);
                 
                 try {
+                    // Get the actual user ID from Supabase session if available
+                    let userId = user.id;
+                    
+                    // If user ID is a number, try to get the UUID from Supabase session
+                    if (!isNaN(userId) || userId.length < 30) {
+                        try {
+                            const { data: sessionData } = await _supabase.auth.getSession();
+                            if (sessionData?.session?.user?.id) {
+                                userId = sessionData.session.user.id;
+                                // Update the user object with the correct UUID
+                                user.id = userId;
+                                localStorage.setItem('user', JSON.stringify(user));
+                            }
+                        } catch (error) {
+                            console.warn('Could not get UUID from session, using existing ID:', error);
+                        }
+                    }
+                    
                     // Prepare order items for the database
                     const orderItems = cart.map(item => ({
                         product_id: item.product_id,
@@ -892,7 +910,7 @@
                             p_customer_email: email,
                             p_delivery_address: address,
                             p_notes: notes || null,
-                            p_user_id: user.id,
+                            p_user_id: userId, // Pass the user ID (could be UUID or integer)
                             p_items: orderItems
                         });
                     

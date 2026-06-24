@@ -8,165 +8,51 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* ... (keep your existing styles) ... */
+        .stock-status {
+            font-size: 0.85rem;
+            margin: 0.5rem 0;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .in-stock { color: #27ae60; }
+        .low-stock { color: #f39c12; }
+        .out-of-stock { color: #e74c3c; }
+        .reserved-badge {
+            background: #3498db;
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            margin-left: 0.5rem;
+        }
+        .timer-badge {
+            background: #e67e22;
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            margin-left: 0.5rem;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .stock-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                <img src="logo.jpg" alt="Ormidia Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/40x40?text=Logo'">
-                <span class="logo-text">Ormidia</span>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="index.html" class="nav-link">Home</a></li>
-                <li><a href="products.html" class="nav-link active">Products</a></li>
-                <li><a href="index.html#about" class="nav-link">About</a></li>
-                <li><a href="index.html#contact" class="nav-link">Contact</a></li>
-            </ul>
-            <div class="nav-icons">
-                <a href="cart.html" class="cart-icon">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span class="cart-count">0</span>
-                </a>
-                <div id="auth-icon" class="user-icon">
-                    <a href="auth.html"><i class="fas fa-user"></i></a>
-                </div>
-                <div class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <section class="page-header">
-        <div class="container">
-            <h1>All Products</h1>
-            <p>Browse our complete collection of premium car accessories</p>
-        </div>
-    </section>
-
-    <section class="filter-section">
-        <div class="container">
-            <div class="filter-bar">
-                <div class="filter-group">
-                    <label for="category-filter">Category:</label>
-                    <select id="category-filter" class="filter-select">
-                        <option value="all">All Products</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="sort-filter">Sort by:</label>
-                    <select id="sort-filter" class="filter-select">
-                        <option value="default">Default</option>
-                        <option value="price-low">Price: Low to High</option>
-                        <option value="price-high">Price: High to Low</option>
-                    </select>
-                </div>
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search products...">
-                    <i class="fas fa-search"></i>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="products-page">
-        <div class="container">
-            <div class="loading-spinner" id="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Loading products...</p>
-            </div>
-            <div class="products-count" id="products-count"></div>
-            <div class="products-grid" id="all-products"></div>
-            <div class="no-results" id="no-results" style="display: none;">
-                <i class="fas fa-search"></i>
-                <h3>No products found</h3>
-                <p>Try adjusting your search or filter criteria</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Variant Modal -->
-    <div id="variant-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <span class="modal-close">&times;</span>
-            <div class="modal-header">
-                <h2 id="modal-product-name">Product Name</h2>
-            </div>
-            <div class="modal-body">
-                <div class="modal-image">
-                    <img id="modal-product-image" src="" alt="Product">
-                </div>
-                <div class="modal-info">
-                    <p id="modal-product-description"></p>
-                    <div class="variant-selector">
-                        <label for="variant-select">Select Option:</label>
-                        <select id="variant-select" class="variant-select">
-                            <option value="">Choose an option...</option>
-                        </select>
-                    </div>
-                    <div class="modal-price">
-                        <span>Price:</span>
-                        <span id="modal-product-price">$0.00</span>
-                    </div>
-                    <div class="modal-quantity">
-                        <label for="modal-quantity">Quantity:</label>
-                        <input type="number" id="modal-quantity" min="1" value="1">
-                    </div>
-                    <button id="modal-add-to-cart" class="btn btn-primary">Add to Cart</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>Ormidia</h3>
-                    <p>Premium car accessories for the modern driver.</p>
-                    <div class="social-links">
-                        <a href="#"><i class="fab fa-facebook"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-youtube"></i></a>
-                    </div>
-                </div>
-                <div class="footer-section">
-                    <h4>Quick Links</h4>
-                    <ul>
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="products.html">Products</a></li>
-                        <li><a href="index.html#about">About Us</a></li>
-                        <li><a href="index.html#contact">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Customer Service</h4>
-                    <ul>
-                        <li><a href="#">FAQ</a></li>
-                        <li><a href="#">Shipping Policy</a></li>
-                        <li><a href="#">Returns & Exchanges</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Working Hours</h4>
-                    <ul>
-                        <li>Monday - Friday: 9am - 8pm</li>
-                        <li>Saturday: 10am - 6pm</li>
-                        <li>Sunday: Closed</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 Ormidia Car Accessories. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
+    <!-- ... (keep your existing HTML structure) ... -->
 
     <script>
         (function() {
-            // Supabase Configuration
             const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
             
@@ -178,137 +64,68 @@
             let productsData = {};
             let currentModalProduct = null;
             let currentModalVariants = [];
-
-            // Complete image mapping for all products
-            function getProductImageUrl(productName, variantName = null) {
-                // Convert product name to filename format
-                const filename = productName.toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/-$/, '');
-                
-                // Specific image mappings based on your files
-                const imageMap = {
-                    'Head Rest Pillow': {
-                        type: 'variant',
-                        baseName: 'head-rest-pillow',
-                        extension: '.png'
-                    },
-                    'Simple Rest Pillow': {
-                        type: 'single',
-                        fileName: 'simple-rest-pillow.png'
-                    },
-                    'Anti-Slip Mat': {
-                        type: 'variant',
-                        baseName: 'anti-slip-mat',
-                        extension: '.png'
-                    },
-                    'Plating Number': {
-                        type: 'variant',
-                        baseName: 'plating-number',
-                        extension: '.png'
-                    },
-                    'Pillow Seat Belt': {
-                        type: 'single',
-                        fileName: 'pillow-seat-belt.png'
-                    },
-                    'Keyring': {
-                        type: 'variant',
-                        baseName: 'keyring',
-                        extension: '.png'
-                    },
-                    'Keyring Small Bag': {
-                        type: 'single',
-                        fileName: 'keyring-small-bag.png'
-                    },
-                    'Drink Holder': {
-                        type: 'single',
-                        fileName: 'drink-holder.png'
-                    },
-                    'Coasters': {
-                        type: 'variant',
-                        baseName: 'coasters',
-                        extension: '.png'
-                    },
-                    'Exhaust': {
-                        type: 'single',
-                        fileName: 'exhaust.png'
-                    },
-                    'Steering Cover Carbon 38cm': {
-                        type: 'single',
-                        fileName: 'steering-cover-carbon-38cm.png'
-                    },
-                    'Sparco 28cm': {
-                        type: 'single',
-                        fileName: 'sparco-28cm.png'
-                    }
-                };
-                
-                const config = imageMap[productName];
-                
-                if (!config) {
-                    // Default placeholder for unmapped products
-                    return `https://via.placeholder.com/300x200?text=${encodeURIComponent(productName)}`;
-                }
-                
-                if (config.type === 'single') {
-                    // Single image for products without variants
-                    return config.fileName;
-                }
-                
-                if (config.type === 'variant' && variantName) {
-                    // Variant-based image (e.g., head-rest-pillow_ford.png)
-                    const variantKey = variantName.toLowerCase().replace(/\s+/g, '');
-                    return `${config.baseName}_${variantKey}${config.extension}`;
-                }
-                
-                // Default fallback
-                return `https://via.placeholder.com/300x200?text=${encodeURIComponent(productName)}`;
+            let cartId = localStorage.getItem('cartId') || generateCartId();
+            
+            // Generate a unique cart ID if not exists
+            function generateCartId() {
+                const id = 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('cartId', id);
+                return id;
             }
-
-            // Fetch products with their variants from Supabase
+            
+            // Get cart from localStorage
+            function getCart() {
+                return JSON.parse(localStorage.getItem('cart')) || [];
+            }
+            
+            // Save cart to localStorage
+            function saveCart(cart) {
+                localStorage.setItem('cart', JSON.stringify(cart));
+            }
+            
+            // Complete image mapping (keep your existing function)
+            function getProductImageUrl(productName, variantName = null) {
+                // ... (keep your existing image mapping code)
+            }
+            
+            // Fetch products with variants and stock
             async function fetchProducts() {
                 try {
                     showLoading(true);
                     
+                    // Use the view to get products with variants
                     const { data: products, error: productsError } = await _supabase
-                        .from('products')
+                        .from('products_with_variants')
                         .select('*')
                         .order('id', { ascending: true });
                     
                     if (productsError) throw productsError;
                     
-                    const { data: variants, error: variantsError } = await _supabase
-                        .from('product_variants')
-                        .select('*');
-                    
-                    if (variantsError) throw variantsError;
-                    
-                    const variantsByProduct = {};
-                    if (variants) {
-                        variants.forEach(variant => {
-                            if (!variantsByProduct[variant.product_id]) {
-                                variantsByProduct[variant.product_id] = [];
-                            }
-                            variantsByProduct[variant.product_id].push(variant);
-                        });
-                    }
-                    
-                    products.forEach(product => {
-                        productsData[product.id] = {
+                    // Fetch stock availability for each product
+                    const stockPromises = products.map(async (product) => {
+                        const stockData = await getProductStock(product.id);
+                        return {
                             ...product,
-                            variants: variantsByProduct[product.id] || []
+                            available_stock: stockData
                         };
+                    });
+                    
+                    const productsWithStock = await Promise.all(stockPromises);
+                    
+                    productsWithStock.forEach(product => {
+                        productsData[product.id] = product;
                         productCategories.add(product.name);
                     });
                     
-                    allProducts = products.map(product => ({
+                    allProducts = productsWithStock.map(product => ({
                         id: product.id,
                         name: product.name,
                         description: product.description,
                         base_price: product.base_price,
                         category: product.name,
-                        hasVariants: (variantsByProduct[product.id] || []).length > 0,
-                        variantCount: (variantsByProduct[product.id] || []).length
+                        hasVariants: product.variants && product.variants.length > 0,
+                        variantCount: product.variants ? product.variants.length : 0,
+                        available_stock: product.available_stock
                     }));
                     
                     currentProducts = [...allProducts];
@@ -323,17 +140,92 @@
                 }
             }
             
-            function populateCategoryFilter() {
-                const categoryFilter = document.getElementById('category-filter');
-                if (!categoryFilter) return;
-                
-                const categories = [...productCategories];
-                categories.forEach(category => {
-                    const option = document.createElement('option');
-                    option.value = category.toLowerCase().replace(/\s+/g, '-');
-                    option.textContent = category;
-                    categoryFilter.appendChild(option);
-                });
+            // Get product stock
+            async function getProductStock(productId) {
+                try {
+                    const { data, error } = await _supabase
+                        .rpc('get_product_available_stock', {
+                            p_product_id: productId,
+                            p_cart_id: cartId
+                        });
+                    
+                    if (error) throw error;
+                    return data || 0;
+                } catch (error) {
+                    console.error('Error getting stock:', error);
+                    return 0;
+                }
+            }
+            
+            // Get variant stock
+            async function getVariantStock(variantId) {
+                try {
+                    const { data, error } = await _supabase
+                        .rpc('get_available_stock', {
+                            p_variant_id: variantId,
+                            p_cart_id: cartId
+                        });
+                    
+                    if (error) throw error;
+                    return data || 0;
+                } catch (error) {
+                    console.error('Error getting variant stock:', error);
+                    return 0;
+                }
+            }
+            
+            // Reserve stock when adding to cart
+            async function reserveStock(productId, variantId = null, quantity = 1) {
+                try {
+                    const { data, error } = await _supabase
+                        .rpc('reserve_stock', {
+                            p_cart_id: cartId,
+                            p_product_id: productId,
+                            p_variant_id: variantId,
+                            p_quantity: quantity
+                        });
+                    
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('Error reserving stock:', error);
+                    return false;
+                }
+            }
+            
+            // Release stock when removing from cart
+            async function releaseStock(productId, variantId = null) {
+                try {
+                    const { error } = await _supabase
+                        .rpc('release_stock', {
+                            p_cart_id: cartId,
+                            p_product_id: productId,
+                            p_variant_id: variantId
+                        });
+                    
+                    if (error) throw error;
+                    return true;
+                } catch (error) {
+                    console.error('Error releasing stock:', error);
+                    return false;
+                }
+            }
+            
+            // Process checkout
+            async function processCheckout(items) {
+                try {
+                    const { data, error } = await _supabase
+                        .rpc('process_checkout', {
+                            p_cart_id: cartId,
+                            p_items: items
+                        });
+                    
+                    if (error) throw error;
+                    return data;
+                } catch (error) {
+                    console.error('Error processing checkout:', error);
+                    throw error;
+                }
             }
             
             function displayProducts(products) {
@@ -355,19 +247,33 @@
                 if (productsCount) productsCount.textContent = `${products.length} product${products.length !== 1 ? 's' : ''} found`;
                 
                 container.innerHTML = products.map(product => {
-                    // Get preview image for the product
                     const productData = productsData[product.id];
                     let previewImage = '';
                     
                     if (productData && productData.variants && productData.variants.length > 0) {
                         const firstVariant = productData.variants[0];
-                        previewImage = getProductImageUrl(product.name, firstVariant.variant_name);
+                        previewImage = getProductImageUrl(product.name, firstVariant.name);
                     } else {
                         previewImage = getProductImageUrl(product.name, null);
                     }
                     
                     const hasVariants = product.hasVariants;
                     const variantBadge = hasVariants ? `<span class="variant-badge">${product.variantCount} options available</span>` : '';
+                    
+                    // Stock status
+                    const stock = product.available_stock || 0;
+                    let stockStatus = '';
+                    let stockClass = '';
+                    if (stock > 5) {
+                        stockStatus = 'In Stock';
+                        stockClass = 'in-stock';
+                    } else if (stock > 0) {
+                        stockStatus = `Low Stock (${stock} left)`;
+                        stockClass = 'low-stock';
+                    } else {
+                        stockStatus = 'Out of Stock';
+                        stockClass = 'out-of-stock';
+                    }
                     
                     return `
                     <div class="product-card" data-id="${product.id}">
@@ -381,16 +287,20 @@
                             ${variantBadge}
                             <div class="product-brand">${escapeHtml(product.category)}</div>
                             <h3 class="product-title">${escapeHtml(product.name)}</h3>
+                            <div class="stock-status ${stockClass}">
+                                <i class="fas ${stock > 0 ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                                ${stockStatus}
+                            </div>
                             <div class="product-price">Starting from $${parseFloat(product.base_price).toFixed(2)}</div>
-                            <button class="add-to-cart" onclick="openVariantModal(${product.id})">
-                                ${hasVariants ? 'Choose Options' : 'Add to Cart'}
+                            <button class="add-to-cart" onclick="openVariantModal(${product.id})" ${stock === 0 ? 'disabled' : ''}>
+                                ${stock === 0 ? 'Out of Stock' : (hasVariants ? 'Choose Options' : 'Add to Cart')}
                             </button>
                         </div>
                     </div>
                 `}).join('');
             }
             
-            window.openVariantModal = function(productId) {
+            window.openVariantModal = async function(productId) {
                 const product = productsData[productId];
                 if (!product) return;
                 
@@ -404,32 +314,36 @@
                 variantSelect.innerHTML = '<option value="">Choose an option...</option>';
                 
                 if (currentModalVariants.length > 0) {
-                    currentModalVariants.forEach(variant => {
+                    // Get stock for each variant
+                    for (const variant of currentModalVariants) {
+                        const stock = await getVariantStock(variant.id);
+                        variant.available_stock = stock;
+                        
                         const option = document.createElement('option');
                         option.value = variant.id;
                         option.setAttribute('data-price', variant.price);
-                        option.setAttribute('data-name', variant.variant_name);
-                        option.setAttribute('data-type', variant.variant_type);
-                        option.textContent = `${variant.variant_name} (${variant.variant_type}) - $${parseFloat(variant.price).toFixed(2)}`;
+                        option.setAttribute('data-name', variant.name);
+                        option.setAttribute('data-type', variant.type);
+                        option.setAttribute('data-stock', stock);
+                        option.textContent = `${variant.name} (${variant.type}) - $${parseFloat(variant.price).toFixed(2)} ${stock === 0 ? ' - OUT OF STOCK' : ''}`;
+                        option.disabled = stock === 0;
                         variantSelect.appendChild(option);
-                    });
+                    }
                     
-                    const firstVariant = currentModalVariants[0];
-                    document.getElementById('modal-product-price').textContent = `$${parseFloat(firstVariant.price).toFixed(2)}`;
-                    
-                    const imageUrl = getProductImageUrl(product.name, firstVariant.variant_name);
-                    const modalImage = document.getElementById('modal-product-image');
-                    if (imageUrl && !imageUrl.includes('placeholder')) {
-                        modalImage.src = imageUrl;
-                        modalImage.style.display = 'block';
-                        modalImage.onerror = function() {
-                            this.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.name)}`;
-                        };
+                    // Select first available variant
+                    const firstAvailable = currentModalVariants.find(v => v.available_stock > 0);
+                    if (firstAvailable) {
+                        variantSelect.value = firstAvailable.id;
+                        updateVariantInfo(firstAvailable);
                     } else {
-                        modalImage.style.display = 'none';
+                        document.getElementById('modal-product-price').textContent = 'Out of Stock';
+                        document.getElementById('modal-add-to-cart').disabled = true;
                     }
                 } else {
+                    // No variants - show base product
                     document.getElementById('modal-product-price').textContent = `$${parseFloat(product.base_price).toFixed(2)}`;
+                    document.getElementById('modal-add-to-cart').disabled = false;
+                    
                     const imageUrl = getProductImageUrl(product.name, null);
                     const modalImage = document.getElementById('modal-product-image');
                     if (imageUrl && !imageUrl.includes('placeholder')) {
@@ -443,23 +357,14 @@
                     }
                 }
                 
+                // Update variant info on change
                 variantSelect.onchange = function() {
                     const selected = variantSelect.options[variantSelect.selectedIndex];
                     if (selected && selected.value) {
-                        const price = selected.getAttribute('data-price');
-                        const variantName = selected.getAttribute('data-name');
-                        document.getElementById('modal-product-price').textContent = `$${parseFloat(price).toFixed(2)}`;
-                        
-                        const imageUrl = getProductImageUrl(product.name, variantName);
-                        const modalImage = document.getElementById('modal-product-image');
-                        if (imageUrl && !imageUrl.includes('placeholder')) {
-                            modalImage.src = imageUrl;
-                            modalImage.style.display = 'block';
-                            modalImage.onerror = function() {
-                                this.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.name)}`;
-                            };
-                        } else {
-                            modalImage.style.display = 'none';
+                        const variantId = parseInt(selected.value);
+                        const variant = currentModalVariants.find(v => v.id === variantId);
+                        if (variant) {
+                            updateVariantInfo(variant);
                         }
                     }
                 };
@@ -468,158 +373,119 @@
                 document.getElementById('variant-modal').style.display = 'flex';
             };
             
-            function closeModal() {
-                document.getElementById('variant-modal').style.display = 'none';
-                currentModalProduct = null;
-                currentModalVariants = [];
+            function updateVariantInfo(variant) {
+                document.getElementById('modal-product-price').textContent = `$${parseFloat(variant.price).toFixed(2)}`;
+                document.getElementById('modal-add-to-cart').disabled = variant.available_stock === 0;
+                
+                const imageUrl = getProductImageUrl(currentModalProduct.name, variant.name);
+                const modalImage = document.getElementById('modal-product-image');
+                if (imageUrl && !imageUrl.includes('placeholder')) {
+                    modalImage.src = imageUrl;
+                    modalImage.style.display = 'block';
+                    modalImage.onerror = function() {
+                        this.src = `https://via.placeholder.com/300x200?text=${encodeURIComponent(currentModalProduct.name)}`;
+                    };
+                } else {
+                    modalImage.style.display = 'none';
+                }
             }
             
-            function addSelectedToCart() {
+            async function addSelectedToCart() {
                 const variantSelect = document.getElementById('variant-select');
                 const selectedOption = variantSelect.options[variantSelect.selectedIndex];
                 const quantity = parseInt(document.getElementById('modal-quantity').value) || 1;
                 
-                if (currentModalVariants.length > 0 && (!selectedOption || !selectedOption.value)) {
-                    showNotification('Please select an option', true);
+                let productId = currentModalProduct.id;
+                let variantId = null;
+                let price = currentModalProduct.base_price;
+                let variantName = null;
+                let variantType = null;
+                
+                if (currentModalVariants.length > 0) {
+                    if (!selectedOption || !selectedOption.value) {
+                        showNotification('Please select an option', true);
+                        return;
+                    }
+                    
+                    variantId = parseInt(selectedOption.value);
+                    variantName = selectedOption.getAttribute('data-name');
+                    variantType = selectedOption.getAttribute('data-type');
+                    price = parseFloat(selectedOption.getAttribute('data-price'));
+                    
+                    // Check stock again
+                    const stock = await getVariantStock(variantId);
+                    if (stock < quantity) {
+                        showNotification('Not enough stock available', true);
+                        return;
+                    }
+                }
+                
+                // Reserve stock
+                const reserved = await reserveStock(productId, variantId, quantity);
+                if (!reserved) {
+                    showNotification('Failed to reserve stock. Please try again.', true);
                     return;
                 }
                 
-                let cartItem;
+                // Add to local cart
+                let cart = getCart();
+                const cartItem = {
+                    id: variantId ? `${productId}_${variantId}` : productId.toString(),
+                    product_id: productId,
+                    variant_id: variantId,
+                    name: variantName ? `${variantName} ${currentModalProduct.name}` : currentModalProduct.name,
+                    product_name: currentModalProduct.name,
+                    variant_name: variantName,
+                    variant_type: variantType,
+                    price: price,
+                    quantity: quantity,
+                    image: getProductImageUrl(currentModalProduct.name, variantName)
+                };
                 
-                if (currentModalVariants.length > 0) {
-                    const variantId = selectedOption.value;
-                    const variantName = selectedOption.getAttribute('data-name');
-                    const variantType = selectedOption.getAttribute('data-type');
-                    const price = parseFloat(selectedOption.getAttribute('data-price'));
-                    
-                    cartItem = {
-                        id: `${currentModalProduct.id}_${variantId}`,
-                        product_id: currentModalProduct.id,
-                        variant_id: variantId,
-                        name: `${variantName} ${currentModalProduct.name}`,
-                        product_name: currentModalProduct.name,
-                        variant_name: variantName,
-                        variant_type: variantType,
-                        price: price,
-                        quantity: quantity,
-                        image: getProductImageUrl(currentModalProduct.name, variantName)
-                    };
-                } else {
-                    cartItem = {
-                        id: currentModalProduct.id.toString(),
-                        product_id: currentModalProduct.id,
-                        name: currentModalProduct.name,
-                        product_name: currentModalProduct.name,
-                        price: currentModalProduct.base_price,
-                        quantity: quantity,
-                        image: getProductImageUrl(currentModalProduct.name, null)
-                    };
-                }
-                
-                let cart = JSON.parse(localStorage.getItem('cart')) || [];
                 const existingItem = cart.find(item => item.id === cartItem.id);
-                
                 if (existingItem) {
                     existingItem.quantity += quantity;
                 } else {
                     cart.push(cartItem);
                 }
                 
-                localStorage.setItem('cart', JSON.stringify(cart));
+                saveCart(cart);
                 showNotification(`${cartItem.name} added to cart!`);
                 updateCartCount();
                 closeModal();
+                
+                // Refresh product list to update stock display
+                await fetchProducts();
             }
             
-            function filterAndSortProducts() {
-                const category = document.getElementById('category-filter');
-                const sortBy = document.getElementById('sort-filter');
-                const searchInput = document.getElementById('search-input');
-                
-                const categoryValue = category ? category.value : 'all';
-                const sortByValue = sortBy ? sortBy.value : 'default';
-                const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-                
-                let filtered = [...allProducts];
-                
-                if (categoryValue !== 'all') {
-                    filtered = filtered.filter(product => 
-                        (product.category || '').toLowerCase().replace(/\s+/g, '-') === categoryValue
-                    );
+            // Cleanup expired reservations periodically
+            async function cleanupExpiredReservations() {
+                try {
+                    await _supabase.rpc('cleanup_expired_reservations');
+                } catch (error) {
+                    console.error('Error cleaning up reservations:', error);
                 }
-                
-                if (searchTerm) {
-                    filtered = filtered.filter(product => 
-                        product.name.toLowerCase().includes(searchTerm) || 
-                        (product.category || '').toLowerCase().includes(searchTerm)
-                    );
-                }
-                
-                if (sortByValue === 'price-low') {
-                    filtered.sort((a, b) => a.base_price - b.base_price);
-                } else if (sortByValue === 'price-high') {
-                    filtered.sort((a, b) => b.base_price - a.base_price);
-                }
-                
-                currentProducts = filtered;
-                displayProducts(currentProducts);
             }
             
+            // Run cleanup every 5 minutes
+            setInterval(cleanupExpiredReservations, 5 * 60 * 1000);
+            
+            // Update stock display in cart
             function updateCartCount() {
-                const cart = JSON.parse(localStorage.getItem('cart')) || [];
+                const cart = getCart();
                 const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
                 const cartCount = document.querySelector('.cart-count');
                 if (cartCount) cartCount.textContent = totalItems;
             }
             
-            function updateAuthUI() {
-                const user = JSON.parse(localStorage.getItem('user'));
-                const authIcon = document.getElementById('auth-icon');
-                
-                if (authIcon) {
-                    if (user && user.name) {
-                        authIcon.innerHTML = `
-                            <div class="user-menu" style="position: relative; cursor: pointer;">
-                                <i class="fas fa-user-circle"></i>
-                                <span style="font-size: 0.9rem; margin-left: 0.3rem;">${user.name.split(' ')[0]}</span>
-                                <div class="user-dropdown" style="position: absolute; top: 100%; right: 0; background: white; min-width: 180px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none; z-index: 100;">
-                                    <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #eee; font-weight: 600;">${user.name}</div>
-                                    <div style="padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; border-bottom: 1px solid #eee;">${user.email}</div>
-                                    <a href="#" onclick="logout()" style="display: block; padding: 0.75rem 1rem; color: #e74c3c; text-decoration: none;">Logout</a>
-                                </div>
-                            </div>
-                        `;
-                        
-                        const userMenu = authIcon.querySelector('.user-menu');
-                        const dropdown = authIcon.querySelector('.user-dropdown');
-                        if (userMenu && dropdown) {
-                            userMenu.addEventListener('mouseenter', () => dropdown.style.display = 'block');
-                            userMenu.addEventListener('mouseleave', () => dropdown.style.display = 'none');
-                        }
-                    } else {
-                        authIcon.innerHTML = '<a href="auth.html"><i class="fas fa-user"></i></a>';
-                    }
-                }
+            function closeModal() {
+                document.getElementById('variant-modal').style.display = 'none';
+                currentModalProduct = null;
+                currentModalVariants = [];
             }
             
-            window.logout = function() {
-                localStorage.removeItem('user');
-                showNotification('Logged out successfully!');
-                setTimeout(() => window.location.reload(), 1000);
-            };
-            
             function showNotification(message, isError = false) {
-                const notification = document.createElement('div');
-                notification.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i><span>${message}</span>`;
-                document.body.appendChild(notification);
-                
-                notification.style.cssText = `
-                    position: fixed; bottom: 20px; right: 20px; background: ${isError ? '#e74c3c' : '#27ae60'};
-                    color: white; padding: 1rem 1.5rem; border-radius: 10px; display: flex;
-                    align-items: center; gap: 0.5rem; z-index: 10000; animation: slideInRight 0.3s ease;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.2); font-family: 'Inter', sans-serif;
-                `;
-                setTimeout(() => notification.remove(), 3000);
+                // ... (keep your existing notification function)
             }
             
             function escapeHtml(str) {
@@ -656,11 +522,18 @@
                 }
             }
             
+            function populateCategoryFilter() {
+                // ... (keep your existing function)
+            }
+            
+            function filterAndSortProducts() {
+                // ... (keep your existing function)
+            }
+            
             // Initialize
             document.addEventListener('DOMContentLoaded', () => {
                 fetchProducts();
                 updateCartCount();
-                updateAuthUI();
                 
                 document.querySelector('.modal-close').onclick = closeModal;
                 window.onclick = function(event) {
@@ -685,122 +558,5 @@
             });
         })();
     </script>
-    
-    <style>
-        .loading-spinner {
-            text-align: center;
-            padding: 4rem;
-            grid-column: 1/-1;
-        }
-        .loading-spinner i {
-            font-size: 3rem;
-            color: var(--secondary-color);
-            margin-bottom: 1rem;
-        }
-        .variant-badge {
-            display: inline-block;
-            background: var(--secondary-color);
-            color: white;
-            font-size: 0.7rem;
-            padding: 0.2rem 0.6rem;
-            border-radius: 20px;
-            margin-bottom: 0.5rem;
-        }
-        .product-image {
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f5f5f5;
-        }
-        .product-image img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        .modal-image img {
-            max-width: 100%;
-            max-height: 200px;
-            object-fit: contain;
-        }
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1001;
-        }
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-            animation: slideUp 0.3s ease;
-        }
-        .modal-close {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            font-size: 28px;
-            cursor: pointer;
-            color: #999;
-        }
-        .modal-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid #eee;
-        }
-        .modal-body {
-            padding: 1.5rem;
-            display: flex;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-        }
-        .modal-image {
-            flex: 1;
-            min-width: 150px;
-            text-align: center;
-        }
-        .modal-info {
-            flex: 2;
-            min-width: 200px;
-        }
-        .variant-selector {
-            margin: 1rem 0;
-        }
-        .variant-select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        .modal-price {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--secondary-color);
-            margin: 1rem 0;
-        }
-        .modal-quantity input {
-            width: 100px;
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-    </style>
 </body>
 </html>

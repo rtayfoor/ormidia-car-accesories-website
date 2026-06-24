@@ -596,13 +596,18 @@
                 }
             }
             
-            // Check if user is logged in (using custom users table)
+            // Get current user from localStorage
             function getCurrentUser() {
-                const user = JSON.parse(localStorage.getItem('user'));
-                if (user && user.id) {
-                    return user;
+                try {
+                    const user = JSON.parse(localStorage.getItem('user'));
+                    if (user && user.id) {
+                        return user;
+                    }
+                    return null;
+                } catch (e) {
+                    console.error('Error getting user:', e);
+                    return null;
                 }
-                return null;
             }
             
             // Load and display cart items
@@ -896,7 +901,9 @@
                         image: item.image || null
                     }));
                     
-                    // Call the checkout_with_order function with the user ID
+                    console.log('Placing order with user ID:', user.id);
+                    
+                    // Call the checkout_with_order function
                     const { data, error } = await _supabase
                         .rpc('checkout_with_order', {
                             p_cart_id: cartId,
@@ -910,11 +917,20 @@
                         });
                     
                     if (error) {
-                        console.error('Checkout error:', error);
-                        throw new Error(error.message || 'Failed to process order');
+                        console.error('Checkout error details:', error);
+                        
+                        // Check for specific error types
+                        if (error.message && error.message.includes('row-level security policy')) {
+                            throw new Error('Permission denied. Please make sure you are logged in properly.');
+                        } else if (error.message && error.message.includes('Insufficient stock')) {
+                            throw new Error(error.message);
+                        } else {
+                            throw new Error(error.message || 'Failed to process order');
+                        }
                     }
                     
                     const orderResult = data;
+                    console.log('Order placed successfully:', orderResult);
                     
                     // Clear cart
                     localStorage.removeItem('cart');
@@ -1002,6 +1018,7 @@
             // Logout function
             window.logout = function() {
                 localStorage.removeItem('user');
+                localStorage.removeItem('cartId');
                 showNotification('Logged out successfully!');
                 setTimeout(() => {
                     window.location.reload();
@@ -1028,9 +1045,14 @@
                     animation: slideInRight 0.3s ease;
                     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
                     font-family: 'Inter', sans-serif;
+                    max-width: 400px;
                 `;
                 
-                setTimeout(() => notification.remove(), 3000);
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }, 4000);
             }
             
             function escapeHtml(str) {

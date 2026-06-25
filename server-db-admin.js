@@ -5,6 +5,84 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
+// Load pending transfers
+async function loadPendingTransfers() {
+    try {
+        const response = await fetch('/api/admin/bank-transfer/pending');
+        const transfers = await response.json();
+
+        const container = document.getElementById('pendingTransfers');
+        if (transfers.length === 0) {
+            container.innerHTML = '<p>No pending transfers</p>';
+            return;
+        }
+
+        let html = '<table class="admin-table">';
+        html += `
+            <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Amount</th>
+                    <th>Reference</th>
+                    <th>Transfer Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        transfers.forEach(transfer => {
+            html += `
+                <tr>
+                    <td>${transfer.orders.order_number}</td>
+                    <td>€${transfer.amount}</td>
+                    <td>${transfer.reference_number}</td>
+                    <td>${new Date(transfer.transfer_date).toLocaleDateString()}</td>
+                    <td>
+                        <button onclick="verifyTransfer(${transfer.id}, 'verified')" class="btn btn-success">Verify</button>
+                        <button onclick="verifyTransfer(${transfer.id}, 'rejected')" class="btn btn-danger">Reject</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading transfers:', error);
+    }
+}
+
+// Verify or reject transfer
+async function verifyTransfer(transferId, status) {
+    if (!confirm(`Are you sure you want to ${status} this transfer?`)) return;
+
+    try {
+        const response = await fetch('/api/admin/bank-transfer/verify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                orderId: transferId,
+                status: status,
+                notes: prompt('Add any notes:') || ''
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(`Transfer ${status} successfully`);
+            loadPendingTransfers(); // Refresh the list
+        } else {
+            alert(data.error || 'Failed to process transfer');
+        }
+    } catch (error) {
+        console.error('Error verifying transfer:', error);
+        alert('An error occurred');
+    }
+}
 // PostgreSQL connection configuration
 const poolConfig = {
   host: 'localhost',

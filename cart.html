@@ -573,10 +573,15 @@
 
     <script>
         (function() {
-            const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
-            const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
-            
-            const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+           // Fetch Supabase config from server
+async function getSupabaseConfig() {
+    const response = await fetch('/api/supabase/config');
+    return response.json();
+}
+// Use it later in your code
+            // Get config first
+const config = await getSupabaseConfig();
+const _supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
             
             let currentUser = null;
             let cartItems = [];

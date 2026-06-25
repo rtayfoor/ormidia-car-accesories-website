@@ -56,3 +56,17 @@ admin.html -> front-end editing
 
 5432
 
+
+
+🔑 Getting Gmail App Password
+Go to: https://myaccount.google.com/apppasswords
+
+Select "Mail" as the app
+
+Select "Other" and name it "Ormidia"
+
+Copy the 16-character password
+
+Add it to your .env as SMTP_PASS
+
+

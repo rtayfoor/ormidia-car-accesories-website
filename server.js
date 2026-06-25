@@ -379,15 +379,15 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
-// Database configuration
-const dbConfig = {
-  host: 'localhost',
-  port: 5432,
-  user: 'postgres',
-  password: '1234',
-  database: 'ormidia_products'
-};
+require('dotenv').config();
 
+const dbConfig = {
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME || 'postgres',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD
+};
 app.use(express.json());
 app.use(express.static(__dirname));
 

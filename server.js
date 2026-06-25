@@ -1,3 +1,22 @@
+
+// Bank Transfer Configuration
+const BANK_CONFIG = {
+    bankName: 'Your Bank Name',
+    accountHolder: 'Ormidia Car Accessories',
+    accountNumber: '1234567890',
+    iban: 'GB1234567890123456',
+    swiftCode: 'SWIFT123',
+    branch: 'Main Branch',
+    currency: 'EUR'
+};
+
+// Helper function to generate order number
+function generateOrderNumber() {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `ORD-${timestamp}-${random}`;
+}
+
 const express = require('express');
 const { Client } = require('pg');
 const path = require('path');

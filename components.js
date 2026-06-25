@@ -1,5 +1,83 @@
 // components.js - Global Header and Footer Components
+// Handle bank transfer payment
+async function handleBankTransfer(orderId) {
+    try {
+        // Get transfer details
+        const response = await fetch(`/api/bank-transfer/${orderId}`);
+        const data = await response.json();
 
+        if (response.ok) {
+            // Populate bank details
+            document.getElementById('bankName').textContent = data.bankDetails.bankName;
+            document.getElementById('accountHolder').textContent = data.bankDetails.accountHolder;
+            document.getElementById('accountNumber').textContent = data.bankDetails.accountNumber;
+            document.getElementById('iban').textContent = data.bankDetails.iban;
+            document.getElementById('swiftCode').textContent = data.bankDetails.swiftCode;
+            document.getElementById('referenceNumber').textContent = data.reference_number;
+            document.getElementById('transferAmount').textContent = data.amount;
+
+            // Show bank transfer info
+            document.getElementById('bankTransferInfo').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error getting transfer details:', error);
+        alert('Failed to get transfer details');
+    }
+}
+
+// Confirm transfer
+async function confirmTransfer() {
+    const orderId = sessionStorage.getItem('currentOrderId');
+    if (!orderId) {
+        alert('No order found');
+        return;
+    }
+
+    const transferDate = prompt('Enter transfer date (YYYY-MM-DD):');
+    const referenceNumber = prompt('Enter your transfer reference number:');
+
+    if (!transferDate || !referenceNumber) {
+        alert('Transfer date and reference number are required');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/bank-transfer/confirm', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                orderId: parseInt(orderId),
+                transferDate: transferDate,
+                referenceNumber: referenceNumber
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('Transfer confirmed successfully! We will verify it within 24 hours.');
+            window.location.href = '/order-confirmation.html';
+        } else {
+            alert(data.error || 'Failed to confirm transfer');
+        }
+    } catch (error) {
+        console.error('Error confirming transfer:', error);
+        alert('An error occurred');
+    }
+}
+
+// Process checkout with bank transfer
+async function processCheckout() {
+    // ... your existing checkout code ...
+
+    // After creating the order, show bank transfer info
+    if (data.success) {
+        sessionStorage.setItem('currentOrderId', data.orderId);
+        await handleBankTransfer(data.orderId);
+    }
+}
 // Supabase Configuration
 const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';

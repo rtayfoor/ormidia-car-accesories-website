@@ -6,8 +6,10 @@ const app = express();
 const port = 3000;
 
 // ===== SUPABASE CONFIGURATION =====
-const supabaseUrl = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';  // Replace with your URL
-const supabaseAnonKey = 'Ysb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';  // Replace with your anon key
+require('dotenv').config();
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 app.use(express.json());

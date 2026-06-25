@@ -1,5 +1,151 @@
 // ============ BANK TRANSFER PAYMENT ROUTES ============
+// ==========================================
+// YOUR EXISTING CODE IN server.js
+// ==========================================
 
+// ... your existing imports and configurations ...
+// ... your existing routes ...
+
+// ==========================================
+// ADD THE BANK TRANSFER CONFIGURATION HERE
+// (Add this after your existing routes)
+// ==========================================
+
+// Bank Transfer Configuration
+const BANK_CONFIG = {
+    bankName: 'Your Bank Name',
+    accountHolder: 'Ormidia Car Accessories',
+    accountNumber: '1234567890',
+    iban: 'GB1234567890123456',
+    swiftCode: 'SWIFT123',
+    branch: 'Main Branch',
+    currency: 'EUR'
+};
+
+// Helper function to generate order number
+function generateOrderNumber() {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `ORD-${timestamp}-${random}`;
+}
+
+// ==========================================
+// ADD THE CHECKOUT ROUTE HERE
+// ==========================================
+
+// Checkout with bank transfer
+app.post('/api/checkout', async (req, res) => {
+    try {
+        const { userId, cartItems, shippingAddress, billingAddress, notes } = req.body;
+
+        if (!userId || !cartItems || cartItems.length === 0) {
+            return res.status(400).json({ error: 'User ID and cart items are required' });
+        }
+
+        const supabase = getSupabaseClient();
+
+        // Calculate total
+        const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+        // Generate order number
+        const orderNumber = generateOrderNumber();
+
+        // Create order
+        const { data: order, error: orderError } = await supabase
+            .from('orders')
+            .insert([{
+                user_id: userId,
+                order_number: orderNumber,
+                total_amount: totalAmount,
+                status: 'pending',
+                payment_method: 'bank_transfer',
+                payment_status: 'pending',
+                shipping_address: shippingAddress,
+                billing_address: billingAddress || shippingAddress,
+                notes: notes || null
+            }])
+            .select()
+            .single();
+
+        if (orderError) throw orderError;
+
+        // Create order items
+        const orderItems = cartItems.map(item => ({
+            order_id: order.id,
+            product_id: item.id,
+            product_name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.price * item.quantity
+        }));
+
+        const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert(orderItems);
+
+        if (itemsError) throw itemsError;
+
+        // Create bank transfer record
+        const { error: transferError } = await supabase
+            .from('bank_transfers')
+            .insert([{
+                order_id: order.id,
+                bank_name: BANK_CONFIG.bankName,
+                account_holder: BANK_CONFIG.accountHolder,
+                account_number: BANK_CONFIG.accountNumber,
+                reference_number: `REF-${orderNumber}`,
+                amount: totalAmount,
+                status: 'pending'
+            }]);
+
+        if (transferError) throw transferError;
+
+        res.json({
+            success: true,
+            orderId: order.id,
+            orderNumber: orderNumber,
+            totalAmount: totalAmount,
+            message: 'Order created successfully'
+        });
+    } catch (error) {
+        console.error('Error during checkout:', error);
+        res.status(500).json({ error: 'Failed to process checkout' });
+    }
+});
+
+// ==========================================
+// ADD ADDITIONAL BANK TRANSFER ROUTES HERE
+// (Optional but recommended)
+// ==========================================
+
+// Get bank transfer details for an order
+app.get('/api/bank-transfer/:orderId', async (req, res) => {
+    // ... (add the code from previous message)
+});
+
+// Confirm bank transfer
+app.post('/api/bank-transfer/confirm', async (req, res) => {
+    // ... (add the code from previous message)
+});
+
+// Admin: Verify bank transfer
+app.post('/api/admin/bank-transfer/verify', async (req, res) => {
+    // ... (add the code from previous message)
+});
+
+// Admin: Get pending transfers
+app.get('/api/admin/bank-transfer/pending', async (req, res) => {
+    // ... (add the code from previous message)
+});
+
+// ==========================================
+// YOUR EXISTING app.listen() AT THE END
+// ==========================================
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
 // Get bank transfer details for an order
 app.get('/api/bank-transfer/:orderId', async (req, res) => {
     try {

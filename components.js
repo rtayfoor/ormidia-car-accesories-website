@@ -79,8 +79,9 @@ async function processCheckout() {
     }
 }
 // Supabase Configuration
-const SUPABASE_URL = 'https://gyeyxvfwhsbbhnjwlgbx.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_nSWYIf67QX6O78By4H3SMQ_YCi28s1S';
+// Supabase config from environment
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Global Header Component

@@ -1,4 +1,213 @@
+// ============ BANK TRANSFER PAYMENT ROUTES ============
 
+// Get bank transfer details for an order
+app.get('/api/bank-transfer/:orderId', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const supabase = getSupabaseClient();
+
+        // Get order details
+        const { data: order, error: orderError } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
+
+        if (orderError) throw orderError;
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Get or create bank transfer details
+        let { data: transfer, error: transferError } = await supabase
+            .from('bank_transfers')
+            .select('*')
+            .eq('order_id', orderId)
+            .single();
+
+        if (transferError && transferError.code === 'PGRST116') {
+            // No transfer record exists, create one
+            const newTransfer = {
+                order_id: orderId,
+                bank_name: BANK_CONFIG.bankName,
+                account_holder: BANK_CONFIG.accountHolder,
+                account_number: BANK_CONFIG.accountNumber,
+                reference_number: `REF-${order.order_number}`,
+                amount: order.total_amount,
+                status: 'pending'
+            };
+
+            const { data: newData, error: createError } = await supabase
+                .from('bank_transfers')
+                .insert([newTransfer])
+                .select()
+                .single();
+
+            if (createError) throw createError;
+            transfer = newData;
+        } else if (transferError) {
+            throw transferError;
+        }
+
+        // Add bank config to response
+        const response = {
+            ...transfer,
+            bankDetails: {
+                bankName: BANK_CONFIG.bankName,
+                accountHolder: BANK_CONFIG.accountHolder,
+                accountNumber: BANK_CONFIG.accountNumber,
+                iban: BANK_CONFIG.iban,
+                swiftCode: BANK_CONFIG.swiftCode,
+                branch: BANK_CONFIG.branch,
+                currency: BANK_CONFIG.currency
+            },
+            orderDetails: {
+                orderNumber: order.order_number,
+                totalAmount: order.total_amount,
+                createdDate: order.created_at
+            }
+        };
+
+        res.json(response);
+    } catch (error) {
+        console.error('Error fetching bank transfer details:', error);
+        res.status(500).json({ error: 'Failed to fetch bank transfer details' });
+    }
+});
+
+// Confirm bank transfer (customer submits proof)
+app.post('/api/bank-transfer/confirm', async (req, res) => {
+    try {
+        const { orderId, transferDate, referenceNumber, notes } = req.body;
+
+        if (!orderId) {
+            return res.status(400).json({ error: 'Order ID is required' });
+        }
+
+        const supabase = getSupabaseClient();
+
+        // Update bank transfer record
+        const { data: transfer, error: updateError } = await supabase
+            .from('bank_transfers')
+            .update({
+                transfer_date: transferDate || new Date(),
+                reference_number: referenceNumber,
+                status: 'confirmed',
+                notes: notes
+            })
+            .eq('order_id', orderId)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        // Update order payment status
+        const { error: orderError } = await supabase
+            .from('orders')
+            .update({
+                payment_status: 'pending_verification',
+                updated_at: new Date()
+            })
+            .eq('id', orderId);
+
+        if (orderError) throw orderError;
+
+        res.json({
+            success: true,
+            message: 'Bank transfer confirmed successfully',
+            transfer: transfer
+        });
+    } catch (error) {
+        console.error('Error confirming bank transfer:', error);
+        res.status(500).json({ error: 'Failed to confirm bank transfer' });
+    }
+});
+
+// Admin: Verify bank transfer
+app.post('/api/admin/bank-transfer/verify', async (req, res) => {
+    try {
+        const { orderId, status, notes } = req.body;
+
+        if (!orderId || !status) {
+            return res.status(400).json({ error: 'Order ID and status are required' });
+        }
+
+        if (!['verified', 'rejected'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status. Must be "verified" or "rejected"' });
+        }
+
+        const supabase = getSupabaseClient();
+
+        // Update bank transfer status
+        const { data: transfer, error: updateError } = await supabase
+            .from('bank_transfers')
+            .update({
+                status: status,
+                verified_at: new Date(),
+                notes: notes || null
+            })
+            .eq('order_id', orderId)
+            .select()
+            .single();
+
+        if (updateError) throw updateError;
+
+        // Update order status
+        const orderStatus = status === 'verified' ? 'confirmed' : 'payment_failed';
+        const paymentStatus = status === 'verified' ? 'completed' : 'rejected';
+
+        const { error: orderError } = await supabase
+            .from('orders')
+            .update({
+                status: orderStatus,
+                payment_status: paymentStatus,
+                updated_at: new Date()
+            })
+            .eq('id', orderId);
+
+        if (orderError) throw orderError;
+
+        res.json({
+            success: true,
+            message: `Bank transfer ${status} successfully`,
+            transfer: transfer
+        });
+    } catch (error) {
+        console.error('Error verifying bank transfer:', error);
+        res.status(500).json({ error: 'Failed to verify bank transfer' });
+    }
+});
+
+// Admin: Get all pending bank transfers
+app.get('/api/admin/bank-transfer/pending', async (req, res) => {
+    try {
+        const supabase = getSupabaseClient();
+
+        const { data: transfers, error } = await supabase
+            .from('bank_transfers')
+            .select(`
+                *,
+                orders (
+                    id,
+                    order_number,
+                    user_id,
+                    total_amount,
+                    shipping_address,
+                    created_at
+                )
+            `)
+            .eq('status', 'confirmed')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        res.json(transfers);
+    } catch (error) {
+        console.error('Error fetching pending transfers:', error);
+        res.status(500).json({ error: 'Failed to fetch pending transfers' });
+    }
+});
 // Bank Transfer Configuration
 const BANK_CONFIG = {
     bankName: 'Your Bank Name',
